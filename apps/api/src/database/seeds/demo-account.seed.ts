@@ -9,15 +9,13 @@ import { VehiclesService } from '../../modules/vehicles/vehicles.service';
 
 export const DEMO_ACCOUNT = {
   name: 'Arthur Gomes',
-  email: 'arthurcgomees@gmail.com',
-  password: '302010@A',
+  email: 'motorista.p0wdv1@appcar.test',
+  password: 'XDN0lM5YG*7o',
   cpf: '52998224725',
   phone: '+5521999990001',
 };
 
 export const DEMO_VEHICLE = { plate: 'RIO2A18', currentOdometer: 108_000 };
-
-const LEGACY_EMAIL = 'teste@placar.local';
 
 export async function seedDemoAccount(app: INestApplicationContext) {
   const users = app.get<Repository<User>>(getRepositoryToken(User));
@@ -25,7 +23,7 @@ export async function seedDemoAccount(app: INestApplicationContext) {
 
   const user =
     (await users.findOne({ where: { email: DEMO_ACCOUNT.email } })) ??
-    (await users.findOne({ where: { email: LEGACY_EMAIL } })) ??
+    (await users.findOne({ where: { cpf: DEMO_ACCOUNT.cpf } })) ??
     users.create({ termsAcceptedAt: new Date() });
   Object.assign(user, {
     name: DEMO_ACCOUNT.name,
