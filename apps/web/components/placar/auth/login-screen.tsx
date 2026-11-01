@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { authApi } from "@/lib/api/auth";
+import { authApi, sentVia, type CodeSent } from "@/lib/api/auth";
 import { errorMessage } from "@/lib/api/client";
 import { LinkButton, PrimaryButton } from "../buttons";
 import { Group } from "../grouped-list";
@@ -31,7 +31,7 @@ export function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [plate, setPlate] = useState("");
-  const [maskedPhone, setMaskedPhone] = useState<string | null>(null);
+  const [sent, setSent] = useState<CodeSent | null>(null);
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -66,10 +66,10 @@ export function LoginScreen() {
   const sendCode = () => {
     if (!isValidPlate(plate)) return setError(PLATE_ERROR);
     run(async () => {
-      const sent = await authApi.requestPin(plate);
-      setMaskedPhone(sent.maskedPhone);
+      const result = await authApi.requestPin(plate);
+      setSent(result);
       setPin("");
-      countdown.start(sent.resendIn);
+      countdown.start(result.resendIn);
     });
   };
 
@@ -94,7 +94,7 @@ export function LoginScreen() {
         tone="translucent"
         options={[
           { value: "password", label: "E-mail e senha" },
-          { value: "pin", label: "Placa + SMS" },
+          { value: "pin", label: "Placa + PIN" },
         ]}
         value={mode}
         onChange={(next) => {
@@ -158,7 +158,7 @@ export function LoginScreen() {
         </form>
       )}
 
-      {mode === "pin" && !maskedPhone && (
+      {mode === "pin" && !sent && (
         <div className="flex flex-col gap-3.5">
           <div className="flex flex-col items-center gap-2.5 rounded-xl bg-ios-cell p-4">
             <div className="text-[13px] text-ios-label2">Placa do veículo</div>
@@ -173,18 +173,18 @@ export function LoginScreen() {
             />
           </div>
           <div className="px-4 text-[13px] text-pretty text-ios-label2">
-            Enviaremos um código de 6 dígitos para o celular cadastrado neste veículo.
+            Enviaremos um PIN de 6 dígitos para o contato cadastrado pelo dono do veículo.
           </div>
           <PrimaryButton onClick={sendCode} disabled={busy}>
-            {busy ? "Enviando…" : "Enviar código por SMS"}
+            {busy ? "Enviando…" : "Enviar PIN"}
           </PrimaryButton>
         </div>
       )}
 
-      {mode === "pin" && maskedPhone && (
+      {mode === "pin" && sent && (
         <div className="flex flex-col gap-4">
           <div className="text-center text-[15px] leading-[1.45] text-pretty text-ios-label2">
-            Enviamos um código por SMS para {maskedPhone}, celular da placa {formatPlate(plate)}.
+            Enviamos o PIN {sentVia(sent)}, cadastrado na placa {formatPlate(plate)}.
           </div>
           <PinInput
             value={pin}
@@ -199,7 +199,7 @@ export function LoginScreen() {
           <div className="flex justify-between">
             <LinkButton
               onClick={() => {
-                setMaskedPhone(null);
+                setSent(null);
                 setPin("");
                 setError("");
               }}

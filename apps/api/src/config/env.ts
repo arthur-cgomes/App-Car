@@ -11,7 +11,7 @@ const envSchema = z
     WEB_URL: z.string().url().default('http://localhost:3001'),
     TRUST_PROXY: z.coerce.number().int().min(0).default(1),
     REFRESH_COOKIE_PATH: z.string().default('/api/v1/auth'),
-    SMS_PROVIDER: z.enum(['console', 'smsdev']).default('console'),
+    SMS_PROVIDER: z.enum(['console', 'smsdev', 'disabled']).default('console'),
     SMSDEV_KEY: z.string().optional(),
     PLATE_PROVIDER: z.enum(['mock']).default('mock'),
     PLATE_LOOKUP_DAILY_LIMIT: z.coerce.number().int().min(1).default(10),
@@ -40,7 +40,7 @@ const envSchema = z
     { message: 'Com STORAGE_PROVIDER=gdrive defina GOOGLE_DRIVE_CLIENT_ID, _CLIENT_SECRET, _REFRESH_TOKEN e _FOLDER_ID' },
   )
   .refine((env) => env.NODE_ENV !== 'production' || env.SMS_PROVIDER !== 'console', {
-    message: 'Em produção use um provedor de SMS real (SMS_PROVIDER=smsdev)',
+    message: 'Em produção use SMS_PROVIDER=smsdev ou SMS_PROVIDER=disabled',
   });
 
 export type Env = z.infer<typeof envSchema>;

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { formatBrPhone, formatBrPhoneInput, formatCpf, isValidCpf, normalizeBrMobile, normalizeCpf } from "@monitoring-car/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { EXPORT_URL, accountApi, authApi, useMe, type CodeSent, type Me } from "@/lib/api/auth";
+import { EXPORT_URL, accountApi, authApi, sentVia, useMe, type CodeSent, type Me } from "@/lib/api/auth";
 import { errorMessage } from "@/lib/api/client";
 import { uploadFile } from "@/lib/api/expenses";
 import { useActivateVehicle, useActiveVehicle, vehicleName } from "@/lib/api/vehicles";
@@ -39,7 +39,7 @@ const draftOf = (me: Me): Draft => ({
 
 const ROW = "flex min-h-[46px] items-center gap-3 border-b-[0.5px] border-ios-sep px-4 last:border-b-0";
 
-type CodeFlow = { kind: "phone" | "delete"; sent: CodeSent; key: number } | null;
+type CodeFlow = { kind: "phone" | "delete" | "email"; sent: CodeSent; key: number } | null;
 
 export function ProfileScreen() {
   const me = useMe();
@@ -67,7 +67,7 @@ function ProfileForm({ me }: { me: Me }) {
     setError("");
   };
   const refresh = () => client.invalidateQueries({ queryKey: ["me"] });
-  const openCode = (kind: "phone" | "delete", sent: CodeSent) => {
+  const openCode = (kind: "phone" | "delete" | "email", sent: CodeSent) => {
     setCodeFlow({ kind, sent, key: Date.now() });
     setCodeOpen(true);
   };
@@ -76,8 +76,8 @@ function ProfileForm({ me }: { me: Me }) {
     if (!dirty || busy) return;
     if (!draft.name.trim()) return setError("Informe seu nome.");
     if (!/^\S+@\S+\.\S+$/.test(draft.email.trim())) return setError("E-mail inválido.");
-    const phone = normalizeBrMobile(draft.phone);
-    if (!phone) return setError("Celular incompleto.");
+    const phone = draft.phone.trim() ? normalizeBrMobile(draft.phone) : me.phone;
+    if (draft.phone.trim() && !phone) return setError("Celular incompleto.");
     if (draft.cpf && !isValidCpf(draft.cpf)) return setError("CPF inválido.");
     setBusy(true);
     try {
@@ -87,11 +87,13 @@ function ProfileForm({ me }: { me: Me }) {
         cpf: draft.cpf ? normalizeCpf(draft.cpf) : null,
         avatarFileId: draft.avatarFileId,
       });
-      const phoneChanged = phone !== me.phone;
-      setSaved({ ...draft, phone: phoneChanged ? saved.phone : draft.phone });
-      if (phoneChanged) {
-        openCode("phone", await accountApi.requestPhoneChange(phone));
+      const phoneChanged = !!phone && phone !== me.phone;
+      const result = phoneChanged ? await accountApi.requestPhoneChange(phone) : null;
+      if (result && !result.saved) {
+        setSaved({ ...draft, phone: saved.phone });
+        openCode("phone", result);
       } else {
+        setSaved(draft);
         shell.toast("Perfil atualizado.");
       }
       await refresh();
@@ -114,7 +116,7 @@ function ProfileForm({ me }: { me: Me }) {
     }
   };
 
-  const preference = async (body: { theme?: Me["theme"]; smsLoginEnabled?: boolean }) => {
+  const preference = async (body: Partial<Pick<Me, "theme" | "pinLoginEnabled" | "pinChannel">>) => {
     client.setQueryData<Me>(["me"], (current) => current && { ...current, ...body });
     try {
       await accountApi.update(body);
@@ -136,7 +138,7 @@ function ProfileForm({ me }: { me: Me }) {
       onConfirm: async () => {
         try {
           const how = await accountApi.requestDeletion();
-          if (how.method === "sms") openCode("delete", how);
+          if (how.method === "code") openCode("delete", how);
           else setPasswordOpen(true);
         } catch (failure) {
           shell.toast(errorMessage(failure));
@@ -186,7 +188,7 @@ function ProfileForm({ me }: { me: Me }) {
                 {error}
               </div>
             )}
-            <Footnote>Ao trocar o celular, enviaremos um código por SMS para confirmar o novo número.</Footnote>
+            {me.smsAvailable && <Footnote>Ao trocar o celular, enviaremos um código por SMS para confirmar o novo número.</Footnote>}
           </>
         }
       >
@@ -264,13 +266,48 @@ function ProfileForm({ me }: { me: Me }) {
 
       <Section
         header={<SectionHeader>Segurança</SectionHeader>}
-        footer={!me.phoneVerifiedAt ? <Footnote>Confirme seu celular para entrar com a placa e um código por SMS.</Footnote> : undefined}
+        footer={
+          <Footnote>
+            {!me.emailVerifiedAt
+              ? "Confirme seu e-mail para entrar com a placa e um PIN."
+              : me.smsAvailable
+                ? "O PIN de acesso pela placa chega pelo canal escolhido."
+                : "O PIN por SMS chega em breve; por enquanto ele é enviado por e-mail."}
+          </Footnote>
+        }
       >
         <Group className="mx-4 text-[17px]">
           <div className={ROW}>
-            <span className="flex-1">Entrar com placa + SMS</span>
-            <Switch checked={me.smsLoginEnabled} onChange={(on) => preference({ smsLoginEnabled: on })} label="Entrar com placa e SMS" />
+            <span className="flex-1">Entrar com placa + PIN</span>
+            <Switch checked={me.pinLoginEnabled} onChange={(on) => preference({ pinLoginEnabled: on })} label="Entrar com placa e PIN" />
           </div>
+          <div className={`${ROW} gap-3`}>
+            <span className="flex-none">Receber o PIN por</span>
+            <div className="w-[150px]">
+              <SegmentedControl
+                options={[
+                  { value: "EMAIL", label: "E-mail" },
+                  { value: "SMS", label: "SMS", disabled: !me.smsAvailable || !me.phoneVerifiedAt },
+                ]}
+                value={me.pinChannel}
+                onChange={(pinChannel) => preference({ pinChannel })}
+              />
+            </div>
+          </div>
+          {!me.emailVerifiedAt && (
+            <button
+              type="button"
+              onClick={() =>
+                authApi
+                  .sendEmailCode()
+                  .then((sent) => openCode("email", sent))
+                  .catch((failure) => shell.toast(errorMessage(failure)))
+              }
+              className={`${ROW} w-full cursor-pointer border-x-0 border-t-0 bg-transparent text-left text-[17px] text-ios-tint active:bg-ios-fill`}
+            >
+              <span className="flex-1">Confirmar e-mail</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() =>
@@ -340,18 +377,26 @@ function ProfileForm({ me }: { me: Me }) {
           <CodeSheet
             key={codeFlow.key}
             open={codeOpen}
-            title={codeFlow.kind === "phone" ? "Confirmar celular" : "Excluir conta"}
-            confirmLabel={codeFlow.kind === "phone" ? "Confirmar" : "Excluir"}
-            intro={`Enviamos um código por SMS para ${codeFlow.sent.maskedPhone}.`}
+            title={codeFlow.kind === "phone" ? "Confirmar celular" : codeFlow.kind === "email" ? "Confirmar e-mail" : "Excluir conta"}
+            confirmLabel={codeFlow.kind === "delete" ? "Excluir" : "Confirmar"}
+            intro={`Enviamos um código ${sentVia(codeFlow.sent)}.`}
             resendIn={codeFlow.sent.resendIn}
-            onResend={async () =>
-              (codeFlow.kind === "phone"
-                ? await accountApi.requestPhoneChange(normalizeBrMobile(draft.phone)!)
-                : ((await accountApi.requestDeletion()) as CodeSent)
-              ).resendIn
-            }
+            onResend={async () => {
+              const again =
+                codeFlow.kind === "phone"
+                  ? await accountApi.requestPhoneChange(normalizeBrMobile(draft.phone)!)
+                  : codeFlow.kind === "email"
+                    ? await authApi.sendEmailCode()
+                    : await accountApi.requestDeletion();
+              return "resendIn" in again ? again.resendIn : 0;
+            }}
             onConfirm={async (code) => {
-              if (codeFlow.kind === "phone") {
+              if (codeFlow.kind === "email") {
+                await authApi.verifyEmail(code);
+                setCodeOpen(false);
+                shell.toast("E-mail confirmado.");
+                await refresh();
+              } else if (codeFlow.kind === "phone") {
                 await accountApi.confirmPhoneChange(code);
                 setSaved((current) => ({ ...current, phone: draft.phone }));
                 setCodeOpen(false);

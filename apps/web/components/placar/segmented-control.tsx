@@ -2,8 +2,14 @@
 
 import { cx } from "@/lib/cx";
 
+interface SegmentOption<T extends string> {
+  value: T;
+  label: string;
+  disabled?: boolean;
+}
+
 interface SegmentedControlProps<T extends string> {
-  options: readonly [{ value: T; label: string }, { value: T; label: string }];
+  options: readonly [SegmentOption<T>, SegmentOption<T>];
   value: T;
   onChange: (value: T) => void;
   tone?: "translucent" | "fill";
@@ -30,9 +36,10 @@ export function SegmentedControl<T extends string>({ options, value, onChange, t
           type="button"
           role="tab"
           aria-selected={option.value === value}
+          disabled={option.disabled}
           onClick={() => onChange(option.value)}
           className={cx(
-            "relative h-8 flex-1 cursor-pointer border-0 bg-transparent text-[13px] text-ios-label",
+            "relative h-8 flex-1 cursor-pointer border-0 bg-transparent text-[13px] text-ios-label disabled:cursor-default disabled:opacity-40",
             option.value === value ? "font-semibold" : "font-medium",
           )}
         >

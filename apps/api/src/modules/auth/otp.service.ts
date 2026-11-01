@@ -1,31 +1,52 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { maskBrPhone, maskEmail, type PinChannel } from '@monitoring-car/shared';
 import { randomUUID } from 'node:crypto';
 import { IsNull, MoreThan, Repository } from 'typeorm';
 import { currentRequestContext } from '../../common/context/request-context';
 import { Env } from '../../config/env';
+import { RateLimiter } from '../../infra/redis/rate-limiter';
+import { MailProvider } from '../../notifications/mail/mail.provider';
 import { SmsProvider } from '../../notifications/sms/sms.provider';
+import { User } from '../users/user.entity';
 import { hmac, randomCode, safeEqualHex } from './crypto';
 import { AuthOtp, OtpPurpose } from './entities/auth-otp.entity';
 
 export const OTP_TTL_SECONDS = 5 * 60;
 export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_RESEND_SECONDS = 30;
+const OTP_PER_TARGET_PER_HOUR = 5;
 
-const MESSAGES: Record<OtpPurpose, (code: string) => string> = {
-  LOGIN: (code) => `App Car: seu código de acesso é ${code}. Não compartilhe.`,
+const SMS_TEXT: Record<OtpPurpose, (code: string) => string> = {
+  LOGIN: (code) => `App Car: seu PIN de acesso é ${code}. Não compartilhe.`,
+  EMAIL_VERIFY: (code) => `App Car: seu código de confirmação é ${code}. Não compartilhe.`,
   PHONE_VERIFY: (code) => `App Car: seu código de confirmação é ${code}. Não compartilhe.`,
   PHONE_CHANGE: (code) => `App Car: seu código para confirmar este celular é ${code}. Não compartilhe.`,
   ACCOUNT_DELETE: (code) => `App Car: seu código para EXCLUIR sua conta é ${code}. Se não foi você, ignore.`,
 };
 
-interface IssueOptions {
+const EMAIL_CONTENT: Record<OtpPurpose, { subject: string; intro: string }> = {
+  LOGIN: { subject: 'App Car: seu PIN de acesso', intro: 'Use este PIN para entrar no App Car com a placa do seu veículo:' },
+  EMAIL_VERIFY: { subject: 'App Car: confirme seu e-mail', intro: 'Use este código para confirmar seu e-mail no App Car:' },
+  PHONE_VERIFY: { subject: 'App Car: código de confirmação', intro: 'Use este código para confirmar seu celular no App Car:' },
+  PHONE_CHANGE: { subject: 'App Car: código de confirmação', intro: 'Use este código para confirmar o novo celular no App Car:' },
+  ACCOUNT_DELETE: { subject: 'App Car: código para excluir sua conta', intro: 'Use este código para EXCLUIR sua conta do App Car. Se não foi você, ignore este e-mail:' },
+};
+
+export interface Delivery {
+  channel: PinChannel;
+  target: string;
+  sentTo: string;
+}
+
+interface IssueOptions extends Delivery {
   userId: string;
   purpose: OtpPurpose;
-  phone: string;
   vehicleId?: string | null;
 }
+
+type DeliveryUser = Pick<User, 'email' | 'emailVerifiedAt' | 'phone' | 'phoneVerifiedAt' | 'pinChannel'>;
 
 @Injectable()
 export class OtpService {
@@ -35,13 +56,34 @@ export class OtpService {
   constructor(
     @InjectRepository(AuthOtp) private readonly otps: Repository<AuthOtp>,
     private readonly sms: SmsProvider,
+    private readonly mail: MailProvider,
+    private readonly limiter: RateLimiter,
     config: ConfigService<Env, true>,
   ) {
     this.secret = config.get('JWT_SECRET', { infer: true });
     this.webHost = new URL(config.get('WEB_URL', { infer: true })).host;
   }
 
-  async issue({ userId, purpose, phone, vehicleId = null }: IssueOptions) {
+  get smsAvailable() {
+    return this.sms.available;
+  }
+
+  email(address: string): Delivery {
+    return { channel: 'EMAIL', target: address, sentTo: maskEmail(address) };
+  }
+
+  phone(e164: string): Delivery {
+    return { channel: 'SMS', target: e164, sentTo: maskBrPhone(e164) };
+  }
+
+  deliveryFor(user: DeliveryUser): Delivery | null {
+    if (user.pinChannel === 'SMS' && this.sms.available && user.phone && user.phoneVerifiedAt) return this.phone(user.phone);
+    if (user.emailVerifiedAt) return this.email(user.email);
+    return null;
+  }
+
+  async issue({ userId, purpose, channel, target, vehicleId = null }: IssueOptions) {
+    await this.limiter.consume(`otp-target:${target}`, OTP_PER_TARGET_PER_HOUR, 3600, () => 'Muitos códigos enviados. Tente novamente mais tarde.');
     await this.otps.update({ userId, purpose, consumedAt: IsNull(), expiresAt: MoreThan(new Date()) }, { expiresAt: new Date() });
 
     const id = randomUUID();
@@ -51,14 +93,26 @@ export class OtpService {
       userId,
       purpose,
       vehicleId,
-      targetPhone: phone,
+      channel,
+      target,
       codeHash: hmac(this.secret, `${id}:${code}`),
       expiresAt: new Date(Date.now() + OTP_TTL_SECONDS * 1000),
       attempts: 0,
       consumedAt: null,
       ip: currentRequestContext().ip,
     });
-    await this.sms.send(phone, `${MESSAGES[purpose](code)}\n\n@${this.webHost} #${code}`);
+
+    if (channel === 'SMS') {
+      await this.sms.send(target, `${SMS_TEXT[purpose](code)}\n\n@${this.webHost} #${code}`);
+      return;
+    }
+    const { subject, intro } = EMAIL_CONTENT[purpose];
+    await this.mail.send({
+      to: target,
+      subject,
+      text: `${intro}\n\n${code}\n\nO código vale por 5 minutos. Não compartilhe.`,
+      html: `<p>${intro}</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>O código vale por 5 minutos. Não compartilhe.</p>`,
+    });
   }
 
   async verify(userId: string, purpose: OtpPurpose, code: string): Promise<AuthOtp> {

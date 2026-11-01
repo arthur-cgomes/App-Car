@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { isValidCpf, maskBrPhone, normalizeCpf } from '@monitoring-car/shared';
+import { isValidCpf, normalizeCpf } from '@monitoring-car/shared';
 import type { Request, Response } from 'express';
 import { IsNull, MoreThan, Not, Repository } from 'typeorm';
 import { AuditService } from '../../audit/audit.service';
@@ -21,7 +21,8 @@ import { SessionService } from './session.service';
 const LOGIN_MAX_FAILURES = 5;
 const LOGIN_LOCK_SECONDS = 15 * 60;
 const RESET_TTL_SECONDS = 30 * 60;
-const PIN_UNAVAILABLE = 'Não foi possível enviar o código para esta placa.';
+const PIN_UNAVAILABLE = 'Não foi possível enviar o PIN para esta placa.';
+const SMS_UNAVAILABLE = 'O envio por SMS ainda não está disponível.';
 
 const resendMessage = (seconds: number) => `Aguarde ${seconds} s para pedir um novo código.`;
 
@@ -53,7 +54,7 @@ export class AuthService {
     if (dto.cpf && (await this.users.exists({ where: { cpf: dto.cpf } }))) {
       throw new ConflictException('Já existe uma conta com este CPF.');
     }
-    if (await this.users.exists({ where: { phone: dto.phone, phoneVerifiedAt: Not(IsNull()) } })) {
+    if (dto.phone && (await this.users.exists({ where: { phone: dto.phone, phoneVerifiedAt: Not(IsNull()) } }))) {
       throw new ConflictException('Este celular já está em uso em outra conta.');
     }
 
@@ -62,16 +63,17 @@ export class AuthService {
         name: dto.name,
         email: dto.email,
         cpf: dto.cpf ?? null,
-        phone: dto.phone,
+        phone: dto.phone ?? null,
         passwordHash: await this.passwords.hash(dto.password),
         termsAcceptedAt: new Date(),
       }),
     );
     await this.audit.logSecurityEvent('ACCOUNT_CREATED', {}, user.id);
     await this.sessions.start(response, user.id);
-    await this.limiter.cooldown(`phone-verify:${user.id}`, OTP_RESEND_SECONDS, resendMessage);
-    await this.otps.issue({ userId: user.id, purpose: 'PHONE_VERIFY', phone: dto.phone });
-    return { user: toSessionUser(user), maskedPhone: maskBrPhone(dto.phone), resendIn: OTP_RESEND_SECONDS };
+    const delivery = this.otps.email(user.email);
+    await this.limiter.cooldown(`email-verify:${user.id}`, OTP_RESEND_SECONDS, resendMessage);
+    await this.otps.issue({ userId: user.id, purpose: 'EMAIL_VERIFY', ...delivery });
+    return { user: toSessionUser(user), channel: delivery.channel, sentTo: delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
   }
 
   async login(dto: LoginDto, response: Response) {
@@ -104,9 +106,9 @@ export class AuthService {
 
     await this.limiter.cooldown(`pin-resend:${plate}`, OTP_RESEND_SECONDS, resendMessage);
     await this.limiter.consume(`pin-plate:${plate}`, 3, 3600, () => 'Muitos códigos pedidos para esta placa. Tente novamente mais tarde.');
-    await this.otps.issue({ userId: owner.user.id, purpose: 'LOGIN', phone: owner.user.phone!, vehicleId: owner.vehicleId });
-    await this.audit.logSecurityEvent('PIN_SENT', { plate }, owner.user.id);
-    return { maskedPhone: maskBrPhone(owner.user.phone!), resendIn: OTP_RESEND_SECONDS };
+    await this.otps.issue({ userId: owner.user.id, purpose: 'LOGIN', vehicleId: owner.vehicleId, ...owner.delivery });
+    await this.audit.logSecurityEvent('PIN_SENT', { plate, channel: owner.delivery.channel }, owner.user.id);
+    return { channel: owner.delivery.channel, sentTo: owner.delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
   }
 
   async verifyPin(plate: string, code: string, response: Response) {
@@ -123,24 +125,45 @@ export class AuthService {
     return { user: toSessionUser(owner.user) };
   }
 
+  async sendEmailCode(userId: string) {
+    const user = await this.users.findOneByOrFail({ id: userId });
+    if (user.emailVerifiedAt) throw new BadRequestException('Este e-mail já está confirmado.');
+    const delivery = this.otps.email(user.email);
+    await this.limiter.cooldown(`email-verify:${userId}`, OTP_RESEND_SECONDS, resendMessage);
+    await this.otps.issue({ userId, purpose: 'EMAIL_VERIFY', ...delivery });
+    return { channel: delivery.channel, sentTo: delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
+  }
+
+  async verifyEmail(userId: string, code: string) {
+    const otp = await this.otps.verify(userId, 'EMAIL_VERIFY', code);
+    const user = await this.users.findOneByOrFail({ id: userId });
+    if (otp.target !== user.email) throw new BadRequestException('O e-mail mudou. Peça um novo código.');
+    user.emailVerifiedAt = new Date();
+    await this.users.save(user);
+    await this.audit.logSecurityEvent('EMAIL_VERIFIED', {}, userId);
+    return { emailVerified: true };
+  }
+
   async sendPhoneCode(userId: string) {
+    if (!this.otps.smsAvailable) throw new BadRequestException(SMS_UNAVAILABLE);
     const user = await this.users.findOneByOrFail({ id: userId });
     if (!user.phone) throw new BadRequestException('Cadastre um celular primeiro.');
     if (user.phoneVerifiedAt) throw new BadRequestException('Este celular já está confirmado.');
+    const delivery = this.otps.phone(user.phone);
     await this.limiter.cooldown(`phone-verify:${userId}`, OTP_RESEND_SECONDS, resendMessage);
-    await this.otps.issue({ userId, purpose: 'PHONE_VERIFY', phone: user.phone });
-    return { maskedPhone: maskBrPhone(user.phone), resendIn: OTP_RESEND_SECONDS };
+    await this.otps.issue({ userId, purpose: 'PHONE_VERIFY', ...delivery });
+    return { channel: delivery.channel, sentTo: delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
   }
 
   async verifyPhone(userId: string, code: string) {
     const otp = await this.otps.verify(userId, 'PHONE_VERIFY', code);
     const taken = await this.users.exists({
-      where: { phone: otp.targetPhone, phoneVerifiedAt: Not(IsNull()), id: Not(userId) },
+      where: { phone: otp.target, phoneVerifiedAt: Not(IsNull()), id: Not(userId) },
     });
     if (taken) throw new ConflictException('Este celular já está em uso em outra conta.');
 
     const user = await this.users.findOneByOrFail({ id: userId });
-    user.phone = otp.targetPhone;
+    user.phone = otp.target;
     user.phoneVerifiedAt = new Date();
     await this.users.save(user);
     await this.audit.logSecurityEvent('PHONE_VERIFIED', {}, userId);
@@ -214,8 +237,9 @@ export class AuthService {
   private async pinOwner(plate: string) {
     const vehicle = await this.vehicles.findOne({ where: { plate, active: true }, relations: { owner: true } });
     const user = vehicle?.owner;
-    if (!vehicle || !user?.phone || !user.phoneVerifiedAt || !user.smsLoginEnabled) return null;
-    return { user, vehicleId: vehicle.id };
+    if (!vehicle || !user?.pinLoginEnabled) return null;
+    const delivery = this.otps.deliveryFor(user);
+    return delivery ? { user, vehicleId: vehicle.id, delivery } : null;
   }
 }
 

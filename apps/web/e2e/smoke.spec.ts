@@ -31,7 +31,7 @@ async function signUp(page: Page, email: string) {
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByLabel("Confirmar").fill(PASSWORD);
   await page.getByRole("button", { name: "Criar conta" }).click();
-  await expect(page.getByText("Confirme seu celular")).toBeVisible();
+  await expect(page.getByText("Confirme seu e-mail")).toBeVisible();
 }
 
 test("cadastro, veículo, gasto, perfil e novo login", async ({ page }) => {

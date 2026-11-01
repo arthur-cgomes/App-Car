@@ -31,6 +31,9 @@ export async function seedDemoAccount(app: INestApplicationContext) {
     cpf: DEMO_ACCOUNT.cpf,
     phone: DEMO_ACCOUNT.phone,
     phoneVerifiedAt: user.phoneVerifiedAt ?? new Date(),
+    emailVerifiedAt: user.emailVerifiedAt ?? new Date(),
+    pinLoginEnabled: true,
+    pinChannel: 'EMAIL',
     passwordHash: await app.get(PasswordService).hash(DEMO_ACCOUNT.password),
   });
   await users.save(user);

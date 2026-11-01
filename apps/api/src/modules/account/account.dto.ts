@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { isValidCpf, normalizeBrMobile, normalizeCpf } from '@monitoring-car/shared';
+import { PIN_CHANNELS, type PinChannel, isValidCpf, normalizeBrMobile, normalizeCpf } from '@monitoring-car/shared';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
@@ -61,7 +61,12 @@ export class UpdateProfileDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
-  smsLoginEnabled?: boolean;
+  pinLoginEnabled?: boolean;
+
+  @ApiPropertyOptional({ enum: PIN_CHANNELS })
+  @IsOptional()
+  @IsIn(PIN_CHANNELS, { message: 'Escolha e-mail ou SMS.' })
+  pinChannel?: PinChannel;
 }
 
 export class ChangePhoneDto {

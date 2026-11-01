@@ -13,13 +13,13 @@ export class AccountController {
   constructor(private readonly account: AccountService) {}
 
   @Get()
-  me(@CurrentUser() user: AuthUser) {
-    return this.account.me(user.id);
+  async me(@CurrentUser() user: AuthUser) {
+    return this.account.view(await this.account.me(user.id));
   }
 
   @Patch()
-  update(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
-    return this.account.update(user.id, dto);
+  async update(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
+    return this.account.view(await this.account.update(user.id, dto));
   }
 
   @Post('phone')
@@ -30,8 +30,8 @@ export class AccountController {
 
   @Post('phone/confirm')
   @HttpCode(200)
-  confirmPhoneChange(@CurrentUser() user: AuthUser, @Body() dto: CodeDto) {
-    return this.account.confirmPhoneChange(user.id, dto.code);
+  async confirmPhoneChange(@CurrentUser() user: AuthUser, @Body() dto: CodeDto) {
+    return this.account.view(await this.account.confirmPhoneChange(user.id, dto.code));
   }
 
   @Get('export')

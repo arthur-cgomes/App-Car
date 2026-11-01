@@ -75,10 +75,11 @@ export class RegisterDto {
   @Transform(({ value }) => (typeof value === 'string' && value.trim() ? normalizeCpf(value) : undefined))
   cpf?: string;
 
-  @ApiProperty({ example: '(21) 98765-4821' })
-  @Transform(({ value }) => (typeof value === 'string' ? (normalizeBrMobile(value) ?? value) : value))
+  @ApiPropertyOptional({ example: '(21) 98765-4821' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? (value.trim() ? (normalizeBrMobile(value) ?? value) : undefined) : value))
   @Matches(/^\+55\d{11}$/, { message: 'Celular incompleto.' })
-  phone: string;
+  phone?: string;
 
   @ApiProperty({ description: '8+ caracteres, com maiúscula, número e caractere especial' })
   @IsString()

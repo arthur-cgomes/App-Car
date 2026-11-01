@@ -7,27 +7,38 @@ export interface SessionUser {
   email: string;
 }
 
+export type PinChannel = "EMAIL" | "SMS";
+
 export interface Me extends SessionUser {
   cpf: string | null;
   phone: string | null;
   phoneVerifiedAt: string | null;
+  emailVerifiedAt: string | null;
   theme: "DARK" | "LIGHT";
-  smsLoginEnabled: boolean;
+  pinLoginEnabled: boolean;
+  pinChannel: PinChannel;
+  smsAvailable: boolean;
   activeVehicleId: string | null;
   avatarFileId: string | null;
 }
 
 export interface CodeSent {
-  maskedPhone: string;
+  channel: PinChannel;
+  sentTo: string;
   resendIn: number;
 }
+
+export const sentVia = (sent: Pick<CodeSent, "channel" | "sentTo">) =>
+  sent.channel === "SMS" ? `por SMS para ${sent.sentTo}` : `por e-mail para ${sent.sentTo}`;
 
 export const authApi = {
   login: (login: string, password: string) => api<{ user: SessionUser }>("/auth/login", { body: { login, password } }),
   requestPin: (plate: string) => api<CodeSent>("/auth/pin/request", { body: { plate } }),
   verifyPin: (plate: string, code: string) => api<{ user: SessionUser }>("/auth/pin/verify", { body: { plate, code } }),
-  register: (body: { name: string; email: string; cpf?: string; phone: string; password: string; acceptTerms: boolean }) =>
+  register: (body: { name: string; email: string; cpf?: string; phone?: string; password: string; acceptTerms: boolean }) =>
     api<CodeSent & { user: SessionUser }>("/auth/register", { body }),
+  sendEmailCode: () => api<CodeSent>("/auth/email/send", { method: "POST" }),
+  verifyEmail: (code: string) => api<{ emailVerified: true }>("/auth/email/verify", { body: { code } }),
   sendPhoneCode: () => api<CodeSent>("/auth/phone/send", { method: "POST" }),
   verifyPhone: (code: string) => api<{ phoneVerified: true }>("/auth/phone/verify", { body: { code } }),
   forgotPassword: (login: string) => api<{ sent: true }>("/auth/password/forgot", { body: { login } }),
@@ -36,12 +47,12 @@ export const authApi = {
 };
 
 export const accountApi = {
-  update: (body: Partial<Pick<Me, "name" | "email" | "cpf" | "avatarFileId" | "theme" | "smsLoginEnabled">>) =>
+  update: (body: Partial<Pick<Me, "name" | "email" | "cpf" | "avatarFileId" | "theme" | "pinLoginEnabled" | "pinChannel">>) =>
     api<Me>("/me", { method: "PATCH", body }),
-  requestPhoneChange: (phone: string) => api<CodeSent>("/me/phone", { body: { phone } }),
+  requestPhoneChange: (phone: string) => api<{ saved: true; user: Me } | ({ saved: false } & CodeSent)>("/me/phone", { body: { phone } }),
   confirmPhoneChange: (code: string) => api<Me>("/me/phone/confirm", { body: { code } }),
   sendPasswordLink: () => api<{ sent: true }>("/me/password-link", { method: "POST" }),
-  requestDeletion: () => api<{ method: "password" } | ({ method: "sms" } & CodeSent)>("/me/delete/request", { method: "POST" }),
+  requestDeletion: () => api<{ method: "password" } | ({ method: "code" } & CodeSent)>("/me/delete/request", { method: "POST" }),
   delete: (proof: { code?: string; password?: string }) => api<void>("/me", { method: "DELETE", body: proof }),
 };
 

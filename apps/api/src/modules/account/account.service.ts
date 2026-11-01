@@ -1,6 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { maskBrPhone } from '@monitoring-car/shared';
 import type { Request, Response } from 'express';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { AuditLog } from '../../audit/audit-log.entity';
@@ -42,6 +41,10 @@ export class AccountService {
     return user;
   }
 
+  view(user: User) {
+    return { ...user, smsAvailable: this.otps.smsAvailable };
+  }
+
   async update(userId: string, dto: UpdateProfileDto) {
     const user = await this.me(userId);
     if (dto.email && dto.email !== user.email && (await this.users.exists({ where: { email: dto.email } }))) {
@@ -50,11 +53,17 @@ export class AccountService {
     if (dto.cpf && dto.cpf !== user.cpf && (await this.users.exists({ where: { cpf: dto.cpf } }))) {
       throw new ConflictException('Já existe uma conta com este CPF.');
     }
+    const phoneReady = !!user.phone && !!user.phoneVerifiedAt;
+    if (dto.pinChannel === 'SMS' && !this.otps.smsAvailable) throw new BadRequestException('O PIN por SMS chega em breve. Por enquanto, use o e-mail.');
+    if (dto.pinChannel === 'SMS' && !phoneReady) throw new BadRequestException('Confirme seu celular para receber o PIN por SMS.');
     if (dto.avatarFileId) {
       const image = await this.files.findOne({ where: { id: dto.avatarFileId, ownerId: userId } });
       if (!image || !image.mime.startsWith('image/')) throw new BadRequestException('Escolha uma foto para o perfil.');
     }
-    return this.users.save(this.users.merge(user, dto));
+    const emailChanged = !!dto.email && dto.email !== user.email;
+    this.users.merge(user, dto);
+    if (emailChanged) user.emailVerifiedAt = null;
+    return this.users.save(user);
   }
 
   async requestPhoneChange(userId: string, phone: string) {
@@ -63,18 +72,24 @@ export class AccountService {
     if (await this.users.exists({ where: { phone, phoneVerifiedAt: Not(IsNull()), id: Not(userId) } })) {
       throw new ConflictException('Este celular já está em uso em outra conta.');
     }
+    if (!this.otps.smsAvailable) {
+      user.phone = phone;
+      user.phoneVerifiedAt = null;
+      return { saved: true as const, user: this.view(await this.users.save(user)) };
+    }
+    const delivery = this.otps.phone(phone);
     await this.limiter.cooldown(`phone-change:${userId}`, OTP_RESEND_SECONDS, resendMessage);
-    await this.otps.issue({ userId, purpose: 'PHONE_CHANGE', phone });
-    return { maskedPhone: maskBrPhone(phone), resendIn: OTP_RESEND_SECONDS };
+    await this.otps.issue({ userId, purpose: 'PHONE_CHANGE', ...delivery });
+    return { saved: false as const, channel: delivery.channel, sentTo: delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
   }
 
   async confirmPhoneChange(userId: string, code: string) {
     const otp = await this.otps.verify(userId, 'PHONE_CHANGE', code);
-    if (await this.users.exists({ where: { phone: otp.targetPhone, phoneVerifiedAt: Not(IsNull()), id: Not(userId) } })) {
+    if (await this.users.exists({ where: { phone: otp.target, phoneVerifiedAt: Not(IsNull()), id: Not(userId) } })) {
       throw new ConflictException('Este celular já está em uso em outra conta.');
     }
     const user = await this.me(userId);
-    user.phone = otp.targetPhone;
+    user.phone = otp.target;
     user.phoneVerifiedAt = new Date();
     await this.users.save(user);
     await this.audit.logSecurityEvent('PHONE_CHANGED', {}, userId);
@@ -95,10 +110,12 @@ export class AccountService {
         cpf: user.cpf,
         phone: user.phone,
         phoneVerifiedAt: user.phoneVerifiedAt,
+        emailVerifiedAt: user.emailVerifiedAt,
         termsAcceptedAt: user.termsAcceptedAt,
         createdAt: user.createdAt,
         theme: user.theme,
-        smsLoginEnabled: user.smsLoginEnabled,
+        pinLoginEnabled: user.pinLoginEnabled,
+        pinChannel: user.pinChannel,
       },
       vehicles,
       expenses: await manager.find(Expense, { where: ofVehicles, relations: { category: true, attachments: true, fuel: true }, withDeleted: true }),
@@ -119,17 +136,20 @@ export class AccountService {
   }
 
   async requestDeletion(userId: string) {
-    const user = await this.me(userId);
-    if (!user.phone || !user.phoneVerifiedAt) return { method: 'password' as const };
+    const delivery = this.otps.deliveryFor(await this.me(userId));
+    if (!delivery) return { method: 'password' as const };
     await this.limiter.cooldown(`account-delete:${userId}`, OTP_RESEND_SECONDS, resendMessage);
-    await this.otps.issue({ userId, purpose: 'ACCOUNT_DELETE', phone: user.phone });
-    return { method: 'sms' as const, maskedPhone: maskBrPhone(user.phone), resendIn: OTP_RESEND_SECONDS };
+    await this.otps.issue({ userId, purpose: 'ACCOUNT_DELETE', ...delivery });
+    return { method: 'code' as const, channel: delivery.channel, sentTo: delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
   }
 
   async delete(userId: string, proof: { code?: string; password?: string }, request: Request, response: Response) {
-    const user = await this.users.findOne({ where: { id: userId }, select: { id: true, phone: true, phoneVerifiedAt: true, passwordHash: true } });
+    const user = await this.users.findOne({
+      where: { id: userId },
+      select: { id: true, email: true, emailVerifiedAt: true, phone: true, phoneVerifiedAt: true, pinChannel: true, passwordHash: true },
+    });
     if (!user) throw new NotFoundException();
-    if (user.phone && user.phoneVerifiedAt) {
+    if (this.otps.deliveryFor(user)) {
       if (!proof.code) throw new BadRequestException('Digite os 6 dígitos do código.');
       await this.otps.verify(userId, 'ACCOUNT_DELETE', proof.code);
     } else if (!(await this.passwords.verify(user.passwordHash, proof.password ?? ''))) {

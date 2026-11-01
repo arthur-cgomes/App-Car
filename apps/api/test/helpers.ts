@@ -41,3 +41,9 @@ export function lastCode(sms: ConsoleSmsProvider, phone: string) {
   if (!message) throw new Error(`Nenhum SMS para ${phone}`);
   return /(\d{6})/.exec(message.text)![1];
 }
+
+export function lastMailCode(mail: MailMessage[], to: string) {
+  const message = [...mail].reverse().find((item) => item.to === to);
+  if (!message) throw new Error(`Nenhum e-mail para ${to}`);
+  return /\b(\d{6})\b/.exec(message.text)![1];
+}

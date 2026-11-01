@@ -8,3 +8,4 @@ export * from './catalogs/emergency-contacts';
 export * from './utils/cpf';
 export * from './utils/phone';
 export * from './utils/password';
+export * from './utils/email';

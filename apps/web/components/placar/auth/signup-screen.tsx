@@ -26,7 +26,7 @@ import { FieldRow } from "./field-row";
 import { FormError } from "./form-error";
 import { resendLabel, useCountdown } from "./use-countdown";
 
-type Step = "data" | "password" | "phone" | "vehicle";
+type Step = "data" | "password" | "email" | "vehicle";
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 
@@ -37,7 +37,7 @@ export function SignupScreen() {
   const [step, setStep] = useState<Step>("data");
   const [form, setForm] = useState({ name: "", email: "", cpf: "", phone: "", password: "", confirm: "" });
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [maskedPhone, setMaskedPhone] = useState("");
+  const [sentTo, setSentTo] = useState("");
   const [code, setCode] = useState("");
   const [plate, setPlate] = useState("");
   const [odometer, setOdometer] = useState("");
@@ -71,7 +71,7 @@ export function SignupScreen() {
     if (form.name.trim().length < 2) return setError("Informe seu nome.");
     if (!EMAIL_PATTERN.test(form.email.trim())) return setError("E-mail inválido.");
     if (form.cpf && !isValidCpf(form.cpf)) return setError("CPF inválido.");
-    if (!normalizeBrMobile(form.phone)) return setError("Celular incompleto.");
+    if (form.phone.trim() && !normalizeBrMobile(form.phone)) return setError("Celular incompleto.");
     setStep("password");
   };
 
@@ -84,13 +84,13 @@ export function SignupScreen() {
         name: form.name.trim(),
         email: form.email.trim(),
         cpf: form.cpf || undefined,
-        phone: form.phone,
+        phone: form.phone.trim() || undefined,
         password: form.password,
         acceptTerms,
       });
-      setMaskedPhone(created.maskedPhone);
+      setSentTo(created.sentTo);
       countdown.start(created.resendIn);
-      setStep("phone");
+      setStep("email");
     });
   };
 
@@ -98,7 +98,7 @@ export function SignupScreen() {
     if (code.length < 6) return setError("Digite os 6 dígitos do código.");
     run(async () => {
       try {
-        await authApi.verifyPhone(code);
+        await authApi.verifyEmail(code);
         setStep("vehicle");
       } catch (failure) {
         setCode("");
@@ -110,7 +110,7 @@ export function SignupScreen() {
   const resend = () =>
     countdown.seconds === 0 &&
     run(async () => {
-      const sent = await authApi.sendPhoneCode();
+      const sent = await authApi.sendEmailCode();
       countdown.start(sent.resendIn);
     });
 
@@ -164,10 +164,10 @@ export function SignupScreen() {
               onChange={(e) => set("phone", formatBrPhoneInput(e.target.value))}
               inputMode="tel"
               autoComplete="tel-national"
-              placeholder="(00) 00000-0000"
+              placeholder="Opcional"
             />
           </Group>
-          <Footnote>Com o CPF você também pode entrar sem o e-mail. O celular recebe o código de acesso pela placa.</Footnote>
+          <Footnote>Com o CPF você também pode entrar sem o e-mail. Com a placa, você entra com um PIN enviado ao seu e-mail.</Footnote>
           <PrimaryButton type="submit">Continuar</PrimaryButton>
         </form>
       )}
@@ -204,9 +204,9 @@ export function SignupScreen() {
         </form>
       )}
 
-      {step === "phone" && (
+      {step === "email" && (
         <div className="flex flex-col gap-4">
-          <StepIntro title="Confirme seu celular">Passo 3 de 4 · enviamos um código por SMS para {maskedPhone}.</StepIntro>
+          <StepIntro title="Confirme seu e-mail">Passo 3 de 4 · enviamos um código para {sentTo}.</StepIntro>
           <PinInput
             value={code}
             onChange={(value) => {
@@ -229,7 +229,7 @@ export function SignupScreen() {
 
       {step === "vehicle" && (
         <div className="flex flex-col gap-3.5">
-          <StepIntro title="Seu carro">Passo 4 de 4 · com a placa você também entra por SMS.</StepIntro>
+          <StepIntro title="Seu carro">Passo 4 de 4 · com a placa você também entra com um PIN.</StepIntro>
           <div className="flex flex-col items-center gap-3.5 rounded-2xl bg-ios-cell px-4 py-[18px]">
             <PlateInput
               value={plate}

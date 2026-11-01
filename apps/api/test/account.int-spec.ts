@@ -7,8 +7,9 @@ import { StorageService } from '../src/infra/storage/storage.service';
 import { AccountPurgeService } from '../src/modules/account/account-purge.service';
 import { PasswordService } from '../src/modules/auth/password.service';
 import { User } from '../src/modules/users/user.entity';
+import type { MailMessage } from '../src/notifications/mail/mail.provider';
 import type { ConsoleSmsProvider } from '../src/notifications/sms/console-sms.provider';
-import { CSRF, createTestApp, lastCode } from './helpers';
+import { CSRF, createTestApp, lastCode, lastMailCode } from './helpers';
 
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(60, 7)]);
 const PDF = Buffer.from('%PDF-1.7 apolice');
@@ -17,6 +18,7 @@ describe('Perfil e LGPD (integração)', () => {
   let app: NestExpressApplication;
   let dataSource: DataSource;
   let sms: ConsoleSmsProvider;
+  let mail: MailMessage[];
   let alice: User;
   let bob: User;
   let asAlice: Record<string, string>;
@@ -26,7 +28,7 @@ describe('Perfil e LGPD (integração)', () => {
   const token = (user: User) => ({ Authorization: `Bearer ${app.get(JwtService).sign({ sub: user.id })}`, ...CSRF });
 
   beforeAll(async () => {
-    ({ app, dataSource, sms } = await createTestApp());
+    ({ app, dataSource, sms, mail } = await createTestApp());
     const users = dataSource.getRepository(User);
     const hash = await app.get(PasswordService).hash('Senha@123');
     alice = await users.save(
@@ -46,9 +48,9 @@ describe('Perfil e LGPD (integração)', () => {
       const res = await request(server())
         .patch('/v1/me')
         .set(asAlice)
-        .send({ name: 'Alice Souza', email: 'ALICE.SOUZA@test.dev', cpf: '529.982.247-25', theme: 'LIGHT', smsLoginEnabled: false })
+        .send({ name: 'Alice Souza', email: 'ALICE.SOUZA@test.dev', cpf: '529.982.247-25', theme: 'LIGHT', pinLoginEnabled: false })
         .expect(200);
-      expect(res.body).toMatchObject({ name: 'Alice Souza', email: 'alice.souza@test.dev', cpf: '52998224725', theme: 'LIGHT', smsLoginEnabled: false });
+      expect(res.body).toMatchObject({ name: 'Alice Souza', email: 'alice.souza@test.dev', cpf: '52998224725', theme: 'LIGHT', pinLoginEnabled: false, emailVerifiedAt: null });
       expect(res.body.passwordHash).toBeUndefined();
 
       const taken = await request(server()).patch('/v1/me').set(asBob).send({ email: 'alice.souza@test.dev' }).expect(409);
@@ -72,7 +74,7 @@ describe('Perfil e LGPD (integração)', () => {
 
     it('troca o celular só depois de confirmar o código enviado ao número novo', async () => {
       const sent = await request(server()).post('/v1/me/phone').set(asAlice).send({ phone: '(21) 98888-7777' }).expect(200);
-      expect(sent.body).toEqual({ maskedPhone: '(21) •••••-7777', resendIn: 30 });
+      expect(sent.body).toEqual({ saved: false, channel: 'SMS', sentTo: '(21) •••••-7777', resendIn: 30 });
       expect(sms.lastTo('+5521988887777')?.text).toMatch(/código para confirmar este celular é \d{6}/);
 
       await request(server()).post('/v1/me/phone/confirm').set(asAlice).send({ code: '000000' }).expect(401);
@@ -111,20 +113,21 @@ describe('Perfil e LGPD (integração)', () => {
       expect(JSON.stringify(res.body)).not.toMatch(/\$argon2|codeHash|tokenHash/);
     });
 
-    it('exclui a conta com o código do SMS: some na hora e a placa fica livre', async () => {
+    it('exclui a conta com o código enviado pelo canal do PIN (e-mail): some na hora e a placa fica livre', async () => {
+      await dataSource.getRepository(User).update({ id: alice.id }, { emailVerifiedAt: new Date() });
       const req = await request(server()).post('/v1/me/delete/request').set(asAlice).expect(200);
-      expect(req.body).toEqual({ method: 'sms', maskedPhone: '(21) •••••-7777', resendIn: 30 });
-      expect(sms.lastTo('+5521988887777')?.text).toMatch(/EXCLUIR sua conta/);
+      expect(req.body).toEqual({ method: 'code', channel: 'EMAIL', sentTo: 'al••••••@test.dev', resendIn: 30 });
+      expect(mail.at(-1)).toMatchObject({ to: 'alice.souza@test.dev', subject: 'App Car: código para excluir sua conta' });
 
       await request(server()).delete('/v1/me').set(asAlice).send({ code: '000000' }).expect(401);
-      const removed = await request(server()).delete('/v1/me').set(asAlice).send({ code: lastCode(sms, '+5521988887777') }).expect(204);
+      const removed = await request(server()).delete('/v1/me').set(asAlice).send({ code: lastMailCode(mail, 'alice.souza@test.dev') }).expect(204);
       expect(([] as string[]).concat(removed.headers['set-cookie'] ?? []).some((c) => c.startsWith('refresh_token=;'))).toBe(true);
 
       await request(server()).get('/v1/me').set(asAlice).expect(404);
       await request(server()).post('/v1/vehicles').set(asBob).send({ plate: 'RIO2A18' }).expect(201);
     });
 
-    it('sem celular confirmado, a exclusão pede a senha', async () => {
+    it('sem e-mail confirmado, a exclusão pede a senha', async () => {
       const users = dataSource.getRepository(User);
       const carol = await users.save(
         users.create({ name: 'Carol', email: 'carol@test.dev', passwordHash: await app.get(PasswordService).hash('Senha@123') }),

@@ -1,3 +1,4 @@
+import type { PinChannel } from '@monitoring-car/shared';
 import { Column, Entity, Index } from 'typeorm';
 import { AuditIgnore } from '../../common/decorators/audit-ignore.decorator';
 import { BaseEntity } from '../../common/entities/base.entity';
@@ -28,6 +29,9 @@ export class User extends BaseEntity {
   @Column({ type: 'timestamptz', nullable: true })
   phoneVerifiedAt: Date | null;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  emailVerifiedAt: Date | null;
+
   @Column({ type: 'uuid', nullable: true })
   avatarFileId: string | null;
 
@@ -35,7 +39,10 @@ export class User extends BaseEntity {
   theme: UserTheme;
 
   @Column({ type: 'boolean', default: true })
-  smsLoginEnabled: boolean;
+  pinLoginEnabled: boolean;
+
+  @Column({ type: 'varchar', length: 5, default: 'EMAIL' })
+  pinChannel: PinChannel;
 
   @Column({ type: 'uuid', nullable: true })
   activeVehicleId: string | null;

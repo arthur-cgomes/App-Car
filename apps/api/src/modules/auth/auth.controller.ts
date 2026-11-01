@@ -53,6 +53,18 @@ export class AuthController {
     await this.auth.logout(request, response);
   }
 
+  @Post('email/send')
+  @HttpCode(200)
+  sendEmailCode(@CurrentUser() user: AuthUser) {
+    return this.auth.sendEmailCode(user.id);
+  }
+
+  @Post('email/verify')
+  @HttpCode(200)
+  verifyEmail(@CurrentUser() user: AuthUser, @Body() dto: CodeDto) {
+    return this.auth.verifyEmail(user.id, dto.code);
+  }
+
   @Post('phone/send')
   @HttpCode(200)
   sendPhoneCode(@CurrentUser() user: AuthUser) {
