@@ -1,0 +1,62 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://appcar.arthurgomes.dev
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Secrets configurados
+        id: check
+        env:
+          HAS_SECRETS: ${{ secrets.VPS_HOST != '' && secrets.VPS_SSH_KEY != '' && secrets.VPS_KNOWN_HOSTS != '' }}
+        run: |
+          if [ "$HAS_SECRETS" != "true" ]; then
+            echo "::warning::Deploy pulado: cadastre VPS_HOST, VPS_USER, VPS_SSH_KEY e VPS_KNOWN_HOSTS (docs/DEPLOY.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Chave SSH
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Deploy na VPS
+        if: steps.check.outputs.ready == 'true'
+        run: ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "bash /opt/repos-run/app-car/deploy/deploy.sh $SHA"
+
+      - name: Verificação pública
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl -fsS https://appcar.arthurgomes.dev/api/health; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+
+      - name: Limpeza
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

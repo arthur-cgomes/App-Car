@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
 
 jobs:
@@ -39,7 +39,6 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      # Serviços do GitHub Actions não aceitam argumentos de comando; o S3 local sobe aqui.
       - name: S3 local (SeaweedFS)
         run: docker run -d --name s3 -p 8333:8333 chrislusf/seaweedfs:latest server -s3 -s3.port=8333
       - name: Testes de integração (API + Postgres + Redis + S3)
