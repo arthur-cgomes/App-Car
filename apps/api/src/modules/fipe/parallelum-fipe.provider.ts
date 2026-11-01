@@ -1,0 +1,38 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { FipePrice, FipeProvider, parsePrice, parseReferenceMonth } from './fipe-provider';
+
+const BASE = 'https://fipe.parallelum.com.br/api/v2/cars';
+
+@Injectable()
+export class ParallelumFipeProvider extends FipeProvider {
+  private readonly logger = new Logger('FIPE');
+
+  constructor(private readonly token?: string) {
+    super();
+  }
+
+  async price(fipeCode: string, yearModel: number): Promise<FipePrice | null> {
+    const years = await this.get<{ code: string }[]>(`/${fipeCode}/years`);
+    const year = years?.find((y) => y.code.startsWith(`${yearModel}-`));
+    if (!year) return null;
+    const data = await this.get<{ price: string; referenceMonth: string; model: string }>(`/${fipeCode}/years/${year.code}`);
+    const priceCents = data && parsePrice(data.price);
+    const referenceMonth = data && parseReferenceMonth(data.referenceMonth);
+    return priceCents && referenceMonth ? { priceCents, referenceMonth, model: data.model } : null;
+  }
+
+  private async get<T>(path: string): Promise<T | null> {
+    try {
+      const response = await fetch(`${BASE}${path}`, {
+        headers: this.token ? { 'X-Subscription-Token': this.token } : {},
+        signal: AbortSignal.timeout(8000),
+      });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return (await response.json()) as T;
+    } catch (error) {
+      this.logger.warn(`Consulta FIPE falhou (${path}): ${(error as Error).message}`);
+      return null;
+    }
+  }
+}

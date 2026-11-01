@@ -1,0 +1,20 @@
+import { AuditLog } from '../audit/audit-log.entity';
+import { ApiKey } from '../modules/api-keys/api-key.entity';
+import { AuthOtp } from '../modules/auth/entities/auth-otp.entity';
+import { PasswordResetToken } from '../modules/auth/entities/password-reset-token.entity';
+import { RefreshToken } from '../modules/auth/entities/refresh-token.entity';
+import { ExpenseAttachment } from '../modules/expenses/expense-attachment.entity';
+import { Expense } from '../modules/expenses/expense.entity';
+import { FuelLog } from '../modules/expenses/fuel-log.entity';
+import { VehicleDocument } from '../modules/documents/vehicle-document.entity';
+import { StoredFile } from '../modules/files/file.entity';
+import { EmergencyContact } from '../modules/emergency-contacts/emergency-contact.entity';
+import { Insurance } from '../modules/insurances/insurance.entity';
+import { Reminder } from '../modules/reminders/reminder.entity';
+import { PlateLookupHistory } from '../modules/plate-lookup/entities/plate-lookup-history.entity';
+import { PlateLookup } from '../modules/plate-lookup/entities/plate-lookup.entity';
+import { ExpenseCategory } from '../modules/expenses/expense-category.entity';
+import { User } from '../modules/users/user.entity';
+import { Vehicle } from '../modules/vehicles/vehicle.entity';
+
+export const ENTITIES = [User, Vehicle, ExpenseCategory, Expense, AuditLog, RefreshToken, AuthOtp, PasswordResetToken, PlateLookup, PlateLookupHistory, StoredFile, ExpenseAttachment, FuelLog, Reminder, VehicleDocument, Insurance, EmergencyContact, ApiKey];
