@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/.env
+**/.env.local
+**/*.tsbuildinfo
+**/test-results
+**/playwright-report
+.git
+.github
+.claude
+docs
+infra

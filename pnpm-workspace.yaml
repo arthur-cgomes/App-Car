@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Pacotes com scripts de instalação: nenhum é necessário (todos têm binários pré-compilados).
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+  "@parcel/watcher": false
+  "@scarf/scarf": false
