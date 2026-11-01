@@ -44,8 +44,8 @@ Abra http://localhost:3001 e entre com a conta de demonstração criada pelo `se
 
 | Campo | Valor |
 |---|---|
-| E-mail | `arthurcgomees@gmail.com` (ou CPF `529.982.247-25`) |
-| Senha | `302010@A` |
+| E-mail | `motorista.p0wdv1@appcar.test` (ou CPF `529.982.247-25`) |
+| Senha | `XDN0lM5YG*7o` |
 | Celular | `(21) 99999-0001` |
 | Carro padrão | `RIO2A18` · VW Polo Highline 1.0 200 TSI 2019 prata · 108.000 km |
 
@@ -90,13 +90,3 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 | `pnpm -C apps/api seed` | Categorias e conta de demonstração (não cria a conta em produção) |
 | `pnpm -C apps/api drive:auth` | Autoriza o Google Drive e cria a pasta dos uploads |
 | `pnpm db:up` / `pnpm db:down` | Sobe / para Postgres, Redis, S3 e Mailpit |
-
-## Regras do projeto
-
-1. O usuário vem sempre do token via `@CurrentUser()`; nenhuma rota recebe id de usuário.
-2. Toda entidade de negócio estende `BaseEntity` e toda alteração é auditada em `audit_logs` (append-only).
-3. Banco em `snake_case`, com **uma única migração** (`InitialSchema`).
-4. Datas sempre no seletor estilo iOS, nunca no campo nativo do navegador.
-5. Código sem comentários; lint, testes unitários, de integração e E2E sempre verdes.
-
-Detalhes em [docs/ESTRUTURA.md](docs/ESTRUTURA.md).
