@@ -11,6 +11,8 @@ monitoring-car/
 │   └── shared/              Regras e catálogos usados pela API e pelo web
 ├── infra/
 │   └── docker-compose.yml   Postgres 17, Redis 7, SeaweedFS (S3 local) e Mailpit
+├── deploy/                  Produção na VPS: docker-compose, deploy.sh e modelo do .env
+├── .github/workflows/       CI (lint, tipos, testes, build) e Deploy (SSH na VPS após o CI)
 └── docs/                    Estrutura, API de integração, deploy e protótipo de design
 ```
 

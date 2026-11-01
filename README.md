@@ -8,7 +8,7 @@ seguro), documentos, seguros, contatos de emergência e lembretes, com consulta 
 |---|---|
 | [docs/ESTRUTURA.md](docs/ESTRUTURA.md) | Estrutura do monorepo, módulos da API, banco, telas e convenções |
 | [docs/API_INTEGRACAO.md](docs/API_INTEGRACAO.md) | API aberta: chaves de API e envio de abastecimentos por outro app |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Imagens Docker, variáveis de ambiente, Google Drive, e-mail, SMS e verificação pós-deploy |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Deploy automático na VPS (GitHub Actions), Nginx Proxy Manager, variáveis, Google Drive, e-mail e SMS |
 | [docs/design/Placar.html](docs/design/Placar.html) | Protótipo de referência visual (telas e componentes iOS) |
 
 ## Stack

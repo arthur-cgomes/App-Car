@@ -15,6 +15,71 @@ O navegador fala só com o web; a API não precisa ser pública. Por isso os coo
 Outros apps falam com a API de integração pelo mesmo domínio (`https://<domínio>/api/v1/integrations/...`), com chave de
 API ([API_INTEGRACAO.md](API_INTEGRACAO.md)).
 
+## Deploy automático na VPS
+
+A cada push na `master`, o workflow **CI** roda lint, tipos, testes e build; se passar, o workflow **Deploy** entra na VPS
+por SSH e executa `deploy/deploy.sh <commit>`, que:
+
+1. atualiza `/opt/repos-run/app-car` para o commit testado;
+2. gera as imagens (`deploy/docker-compose.yml`, projeto `appcar`);
+3. sobe Postgres e Redis, roda a migração e sobe API e web;
+4. confere API e web por dentro da rede e, no fim, o workflow chama `https://appcar.arthurgomes.dev/api/health`.
+
+Na VPS ficam os containers `appcar-postgres`, `appcar-redis`, `appcar-api` e `appcar-web`. Só o web é publicado, na
+porta `APP_PORT` da VPS (padrão `3003`), como os demais apps; o Nginx Proxy Manager encaminha o domínio para
+`http://178.104.211.246:3003`. Banco, Redis e API não têm porta exposta (a API só é acessível pelo web). Para rodar à mão: `bash /opt/repos-run/app-car/deploy/deploy.sh` (ou **Actions → Deploy → Run
+workflow** no GitHub).
+
+### Configuração inicial (uma vez)
+
+**DNS:** registro `A` de `appcar.arthurgomes.dev` para `178.104.211.246`.
+
+**VPS:**
+
+```bash
+git clone -b master https://github.com/arthur-cgomes/App-Car.git /opt/repos-run/app-car
+cp /opt/repos-run/app-car/deploy/.env.example /opt/repos-run/app-car/deploy/.env
+chmod 600 /opt/repos-run/app-car/deploy/.env
+ss -tlnp | grep ':3003 ' || echo "porta 3003 livre"
+```
+
+Preencha o `deploy/.env` (veja [Variáveis da API](#variáveis-da-api)): `POSTGRES_PASSWORD` e `JWT_SECRET` com
+`openssl rand -hex 32`, `APP_PORT` com uma porta livre (o último comando confere a 3003), `SMSDEV_KEY`,
+`SMTP_URL` e as variáveis `GOOGLE_DRIVE_*`. Em produção a API não sobe sem SMSDev, Drive e um `JWT_SECRET` de 32+
+caracteres.
+
+**Chave de deploy** (no seu computador):
+
+```bash
+ssh-keygen -t ed25519 -N "" -C "github-actions-app-car" -f ~/.ssh/app_car_deploy
+ssh-copy-id -i ~/.ssh/app_car_deploy.pub root@178.104.211.246
+ssh-keyscan -t ed25519 178.104.211.246
+```
+
+**GitHub** → repositório → Settings → Secrets and variables → Actions → New repository secret:
+
+| Secret | Valor |
+|---|---|
+| `VPS_HOST` | `178.104.211.246` |
+| `VPS_USER` | `root` |
+| `VPS_SSH_KEY` | Conteúdo de `~/.ssh/app_car_deploy` (a chave privada inteira) |
+| `VPS_KNOWN_HOSTS` | A linha impressa pelo `ssh-keyscan` |
+
+**Primeiro deploy:** na VPS, `bash /opt/repos-run/app-car/deploy/deploy.sh` (ou **Run workflow** no GitHub).
+
+**Nginx Proxy Manager** → Hosts → Proxy Hosts → Add Proxy Host:
+
+| Aba | Campo | Valor |
+|---|---|---|
+| Details | Domain Names | `appcar.arthurgomes.dev` |
+| Details | Scheme / Forward Hostname / Port | `http` / `178.104.211.246` / `3003` |
+| Details | Block Common Exploits | ligado |
+| SSL | SSL Certificate | Request a new SSL Certificate (Let's Encrypt) |
+| SSL | Force SSL, HTTP/2 Support | ligados |
+
+`TRUST_PROXY=2` corresponde aos dois proxies na frente da API (NPM e o web); assim os limites por IP e a auditoria
+registram o IP real do usuário.
+
 ## Imagens
 
 ```bash
