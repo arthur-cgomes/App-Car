@@ -8,7 +8,7 @@ navegador ──HTTPS──> web (Next.js, :3001) ──/api/* (rewrite interno)
                                                                           ├─ Redis 7 (limites, locks dos jobs)
                                                                           ├─ Google Drive (fotos e PDFs enviados)
                                                                           ├─ SMTP (Resend ou Brevo)
-                                                                          └─ SMSDev (códigos por SMS)
+                                                                          └─ SMSDev (PIN por SMS, quando ativado)
 ```
 
 O navegador fala só com o web; a API não precisa ser pública. Por isso os cookies de sessão são first-party e não há CORS.
@@ -26,8 +26,8 @@ por SSH e executa `deploy/deploy.sh <commit>`, que:
 4. confere API e web por dentro da rede e, no fim, o workflow chama `https://appcar.arthurgomes.dev/api/health`.
 
 Na VPS ficam os containers `appcar-postgres`, `appcar-redis`, `appcar-api` e `appcar-web`. Só o web é publicado, na
-porta `APP_PORT` da VPS (padrão `3003`), como os demais apps; o Nginx Proxy Manager encaminha o domínio para
-`http://178.104.211.246:3003`. Banco, Redis e API não têm porta exposta (a API só é acessível pelo web). Para rodar à mão: `bash /opt/repos-run/app-car/deploy/deploy.sh` (ou **Actions → Deploy → Run
+porta `APP_PORT` da VPS (padrão `3004`), como os demais apps; o Nginx Proxy Manager encaminha o domínio para
+`http://178.104.211.246:3004`. Banco, Redis e API não têm porta exposta (a API só é acessível pelo web). Para rodar à mão: `bash /opt/repos-run/app-car/deploy/deploy.sh` (ou **Actions → Deploy → Run
 workflow** no GitHub).
 
 ### Configuração inicial (uma vez)
@@ -40,12 +40,13 @@ workflow** no GitHub).
 git clone -b master https://github.com/arthur-cgomes/App-Car.git /opt/repos-run/app-car
 cp /opt/repos-run/app-car/deploy/.env.example /opt/repos-run/app-car/deploy/.env
 chmod 600 /opt/repos-run/app-car/deploy/.env
-ss -tlnp | grep ':3003 ' || echo "porta 3003 livre"
+ss -tlnp | grep ':3004 ' || echo "porta 3004 livre"
 ```
 
 Preencha o `deploy/.env` (veja [Variáveis da API](#variáveis-da-api)): `POSTGRES_PASSWORD` e `JWT_SECRET` com
-`openssl rand -hex 32`, `APP_PORT` com uma porta livre (o último comando confere a 3003), `SMSDEV_KEY`,
-`SMTP_URL` e as variáveis `GOOGLE_DRIVE_*`. Em produção a API não sobe sem SMSDev, Drive e um `JWT_SECRET` de 32+
+`openssl rand -hex 32`, `APP_PORT` com uma porta livre (o último comando confere a 3004), `SMTP_URL` e as
+variáveis `GOOGLE_DRIVE_*`. `SMS_PROVIDER=disabled` mantém o PIN só por e-mail; para ligar o SMS, use `smsdev` e
+`SMSDEV_KEY`. Em produção a API não sobe sem e-mail, Drive e um `JWT_SECRET` de 32+
 caracteres.
 
 **Chave de deploy** (no seu computador):
@@ -72,7 +73,7 @@ ssh-keyscan -t ed25519 178.104.211.246
 | Aba | Campo | Valor |
 |---|---|---|
 | Details | Domain Names | `appcar.arthurgomes.dev` |
-| Details | Scheme / Forward Hostname / Port | `http` / `178.104.211.246` / `3003` |
+| Details | Scheme / Forward Hostname / Port | `http` / `178.104.211.246` / `3004` |
 | Details | Block Common Exploits | ligado |
 | SSL | SSL Certificate | Request a new SSL Certificate (Let's Encrypt) |
 | SSL | Force SSL, HTTP/2 Support | ligados |
@@ -116,7 +117,7 @@ Modelo completo em [apps/api/.env.example](../apps/api/.env.example). Em produç
 | `JWT_SECRET` | 32+ caracteres aleatórios (`openssl rand -base64 48`) |
 | `WEB_URL`, `CORS_ORIGIN` | Domínio público do web (links dos e-mails) |
 | `TRUST_PROXY` | `1` atrás de um proxy/load balancer (IP real nos limites e na auditoria) |
-| `SMS_PROVIDER=smsdev`, `SMSDEV_KEY` | Chave do painel do SMSDev. `console` é recusado em produção |
+| `SMS_PROVIDER`, `SMSDEV_KEY` | `disabled`: sem SMS, o PIN e os códigos vão por e-mail (opção SMS aparece como "em breve"). `smsdev` + `SMSDEV_KEY`: liga o PIN por SMS. `console` é recusado em produção |
 | `SMTP_URL`, `MAIL_FROM` | Resend (`smtps://resend:<API_KEY>@smtp.resend.com:465`) ou Brevo (`smtp://<login>:<chave>@smtp-relay.brevo.com:587`); `MAIL_FROM` com domínio verificado |
 | `STORAGE_PROVIDER=gdrive`, `GOOGLE_DRIVE_*` | Uploads no Google Drive da conta do app (ver abaixo). As fotos são servidas pela API, só para o dono |
 | `S3_*` | Só com `STORAGE_PROVIDER=s3` (bucket privado S3/R2) ou para ler arquivos enviados antes do Drive |
@@ -153,7 +154,7 @@ Rodam dentro da API (cron + lock no Redis, então várias réplicas não duplica
 - **Consulta de placa:** não há API pública e gratuita oficial (Senatran/Detrans só têm portais com login gov.br ou
   captcha). Para dados do veículo e débitos é preciso contratar um agregador pago e implementar o `PlateProvider` em
   `apps/api/src/modules/plate-lookup/providers`.
-- **Captcha** (ex.: Cloudflare Turnstile) no envio de código por SMS, se houver abuso; os limites por placa/IP/celular
+- **Captcha** (ex.: Cloudflare Turnstile) no envio de PIN, se houver abuso; os limites por placa, IP e destino
   já estão no Redis.
 - **Observabilidade:** Sentry (web e API) e um monitor de uptime em `/health`.
 - **Backups** automáticos do Postgres no provedor.
@@ -162,6 +163,6 @@ Rodam dentro da API (cron + lock no Redis, então várias réplicas não duplica
 
 ```bash
 curl -fsS https://<dominio>/api/health        # API pelo web
-# Só em staging com SMS_PROVIDER=console: o teste cria uma conta e dispara um SMS para um número aleatório.
+# Só em staging com SMS_PROVIDER=console: o teste cria uma conta e dispara um e-mail de confirmação.
 E2E_BASE_URL=https://<staging> pnpm -C apps/web e2e
 ```

@@ -8,7 +8,7 @@ seguro), documentos, seguros, contatos de emergência e lembretes, com consulta 
 |---|---|
 | [docs/ESTRUTURA.md](docs/ESTRUTURA.md) | Estrutura do monorepo, módulos da API, banco, telas e convenções |
 | [docs/API_INTEGRACAO.md](docs/API_INTEGRACAO.md) | API aberta: chaves de API e envio de abastecimentos por outro app |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Deploy automático na VPS (GitHub Actions), Nginx Proxy Manager, variáveis, Google Drive, e-mail e SMS |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Deploy automático na VPS (GitHub Actions), Nginx Proxy Manager, variáveis, Google Drive e e-mail |
 | [docs/design/Placar.html](docs/design/Placar.html) | Protótipo de referência visual (telas e componentes iOS) |
 
 ## Stack
@@ -16,7 +16,7 @@ seguro), documentos, seguros, contatos de emergência e lembretes, com consulta 
 - **Web:** Next.js 16 (App Router, `cacheComponents`), React 19, Tailwind 4, TanStack Query — porta **3001**
 - **API:** NestJS 11, TypeORM 0.3, PostgreSQL 17, Redis — porta **3000** (Swagger em `/docs` fora de produção)
 - **Monorepo:** pnpm 11 + Turborepo; `packages/shared` com regras e catálogos usados pelos dois lados
-- **Serviços:** Google Drive (fotos e PDFs), SMSDev (SMS), Resend ou Brevo (e-mail), FIPE (Parallelum)
+- **Serviços:** Google Drive (fotos e PDFs), Resend ou Brevo (e-mail e PIN), SMSDev (PIN por SMS, quando ativado), FIPE (Parallelum)
 
 ## Rodando localmente
 
@@ -53,7 +53,8 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 
 ### Em desenvolvimento
 
-- **SMS:** com `SMS_PROVIDER=console` nada é enviado; o código aparece no terminal da API (`[SMS] Para +55…`).
+- **PIN e códigos:** vão por e-mail (no Mailpit, em desenvolvimento). Com `SMS_PROVIDER=console`, os enviados por SMS
+  aparecem só no terminal da API (`[SMS] Para +55…`).
 - **E-mail:** com `SMTP_URL=smtp://localhost:1025` os e-mails chegam no Mailpit (http://localhost:8025).
 - **Consulta de placa:** `PLATE_PROVIDER=mock` é um provedor simulado; `RIO2A18` traz o Polo do carro padrão e placas
   começando com `ZZZ` não existem. Enquanto não há provedor real, o veículo pode ser cadastrado manualmente.
@@ -63,7 +64,8 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 
 ## Funcionalidades
 
-- **Entrar:** e-mail ou CPF + senha (8+ caracteres com maiúscula, número e caractere especial) ou placa + código por SMS.
+- **Entrar:** e-mail ou CPF + senha (8+ caracteres com maiúscula, número e caractere especial) ou **placa + PIN**, enviado por e-mail ou SMS conforme a preferência do usuário (por enquanto, só e-mail).
+  O cadastro confirma o e-mail com um código; o celular é opcional.
 - **Resumo:** veículo ativo, gasto do mês, custo por km, próximos lembretes e atalhos para Ficha e contatos de emergência.
 - **Gastos:** lançamento com categoria, valor, data (seletor estilo iOS), local, odômetro, litros e fotos da nota.
   Em **Manutenção**, peças e mão de obra são informadas separadamente e o total é a soma das duas.
@@ -75,7 +77,7 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
   contatos de emergência e relatórios (JSON, CSV e PDF) com o total de peças e mão de obra.
 - **Veículos:** cadastro pela placa ou manual (marca entre as 10 mais vendidas, modelo, versão, cor, km e data da compra).
 - **Consulta:** dados e débitos de qualquer placa, com "Lançar como gasto". O app só acompanha débitos; não há pagamento.
-- **Perfil:** dados pessoais, foto, tema, troca de celular com SMS, link para trocar a senha, **Integrações** (chaves de
+- **Perfil:** dados pessoais, foto, tema, canal do PIN (e-mail ou SMS), confirmação do e-mail, link para trocar a senha, **Integrações** (chaves de
   API) e Privacidade (exportar dados e excluir conta; a exclusão definitiva acontece em 30 dias).
 
 ## Comandos

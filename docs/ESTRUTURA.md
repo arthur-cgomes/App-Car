@@ -39,7 +39,7 @@ src/
 ├── infra/
 │   ├── redis/                               Cliente e RateLimiter (limites e locks dos jobs)
 │   └── storage/                             StorageService: Google Drive (gdrive:<id>) ou S3
-├── notifications/                           SMS (console ou SMSDev) e e-mail (SMTP)
+├── notifications/                           E-mail (SMTP) e SMS (console, SMSDev ou desligado)
 └── modules/                                 Módulos de domínio (abaixo)
 scripts/google-drive-auth.ts                 Autorização OAuth do Drive
 test/                                        Testes de integração (*.int-spec.ts)
@@ -49,7 +49,7 @@ test/                                        Testes de integração (*.int-spec.
 
 | Módulo | Rotas (`/v1`) | Responsabilidade |
 |---|---|---|
-| `auth` | `/auth/register`, `/login`, `/pin/request`, `/pin/verify`, `/refresh`, `/logout`, `/phone/*`, `/password/*` | Cadastro, login por senha ou placa + SMS, sessão em cookies httpOnly, recuperação de senha |
+| `auth` | `/auth/register`, `/login`, `/pin/request`, `/pin/verify`, `/email/*`, `/phone/*`, `/refresh`, `/logout`, `/password/*` | Cadastro com confirmação do e-mail, login por senha ou placa + PIN (por e-mail ou SMS), sessão em cookies httpOnly, recuperação de senha |
 | `users` / `account` | `/me`, `/me/phone`, `/me/password-link`, `/me/export`, `/me/delete/request` | Perfil, tema, troca de celular, exportação (LGPD) e exclusão de conta |
 | `api-keys` | `/me/api-keys` | Chaves de API do usuário (só o hash é guardado) |
 | `integrations` | `/integrations/fuel-expenses` | API aberta: abastecimentos enviados por outro app ([API_INTEGRACAO.md](API_INTEGRACAO.md)) |
@@ -72,7 +72,7 @@ Tabelas em `snake_case`; toda tabela de negócio tem `id`, `created_at`, `update
 
 | Tabela | Conteúdo |
 |---|---|
-| `users` | Conta, tema, login por SMS, veículo ativo |
+| `users` | Conta, tema, login por placa + PIN e canal do PIN (`pin_channel`), e-mail confirmado, veículo ativo |
 | `vehicles` | Placa, marca, modelo, versão, cor, ano, data da compra, odômetro (`current_odometer` e `base_odometer`), FIPE |
 | `expenses` | Gastos; `occurred_at`, `establishment`, `parts_cents`, `labor_cents`, `source` (`MANUAL`, `API`…) e `external_id` (idempotência da integração) |
 | `expense_categories` | 7 categorias fixas (criadas pela migração) |
