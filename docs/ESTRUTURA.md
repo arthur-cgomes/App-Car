@@ -99,8 +99,7 @@ components/placar/           Design system iOS: shell (tab bar, sheets, banner),
 │   └── date-picker.tsx      Seletor de data estilo iOS (pílula + calendário + rodas de mês/ano)
 lib/
 ├── api/                     Cliente HTTP (cookies + cabeçalho anti-CSRF) e hooks TanStack Query por recurso
-├── privacy.ts use-privacy.ts Botão de olho: embaça valores (`.sensitive`), preferência guardada no aparelho
-├── viewport.ts              Altura real da tela no app da Tela de Início do iPhone
+├── privacy.ts use-privacy.ts Botão de olho: valores (`.sensitive`) embaçados por padrão; a escolha fica guardada no aparelho
 └── format.ts theme.ts …     Formatação pt-BR, tema claro/escuro
 proxy.ts                     Redireciona para /login sem sessão (os endereços antigos em português redirecionam em next.config.ts)
 next.config.ts               Rewrite /api, cabeçalhos de segurança (CSP, HSTS, X-Frame-Options…)

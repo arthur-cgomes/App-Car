@@ -9,5 +9,5 @@ const subscribe = (onChange: () => void) => {
 };
 
 export function usePrivacy() {
-  return useSyncExternalStore(subscribe, readPrivacy, () => false);
+  return useSyncExternalStore(subscribe, readPrivacy, () => true);
 }
