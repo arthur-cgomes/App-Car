@@ -14,6 +14,7 @@ import { Backdrop } from "../overlays";
 import { HeaderAddButton, PushPage } from "../push-page";
 import { useShell } from "../shell/shell-context";
 import { Sheet } from "../sheets/sheet";
+import { Masked } from "../masked";
 
 export function InsurancesScreen() {
   const today = useToday() ?? "";
@@ -49,9 +50,9 @@ export function InsurancesScreen() {
               </div>
             </div>
             {current.premiumCents && (
-              <ValueRow label="Prêmio" value={`${brl(current.premiumCents)}${current.installments ? ` em ${current.installments}x` : ""}`} />
+              <ValueRow label="Prêmio" value={<Masked text={`${brl(current.premiumCents)}${current.installments ? ` em ${current.installments}x` : ""}`} />} />
             )}
-            {current.deductibleCents !== null && <ValueRow label="Franquia" value={brl(current.deductibleCents)} />}
+            {current.deductibleCents !== null && <ValueRow label="Franquia" value={<Masked text={brl(current.deductibleCents)} />} />}
             {current.brokerContact && <ValueRow label="Corretor" value={current.brokerContact} />}
             {current.fileId && (
               <a href={fileUrl(current.fileId)} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} className="block px-4 py-3 text-ios-tint no-underline">

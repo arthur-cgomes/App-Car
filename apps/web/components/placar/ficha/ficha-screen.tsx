@@ -10,12 +10,16 @@ import { useActiveVehicle, vehicleName, vehiclePlace, vehicleYears } from "@/lib
 import { MONTHS_LONG, brl, km } from "@/lib/format";
 import { Chip } from "../chip";
 import { InlineEmpty } from "../empty-state";
+import { Icon } from "../icon";
 import { brDate } from "../form-cells";
 import { Footnote, Group, Section, SectionHeader, ValueRow } from "../grouped-list";
+import { Backdrop } from "../overlays";
 import { PlateBadge } from "../plate";
 import { PushPage } from "../push-page";
 import { useShell } from "../shell/shell-context";
+import { FipeSheet } from "../sheets/fipe-sheet";
 import { NavRow } from "./nav-row";
+import { Masked } from "../masked";
 
 const INTERVALS = [5000, 10000, 15000, 20000];
 
@@ -26,6 +30,8 @@ export function FichaScreen() {
   const { vehicle, isLoading } = useActiveVehicle();
   const fipe = useFipe(vehicle?.id);
   const [interval, setInterval] = useState<number | null>(null);
+  const [fipeOpen, setFipeOpen] = useState(false);
+  const [fipeKey, setFipeKey] = useState(0);
 
   if (isLoading) return <PushPage title="Ficha do veículo" backHref="/">{null}</PushPage>;
   if (!vehicle) {
@@ -66,7 +72,7 @@ export function FichaScreen() {
       },
     });
 
-  const reference = fipe.data?.available ? fipe.data.referenceMonth : null;
+  const reference = fipe.data?.available && !fipe.data.manual ? fipe.data.referenceMonth : null;
 
   return (
     <PushPage title="Ficha do veículo" backHref="/">
@@ -80,19 +86,32 @@ export function FichaScreen() {
         header={<SectionHeader>Valor de mercado</SectionHeader>}
         footer={
           <Footnote>
-            {reference
-              ? `Tabela FIPE de ${MONTHS_LONG[+reference.slice(5) - 1]} de ${reference.slice(0, 4)}.`
+            {fipe.data?.available && fipe.data.manual
+              ? "Valor FIPE informado por você. IPVA estimado em 4% do valor FIPE; a alíquota real varia conforme o estado."
+              : reference
+              ? `Tabela FIPE de ${MONTHS_LONG[+reference.slice(5) - 1]} de ${reference.slice(0, 4)}. IPVA estimado em 4% do valor FIPE; a alíquota real varia conforme o estado.`
               : fipe.isLoading
                 ? "Consultando a tabela FIPE…"
-                : "Valor FIPE indisponível para este veículo."}
+                : "Valor FIPE indisponível para este veículo. Toque para informar."}
           </Footnote>
         }
       >
         <Group className="mx-4">
-          <div className="flex items-baseline justify-between px-4 py-3">
-            <span className="text-[17px]">FIPE</span>
-            <span className="font-rounded text-[26px] font-bold tabular-nums">{fipe.data?.available ? brl(fipe.data.valueCents) : "—"}</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setFipeKey(Date.now());
+              setFipeOpen(true);
+            }}
+            className={`flex w-full cursor-pointer items-center justify-between gap-2 border-0 bg-transparent px-4 py-3 text-left text-ios-label active:bg-ios-fill ${fipe.data?.available ? "border-b-[0.5px] border-ios-sep" : ""}`}
+          >
+            <span className="flex-1 text-[17px]">FIPE</span>
+            <span className="font-rounded text-[26px] font-bold tabular-nums">{fipe.data?.available ? <Masked text={brl(fipe.data.valueCents)} /> : "—"}</span>
+            <span className="text-ios-label3">
+              <Icon name="right" size={18} />
+            </span>
+          </button>
+          {fipe.data?.available && <ValueRow label="IPVA estimado" value={<Masked text={brl(fipe.data.ipvaEstimateCents)} />} />}
         </Group>
       </Section>
 
@@ -101,6 +120,7 @@ export function FichaScreen() {
           {vehicle.modelVersion && <ValueRow label="Versão" value={vehicle.modelVersion} />}
           <ValueRow label="Odômetro" value={km(vehicle.currentOdometer)} />
           {vehicle.purchaseDate && <ValueRow label="Data da compra" value={brDate(vehicle.purchaseDate)} />}
+          {vehicle.purchaseOdometer !== null && <ValueRow label="Odômetro na compra" value={km(vehicle.purchaseOdometer)} />}
           {vehicle.fuelType && <ValueRow label="Combustível" value={vehicle.fuelType} />}
           {vehiclePlace(vehicle) && <ValueRow label="Município" value={vehiclePlace(vehicle)} />}
           {vehicle.restrictions && <ValueRow label="Situação" value={vehicle.restrictions} />}
@@ -130,6 +150,8 @@ export function FichaScreen() {
           Remover veículo
         </button>
       </Group>
+      <Backdrop open={fipeOpen} onClose={() => setFipeOpen(false)} />
+      <FipeSheet key={fipeKey} open={fipeOpen} vehicleId={vehicle.id} fipe={fipe.data} onClose={() => setFipeOpen(false)} />
     </PushPage>
   );
 }

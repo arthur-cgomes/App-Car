@@ -18,12 +18,14 @@ export interface Vehicle {
   currentOdometer: number;
   serviceIntervalKm: number;
   purchaseDate: string | null;
+  purchaseOdometer: number | null;
 }
 
 export interface NewVehicle {
   plate: string;
   currentOdometer: number;
   purchaseDate: string | null;
+  purchaseOdometer: number | null;
   manual?: { brand: string; model: string; modelVersion: string | null; color: string | null };
 }
 
@@ -55,7 +57,11 @@ export interface PlateConsultation {
   checkedAt: string;
 }
 
-export const vehicleName = (v: Pick<Vehicle, "brand" | "model">) => [v.brand, v.model].filter(Boolean).join(" ") || "Veículo";
+const SHORT_BRANDS: Record<string, string> = { volkswagen: "VW" };
+export const brandLabel = (brand: string | null) => (brand ? (SHORT_BRANDS[brand.trim().toLowerCase()] ?? brand) : null);
+export const vehicleName = (v: Pick<Vehicle, "brand" | "model">) => [brandLabel(v.brand), v.model].filter(Boolean).join(" ") || "Veículo";
+export const vehicleFullName = (v: Pick<Vehicle, "brand" | "model" | "modelVersion">) =>
+  [brandLabel(v.brand), v.model, v.modelVersion].filter(Boolean).join(" ") || "Veículo";
 export const vehicleYears = (v: Pick<Vehicle, "yearFab" | "yearModel">) =>
   v.yearFab && v.yearModel ? `${v.yearFab}/${v.yearModel}` : "";
 export const vehiclePlace = (v: Pick<Vehicle, "municipality" | "uf">) => [v.municipality, v.uf].filter(Boolean).join("/");

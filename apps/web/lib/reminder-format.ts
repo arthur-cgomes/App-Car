@@ -53,6 +53,12 @@ export function reminderUrgent(reminder: Reminder, today: string, odometer: numb
   return !!reminder.dueDate && daysBetween(today, reminder.dueDate) <= 15;
 }
 
+export function reminderOverdue(reminder: Reminder, today: string, odometer: number) {
+  if (reminder.doneAt) return false;
+  if (reminder.dueOdometer && reminder.dueOdometer <= odometer) return true;
+  return !!reminder.dueDate && reminder.dueDate < today;
+}
+
 export function addMonths(iso: string, months: number) {
   const [year, month, day] = iso.split("-").map(Number);
   const target = new Date(Date.UTC(year, month - 1 + months, 1));

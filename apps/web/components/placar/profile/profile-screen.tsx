@@ -278,8 +278,8 @@ function ProfileForm({ me }: { me: Me }) {
             <Switch checked={me.pinLoginEnabled} onChange={(on) => preference({ pinLoginEnabled: on })} label="Entrar com placa e PIN" />
           </div>
           <div className={`${ROW} gap-3`}>
-            <span className="flex-none">Receber o PIN por</span>
-            <div className="w-[150px]">
+            <span className="flex-1">Receber o PIN por</span>
+            <div className="w-[150px] flex-none">
               <SegmentedControl
                 options={[
                   { value: "EMAIL", label: "E-mail" },

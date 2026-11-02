@@ -153,6 +153,15 @@ input::placeholder {
   display: none;
 }
 
+.sensitive {
+  transition: filter 0.2s;
+}
+
+[data-privacy="on"] .sensitive {
+  filter: blur(7px);
+  user-select: none;
+}
+
 .glass-control {
   background: var(--ios-glass);
   -webkit-backdrop-filter: blur(16px) saturate(180%);

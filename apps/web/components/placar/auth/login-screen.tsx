@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/api/client";
 import { LinkButton, PrimaryButton } from "../buttons";
 import { Group } from "../grouped-list";
 import { PinInput } from "../pin-input";
+import { Icon } from "../icon";
 import { PlateInput } from "../plate";
 import { SegmentedControl } from "../segmented-control";
 import { AppLogo } from "./app-logo";
@@ -141,10 +142,12 @@ export function LoginScreen() {
               trailing={
                 <button
                   type="button"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  aria-pressed={showPassword}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="cursor-pointer border-0 bg-transparent py-1.5 text-[15px] text-ios-tint active:opacity-50"
+                  className="-mr-1.5 grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label2 active:opacity-50"
                 >
-                  {showPassword ? "Ocultar" : "Mostrar"}
+                  <Icon name={showPassword ? "eye-off" : "eye"} size={20} stroke={1.75} />
                 </button>
               }
             />

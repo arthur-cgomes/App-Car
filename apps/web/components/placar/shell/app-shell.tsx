@@ -1,22 +1,25 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { accountApi, useMe, type Me } from "@/lib/api/auth";
+import { useMe } from "@/lib/api/auth";
 import { errorMessage } from "@/lib/api/client";
 import { useActivateVehicle, useActiveVehicle, vehicleName } from "@/lib/api/vehicles";
 import { useDeleteExpense, type Expense } from "@/lib/api/expenses";
-import { useDeleteReminder, useSaveReminder, type Reminder } from "@/lib/api/reminders";
+import { useDeleteReminder, useReminders, useSaveReminder, type Reminder } from "@/lib/api/reminders";
 import { cx } from "@/lib/cx";
-import { MAINTENANCE_REMINDER_MONTHS, maintenanceReminder } from "@/lib/reminder-format";
+import { applyPrivacy } from "@/lib/privacy";
+import { MAINTENANCE_REMINDER_MONTHS, maintenanceReminder, reminderOverdue } from "@/lib/reminder-format";
 import { applyTheme, readTheme } from "@/lib/theme";
+import { usePrivacy } from "@/lib/use-privacy";
+import { useToday } from "@/lib/use-today";
 import { Avatar } from "../avatar";
 import { GlassIconButton } from "../buttons";
 import { ExpenseDetail } from "../expense-detail";
 import { Icon } from "../icon";
 import { ActionPanel, ActionPanelButton, ActionPanelMessage, Backdrop, Banner, PhotoViewer } from "../overlays";
 import { ExpenseSheet, expenseSavedMessage, type ExpenseFormValues } from "../sheets/expense-sheet";
+import { OdometerSheet } from "../sheets/odometer-sheet";
 import { ReminderSheet } from "../sheets/reminder-sheet";
 import { VehicleSheet } from "../sheets/vehicle-sheet";
 import { VehiclePicker } from "../vehicle-picker";
@@ -27,7 +30,8 @@ import { TABS, TabBar, type TabHref } from "./tab-bar";
 type SheetRequest =
   | { mode: "expense"; prefill?: Partial<ExpenseFormValues>; expense?: Expense }
   | { mode: "reminder"; reminder?: Reminder }
-  | { mode: "vehicle" };
+  | { mode: "vehicle" }
+  | { mode: "odometer" };
 type SheetState = SheetRequest & { key: number };
 type BannerState = { title: string; body: string; icon: string };
 
@@ -40,7 +44,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const deleteReminder = useDeleteReminder();
   const saveReminder = useSaveReminder();
   const me = useMe();
-  const queryClient = useQueryClient();
   const { vehicle, vehicles } = useActiveVehicle();
   const activate = useActivateVehicle();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -73,11 +76,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (accountTheme && accountTheme !== readTheme()) applyTheme(accountTheme);
   }, [accountTheme]);
 
-  const toggleTheme = () => {
-    const next = accountTheme === "light" ? "DARK" : "LIGHT";
-    applyTheme(next === "LIGHT" ? "light" : "dark");
-    queryClient.setQueryData<Me>(["me"], (current) => current && { ...current, theme: next });
-    accountApi.update({ theme: next }).catch((failure) => toast(errorMessage(failure)));
+  const hidden = usePrivacy();
+  const today = useToday();
+  const reminders = useReminders(vehicle?.id);
+  const overdue =
+    today && reminders.data ? reminders.data.items.filter((reminder) => reminderOverdue(reminder, today, reminders.data.odometer)) : [];
+  const togglePrivacy = () => {
+    applyPrivacy(!hidden);
   };
 
   const toast = useCallback((message: string) => {
@@ -146,7 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               }}
               className="no-scrollbar absolute inset-0 overflow-y-auto"
               style={{
-                paddingTop: isTabRoot ? "calc(env(safe-area-inset-top) + 44px)" : 0,
+                paddingTop: isTabRoot ? "calc(env(safe-area-inset-top) + 56px)" : 0,
                 paddingBottom: "calc(var(--tabbar-bottom) + 96px)",
               }}
             >
@@ -155,19 +160,48 @@ export function AppShell({ children }: { children: ReactNode }) {
             {isTabRoot && <NavBar
               title={title}
               collapsed={collapsed}
+              leading={
+                activeTab === "/" && (
+                  <button
+                    type="button"
+                    aria-label="Perfil"
+                    onClick={() => router.push("/profile")}
+                    className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
+                  >
+                    {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={40} />}
+                  </button>
+                )
+              }
               actions={
                 activeTab === "/" ? (
-                  <div className="flex items-center gap-3">
-                    <GlassIconButton aria-label={accountTheme === "light" ? "Usar tema escuro" : "Usar tema claro"} onClick={toggleTheme}>
-                      <Icon name={accountTheme === "light" ? "moon" : "sun"} size={18} stroke={2} />
-                    </GlassIconButton>
+                  <div className="glass-control flex h-10 items-center rounded-full px-1">
                     <button
                       type="button"
-                      aria-label="Perfil"
-                      onClick={() => router.push("/profile")}
-                      className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
+                      aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
+                      aria-pressed={hidden}
+                      onClick={togglePrivacy}
+                      className="grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
                     >
-                      {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={36} />}
+                      <Icon name={hidden ? "eye-off" : "eye"} size={20} stroke={2} />
+                    </button>
+                    {vehicle && (
+                      <button
+                        type="button"
+                        aria-label="Atualizar km do carro"
+                        onClick={() => openSheet({ mode: "odometer" })}
+                        className="grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
+                      >
+                        <Icon name="gauge" size={20} stroke={2} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={overdue.length ? `Notificações: ${overdue.length} ${overdue.length === 1 ? "lembrete vencido" : "lembretes vencidos"}` : "Notificações"}
+                      onClick={() => router.push("/reminders?filter=overdue")}
+                      className="relative grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
+                    >
+                      <Icon name="bell" size={20} stroke={2} />
+                      {overdue.length > 0 && <span aria-hidden className="absolute top-[7px] right-[8px] size-2 rounded-full bg-danger ring-2 ring-[var(--ios-glass)]" />}
                     </button>
                   </div>
                 ) : activeTab === "/expenses" || activeTab === "/reminders" ? (
@@ -261,6 +295,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                   ),
               })
             }
+          />
+        )}
+        {sheet?.mode === "odometer" && vehicle && (
+          <OdometerSheet
+            key={sheet.key}
+            open={sheetOpen}
+            vehicle={vehicle}
+            onClose={() => setSheetOpen(false)}
+            onSaved={(message) => {
+              setSheetOpen(false);
+              setTimeout(() => toast(message), 350);
+            }}
           />
         )}
         {sheet?.mode === "vehicle" && (

@@ -31,7 +31,7 @@ export function VehicleSheet({ open, lookupAvailable, vehicles, onCancel, onAdde
   const [busy, setBusy] = useState(false);
   const [found, setFound] = useState<PlateVehicleData | null>(null);
   const [manual, setManual] = useState(!lookupAvailable);
-  const [form, setForm] = useState({ brand: "", otherBrand: "", model: "", version: "", color: "", odometer: "", purchaseDate: "" });
+  const [form, setForm] = useState({ brand: "", otherBrand: "", model: "", version: "", color: "", odometer: "", purchaseDate: "", purchaseOdometer: "" });
   const [error, setError] = useState("");
 
   const set = (key: keyof typeof form, value: string) => {
@@ -67,7 +67,11 @@ export function VehicleSheet({ open, lookupAvailable, vehicles, onCancel, onAdde
       plate,
       currentOdometer: Number.parseInt(form.odometer.replace(/\D/g, ""), 10) || 0,
       purchaseDate: form.purchaseDate || null,
+      purchaseOdometer: form.purchaseOdometer ? Number.parseInt(form.purchaseOdometer.replace(/\D/g, ""), 10) : null,
     };
+    if (base.purchaseOdometer !== null && base.purchaseOdometer > base.currentOdometer) {
+      return setError("O odômetro na compra não pode ser maior que o atual.");
+    }
     if (manual) {
       const brand = form.brand === OTHER_BRAND ? form.otherBrand.trim() : form.brand;
       if (brand.length < 2) return setError("Escolha a marca.");
@@ -87,6 +91,13 @@ export function VehicleSheet({ open, lookupAvailable, vehicles, onCancel, onAdde
     <>
       <InputCell label="Odômetro atual" value={form.odometer} onChange={(e) => set("odometer", formatKmInput(e.target.value))} inputMode="numeric" placeholder="km" />
       <DatePickerCell label="Data da compra" value={form.purchaseDate} onChange={(value) => set("purchaseDate", value)} optional max={today} />
+      <InputCell
+        label="Odômetro na compra"
+        value={form.purchaseOdometer}
+        onChange={(e) => set("purchaseOdometer", formatKmInput(e.target.value))}
+        inputMode="numeric"
+        placeholder="Opcional"
+      />
     </>
   );
 

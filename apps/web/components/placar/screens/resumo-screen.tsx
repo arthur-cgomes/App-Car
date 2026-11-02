@@ -3,7 +3,7 @@
 import { EXPENSE_CATEGORY_BY_CODE } from "@monitoring-car/shared";
 import { useRouter } from "next/navigation";
 import { useSummary, type Summary } from "@/lib/api/summary";
-import { useActiveVehicle, vehicleName, type Vehicle } from "@/lib/api/vehicles";
+import { useActiveVehicle, vehicleFullName, type Vehicle } from "@/lib/api/vehicles";
 import { MONTHS_SHORT, brl, capitalize, km, monthName, previousMonth } from "@/lib/format";
 import { reminderDetail, reminderUrgent, reminderWhen } from "@/lib/reminder-format";
 import { useToday } from "@/lib/use-today";
@@ -17,6 +17,7 @@ import { LargeTitle } from "../large-title";
 import { PlateBadge } from "../plate";
 import { useShell } from "../shell/shell-context";
 import { TodayLabel } from "./today-label";
+import { Masked } from "../masked";
 
 const CARD_KICKER = "text-[13px] font-semibold tracking-[.02em] text-ios-label2 uppercase";
 
@@ -95,7 +96,7 @@ function VehicleSummary({ vehicle, today }: { vehicle: Vehicle; today: string })
         >
           <PlateBadge plate={vehicle.plate} />
           <div className="min-w-0 flex-1">
-            <div className="text-[17px] font-semibold text-ios-label">{vehicleName(vehicle)}</div>
+            <div className="text-[17px] font-semibold text-ios-label">{vehicleFullName(vehicle)}</div>
             <div className="text-[13px] text-ios-label2">
               {[vehicle.yearModel, vehicle.color, km(odometer)].filter(Boolean).join(" · ")}
             </div>
@@ -145,14 +146,14 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
     <>
       <div className="flex flex-col gap-3.5 rounded-2xl bg-ios-cell p-4">
         <div className={CARD_KICKER}>Gasto em {monthName(summary.month)}</div>
-        <div className="font-rounded text-[44px] leading-none font-bold tracking-[-.02em] tabular-nums">{brl(totalCents)}</div>
+        <div className="font-rounded text-[44px] leading-none font-bold tracking-[-.02em] tabular-nums"><Masked text={brl(totalCents)} /></div>
         <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[13px] text-ios-label2">
           {summary.deltaPct !== null && (
             <span className="font-semibold text-ios-tint">
               {summary.deltaPct >= 0 ? "↑" : "↓"} {Math.abs(summary.deltaPct)}% vs {monthName(previousMonth(summary.month))}
             </span>
           )}
-          <span>{brl(summary.costPerKmCents ?? 0)} por km</span>
+          <span><Masked text={brl(summary.costPerKmCents ?? 0)} /> por km</span>
           <span>{km(summary.kmDriven)} rodados</span>
         </div>
         {categories.length === 0 && (
@@ -176,7 +177,7 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
                 <div key={segment.code} className="flex min-h-11 items-center gap-3 px-4">
                   <CategoryIcon code={segment.code} />
                   <span className="flex-1 text-base">{EXPENSE_CATEGORY_BY_CODE[segment.code].name}</span>
-                  <span className="text-base tabular-nums">{brl(segment.cents)}</span>
+                  <span className="text-base tabular-nums"><Masked text={brl(segment.cents)} /></span>
                   <span className="w-9 text-right text-[13px] text-ios-label2 tabular-nums">
                     {Math.round((segment.cents / totalCents) * 100)}%
                   </span>
@@ -204,7 +205,7 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
                 <div className={`flex min-w-0 flex-1 items-center gap-2 py-2.5 pr-4 ${ROW_BODY}`}>
                   <div className="min-w-0 flex-1">
                     <div className="text-base text-ios-label">{reminder.title}</div>
-                    <div className="text-[13px] text-ios-label2">{reminderDetail(reminder, upcoming.odometer)}</div>
+                    <div className="text-[13px] text-ios-label2"><Masked text={reminderDetail(reminder, upcoming.odometer)} /></div>
                   </div>
                   <span
                     className="text-sm whitespace-nowrap"

@@ -17,6 +17,7 @@ import { Backdrop } from "../overlays";
 import { HeaderAddButton, PushPage } from "../push-page";
 import { useShell } from "../shell/shell-context";
 import { Sheet } from "../sheets/sheet";
+import { Masked } from "../masked";
 
 function status(document: VehicleDocument, today: string) {
   if (document.paidAt) return { label: "Pago", bg: "var(--ios-fill)", color: "var(--ios-label2)" };
@@ -64,7 +65,7 @@ export function DocumentsScreen() {
                 <div className={`flex min-w-0 flex-1 items-center gap-2 py-2.5 pr-4 ${ROW_BODY}`}>
                   <div className="min-w-0 flex-1">
                     <div className="text-base text-ios-label">{[documentTypeName(document.type), document.year].filter(Boolean).join(" ")}</div>
-                    <div className="text-[13px] text-ios-label2">{detail(document)}</div>
+                    <div className="text-[13px] text-ios-label2"><Masked text={detail(document)} /></div>
                   </div>
                   {document.fileId && (
                     <span className="text-ios-label2">

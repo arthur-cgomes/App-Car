@@ -10,6 +10,7 @@ import { CategoryIcon } from "./category-icon";
 import { Footnote, Group, Section, SectionHeader, ValueRow } from "./grouped-list";
 import { AddPhotoButton, PhotoThumb } from "./sheets/photo-picker";
 import { PushHeader } from "./shell/nav-bar";
+import { Masked } from "./masked";
 
 interface ExpenseDetailProps {
   vehicleId: string | undefined;
@@ -66,7 +67,7 @@ export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDe
         <div className="mx-auto flex max-w-[720px] flex-col gap-6 pt-2" style={{ paddingBottom: "calc(var(--tabbar-bottom) + 96px)" }}>
           <div className="flex flex-col items-center gap-2.5 px-6 py-2 text-center">
             <CategoryIcon code={expense.category} size="lg" />
-            <div className="font-rounded text-[40px] font-bold tracking-[-.02em] tabular-nums">{brl(expense.amountCents)}</div>
+            <div className="font-rounded text-[40px] font-bold tracking-[-.02em] tabular-nums"><Masked text={brl(expense.amountCents)} /></div>
             <div className="text-[17px]">{expense.description}</div>
           </div>
           <Group className="mx-4">
@@ -74,14 +75,14 @@ export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDe
             {expense.partSystem && <ValueRow label="Peça" value={PART_SYSTEM_BY_CODE[expense.partSystem].name} />}
             <ValueRow label="Data" value={expense.occurredAt ? `${longDate(expense.date)}, ${brTime(expense.occurredAt)}` : longDate(expense.date)} />
             {expense.establishment && <ValueRow label="Local" value={expense.establishment} />}
-            {expense.partsCents !== null && <ValueRow label="Peças" value={brl(expense.partsCents)} />}
-            {expense.laborCents !== null && <ValueRow label="Mão de obra" value={brl(expense.laborCents)} />}
+            {expense.partsCents !== null && <ValueRow label="Peças" value={<Masked text={brl(expense.partsCents)} />} />}
+            {expense.laborCents !== null && <ValueRow label="Mão de obra" value={<Masked text={brl(expense.laborCents)} />} />}
             <ValueRow label="Odômetro" value={expense.odometer ? km(expense.odometer) : "—"} />
             {expense.source === "API" && <ValueRow label="Origem" value="Integração" />}
             {expense.fuel && (
               <>
                 <ValueRow label="Litros" value={`${litersLabel(expense.fuel.liters)}${expense.fuel.fullTank ? " · tanque cheio" : ""}`} />
-                <ValueRow label="Preço por litro" value={brl(Math.round(expense.amountCents / expense.fuel.liters))} />
+                <ValueRow label="Preço por litro" value={<Masked text={brl(Math.round(expense.amountCents / expense.fuel.liters))} />} />
               </>
             )}
           </Group>

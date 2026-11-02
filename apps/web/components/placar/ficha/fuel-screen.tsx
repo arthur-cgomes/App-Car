@@ -9,6 +9,7 @@ import { brDate } from "../form-cells";
 import { Footnote, Group, ROW_BODY, Section, SectionHeader } from "../grouped-list";
 import { PushPage } from "../push-page";
 import { useShell } from "../shell/shell-context";
+import { Masked } from "../masked";
 
 const liters = (value: number) => `${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} L`;
 const kml = (value: number) => `${value.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km/l`;
@@ -38,9 +39,9 @@ export function FuelScreen() {
                 {data.averageKmPerLiter ? kml(data.averageKmPerLiter) : "—"}
               </div>
               <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[13px] text-ios-label2">
-                {data.averagePricePerLiterCents && <span>{brl(data.averagePricePerLiterCents)} por litro</span>}
+                {data.averagePricePerLiterCents && <span><Masked text={brl(data.averagePricePerLiterCents)} /> por litro</span>}
                 <span>{liters(data.totalLiters)} no total</span>
-                <span>{brl(data.totalCents)}</span>
+                <span><Masked text={brl(data.totalCents)} /></span>
               </div>
             </div>
           </Section>
@@ -67,7 +68,7 @@ export function FuelScreen() {
                           {fill.fullTank ? " · tanque cheio" : ""}
                         </div>
                         <div className="text-[13px] text-ios-label2">
-                          {[brDate(fill.date), fill.odometer && km(fill.odometer), `${brl(fill.pricePerLiterCents)}/L`].filter(Boolean).join(" · ")}
+                          <Masked text={[brDate(fill.date), fill.odometer && km(fill.odometer), `${brl(fill.pricePerLiterCents)}/L`].filter(Boolean).join(" · ")} />
                         </div>
                       </div>
                       <span className="text-sm whitespace-nowrap text-ios-tint">{fill.kmPerLiter ? kml(fill.kmPerLiter) : ""}</span>

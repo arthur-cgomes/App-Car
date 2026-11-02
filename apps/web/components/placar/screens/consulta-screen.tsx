@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { useMe } from "@/lib/api/auth";
-import { plateApi, usePlateHistory, vehiclePlace, vehicleYears } from "@/lib/api/vehicles";
+import { brandLabel, plateApi, usePlateHistory, vehiclePlace, vehicleYears } from "@/lib/api/vehicles";
 import { brl } from "@/lib/format";
 import { PrimaryButton } from "../buttons";
 import { EmptyState } from "../empty-state";
@@ -14,6 +14,7 @@ import { Footnote, Group, Section, SectionHeader, ValueRow } from "../grouped-li
 import { LargeTitle } from "../large-title";
 import { PlateInput, cleanPlateInput } from "../plate";
 import { useShell } from "../shell/shell-context";
+import { Masked } from "../masked";
 
 export function ConsultaScreen() {
   const shell = useShell();
@@ -114,7 +115,7 @@ export function ConsultaScreen() {
             <Group className="mx-4 text-base">
               <div className="border-b-[0.5px] border-ios-sep px-4 py-3">
                 <div className="text-[17px] font-semibold">
-                  {result.vehicle.brand} {result.vehicle.model}
+                  {brandLabel(result.vehicle.brand)} {result.vehicle.model}
                 </div>
                 <div className="text-[13px] text-ios-tint">
                   {formatPlate(result.plate)} · {result.vehicle.restrictions}
@@ -135,7 +136,7 @@ export function ConsultaScreen() {
                   return (
                     <div key={debt.description} className="flex items-center gap-2.5 border-b-[0.5px] border-ios-sep px-4 py-[11px] last:border-transparent">
                       <span className="flex-1">{debt.description}</span>
-                      <span className="tabular-nums">{brl(debt.amountCents)}</span>
+                      <span className="tabular-nums"><Masked text={brl(debt.amountCents)} /></span>
                       <span
                         className="rounded-md px-2 py-[3px] text-xs font-semibold"
                         style={{ background: paid ? "var(--ios-fill)" : "var(--ios-tintbg)", color: paid ? "var(--ios-label2)" : "var(--ios-tint)" }}
@@ -153,7 +154,7 @@ export function ConsultaScreen() {
             <div className="mx-4 flex flex-col gap-2.5">
               <div className="flex items-baseline justify-between px-4">
                 <span className="text-[15px] text-ios-label2">Total em aberto</span>
-                <span className="font-rounded text-[26px] font-bold tabular-nums">{brl(result.openCents)}</span>
+                <span className="font-rounded text-[26px] font-bold tabular-nums"><Masked text={brl(result.openCents)} /></span>
               </div>
               <PrimaryButton
                 onClick={() =>

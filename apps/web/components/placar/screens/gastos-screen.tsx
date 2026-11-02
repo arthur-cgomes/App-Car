@@ -16,6 +16,7 @@ import { Group, SectionHeader } from "../grouped-list";
 import { Icon } from "../icon";
 import { LargeTitle } from "../large-title";
 import { useShell } from "../shell/shell-context";
+import { Masked } from "../masked";
 
 function MonthArrow({ direction, enabled, onClick }: { direction: "left" | "right"; enabled: boolean; onClick: () => void }) {
   return (
@@ -60,7 +61,7 @@ function GastosList({ vehicleId, currentMonth }: { vehicleId: string | undefined
         <div className="flex-1 text-center">
           <div className="text-[17px] font-semibold">{monthLabel(month)}</div>
           <div className="text-[13px] text-ios-label2 tabular-nums">
-            {count} {count === 1 ? "lançamento" : "lançamentos"} · {brl(view.total)}
+            {count} {count === 1 ? "lançamento" : "lançamentos"} · <Masked text={brl(view.total)} />
           </div>
         </div>
         <MonthArrow direction="right" enabled={index < months.length - 1} onClick={() => setMonth(months[index + 1])} />
@@ -83,7 +84,7 @@ function GastosList({ vehicleId, currentMonth }: { vehicleId: string | undefined
 
       {view.partSummary.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <SectionHeader trailing={brl(view.partsTotal)}>Peças por sistema</SectionHeader>
+          <SectionHeader trailing={<Masked text={brl(view.partsTotal)} />}>Peças por sistema</SectionHeader>
           <Group className="mx-4">
             {view.partSummary.map((part) => {
               const on = partSystem === part.code;
@@ -100,7 +101,7 @@ function GastosList({ vehicleId, currentMonth }: { vehicleId: string | undefined
                       <Icon name="check" size={18} stroke={2.25} />
                     </span>
                     <span className={cx("flex-1 text-base", on && "font-semibold")}>{part.name}</span>
-                    <span className="text-base tabular-nums">{brl(part.cents)}</span>
+                    <span className="text-base tabular-nums"><Masked text={brl(part.cents)} /></span>
                   </div>
                   <div className="h-1 w-full overflow-hidden rounded-sm bg-ios-fill">
                     <div className="h-full rounded-sm bg-accent" style={{ width: `${part.width}%` }} />

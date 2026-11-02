@@ -1,15 +1,18 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useReminders, useToggleReminder, type Reminder } from "@/lib/api/reminders";
 import { useActiveVehicle } from "@/lib/api/vehicles";
 import { cx } from "@/lib/cx";
-import { reminderDetail, reminderUrgent, reminderWhen } from "@/lib/reminder-format";
+import { reminderDetail, reminderOverdue, reminderUrgent, reminderWhen } from "@/lib/reminder-format";
 import { useToday } from "@/lib/use-today";
 import { InlineEmpty } from "../empty-state";
 import { Footnote, Group, ROW_BODY } from "../grouped-list";
 import { Icon } from "../icon";
 import { LargeTitle } from "../large-title";
+import { SegmentedControl } from "../segmented-control";
 import { useShell } from "../shell/shell-context";
+import { Masked } from "../masked";
 
 export function LembretesScreen() {
   const shell = useShell();
@@ -17,7 +20,11 @@ export function LembretesScreen() {
   const { vehicle, isLoading: loadingVehicle } = useActiveVehicle();
   const { data, isLoading } = useReminders(vehicle?.id);
   const toggle = useToggleReminder();
+  const router = useRouter();
+  const filter = useSearchParams().get("filter") === "overdue" ? "overdue" : "all";
   const pending = data?.items.filter((r) => !r.doneAt).length ?? 0;
+  const overdue = data && today ? data.items.filter((r) => reminderOverdue(r, today, data.odometer)) : [];
+  const items = filter === "overdue" ? overdue : (data?.items ?? []);
 
   if (!loadingVehicle && !vehicle) {
     return (
@@ -39,15 +46,28 @@ export function LembretesScreen() {
 
       {(isLoading || !today || !data) && <div className="mx-4 h-[220px] animate-pulse rounded-xl bg-ios-cell" />}
 
-      {data && today && data.items.length === 0 && (
+      <div className="mx-4">
+        <SegmentedControl
+          options={[
+            { value: "all", label: "Todos" },
+            { value: "overdue", label: overdue.length ? `Vencidos (${overdue.length})` : "Vencidos" },
+          ]}
+          value={filter}
+          onChange={(next) => router.replace(next === "overdue" ? "/reminders?filter=overdue" : "/reminders", { scroll: false })}
+        />
+      </div>
+
+      {data && today && items.length === 0 && (
         <div className="mx-4">
-          <InlineEmpty>Nenhum lembrete por enquanto. Toque em + para criar um.</InlineEmpty>
+          <InlineEmpty>
+            {filter === "overdue" ? "Nenhum lembrete vencido. Tudo em dia!" : "Nenhum lembrete por enquanto. Toque em + para criar um."}
+          </InlineEmpty>
         </div>
       )}
 
-      {data && today && data.items.length > 0 && (
+      {data && today && items.length > 0 && (
         <Group className="mx-4">
-          {data.items.map((reminder) => {
+          {items.map((reminder) => {
             const done = !!reminder.doneAt;
             const urgent = reminderUrgent(reminder, today, data.odometer);
             return (
@@ -84,7 +104,7 @@ export function LembretesScreen() {
                     <div className="text-base transition-colors duration-200" style={{ color: done ? "var(--ios-label2)" : "var(--ios-label)" }}>
                       {reminder.title}
                     </div>
-                    <div className="text-[13px] text-ios-label2">{reminderDetail(reminder, data.odometer)}</div>
+                    <div className="text-[13px] text-ios-label2"><Masked text={reminderDetail(reminder, data.odometer)} /></div>
                   </div>
                   <span className="text-[13px] whitespace-nowrap" style={{ color: urgent ? "var(--ios-tint)" : "var(--ios-label2)" }}>
                     {reminderWhen(reminder, today, data.odometer, data.kmPerDay)}

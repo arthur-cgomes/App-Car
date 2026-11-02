@@ -11,6 +11,7 @@ export class ApiError extends Error {
 const BASE = "/api/v1";
 const CSRF_HEADERS = { "X-Requested-With": "placar" };
 const JSON_HEADERS = { ...CSRF_HEADERS, "Content-Type": "application/json" };
+const INTERNAL_ERROR = "Erro interno no servidor.";
 const GENERIC_ERROR = "Não foi possível concluir agora. Verifique sua conexão e tente novamente.";
 
 let refreshing: Promise<boolean> | null = null;
@@ -59,6 +60,9 @@ export async function api<T>(path: string, options: { method?: string; body?: un
   const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
   if (!response.ok) {
     const message = Array.isArray(body.message) ? body.message[0] : body.message;
+    if (response.status >= 500 && (typeof message !== "string" || message === "Internal server error")) {
+      throw new ApiError(response.status, INTERNAL_ERROR, body);
+    }
     throw new ApiError(response.status, typeof message === "string" ? message : GENERIC_ERROR, body);
   }
   return body as T;

@@ -11,6 +11,7 @@ import { brDate } from "../form-cells";
 import { Footnote, Group, Section, SectionHeader, ValueRow } from "../grouped-list";
 import { Icon } from "../icon";
 import { PushPage } from "../push-page";
+import { Masked } from "../masked";
 
 type Period = "month" | "3m" | "year" | "12m";
 
@@ -59,7 +60,7 @@ export function ReportsScreen() {
             <div className="text-[13px] font-semibold tracking-[.02em] text-ios-label2 uppercase">
               {brDate(data.from)} a {brDate(data.to)}
             </div>
-            <div className="font-rounded text-[44px] leading-none font-bold tracking-[-.02em] tabular-nums">{brl(data.totalCents)}</div>
+            <div className="font-rounded text-[44px] leading-none font-bold tracking-[-.02em] tabular-nums"><Masked text={brl(data.totalCents)} /></div>
             <div className="text-[13px] text-ios-label2">
               {data.count} {data.count === 1 ? "lançamento" : "lançamentos"}
             </div>
@@ -74,7 +75,7 @@ export function ReportsScreen() {
               <Section header={<SectionHeader>Por categoria</SectionHeader>}>
                 <Group className="mx-4">
                   {data.byCategory.map((item) => (
-                    <ValueRow key={item.code} label={`${item.name} (${item.count})`} value={brl(item.cents)} />
+                    <ValueRow key={item.code} label={`${item.name} (${item.count})`} value={<Masked text={brl(item.cents)} />} />
                   ))}
                 </Group>
               </Section>
@@ -84,9 +85,9 @@ export function ReportsScreen() {
                   footer={<Footnote>Peças somam a categoria Peças e as peças informadas nas manutenções.</Footnote>}
                 >
                   <Group className="mx-4">
-                    <ValueRow label="Peças" value={brl(data.costs.partsCents)} />
-                    <ValueRow label="Mão de obra" value={brl(data.costs.laborCents)} />
-                    {data.costs.maintenanceUnsplitCents > 0 && <ValueRow label="Manutenção sem detalhar" value={brl(data.costs.maintenanceUnsplitCents)} />}
+                    <ValueRow label="Peças" value={<Masked text={brl(data.costs.partsCents)} />} />
+                    <ValueRow label="Mão de obra" value={<Masked text={brl(data.costs.laborCents)} />} />
+                    {data.costs.maintenanceUnsplitCents > 0 && <ValueRow label="Manutenção sem detalhar" value={<Masked text={brl(data.costs.maintenanceUnsplitCents)} />} />}
                   </Group>
                 </Section>
               )}
@@ -94,7 +95,7 @@ export function ReportsScreen() {
                 <Section header={<SectionHeader>Peças e manutenção por sistema</SectionHeader>}>
                   <Group className="mx-4">
                     {data.byPartSystem.map((item) => (
-                      <ValueRow key={item.code} label={item.name} value={brl(item.cents)} />
+                      <ValueRow key={item.code} label={item.name} value={<Masked text={brl(item.cents)} />} />
                     ))}
                   </Group>
                 </Section>
@@ -102,7 +103,7 @@ export function ReportsScreen() {
               <Section header={<SectionHeader>Por mês</SectionHeader>}>
                 <Group className="mx-4">
                   {data.byMonth.map((item) => (
-                    <ValueRow key={item.month} label={`${capitalize(MONTHS_SHORT[+item.month.slice(5) - 1])}/${item.month.slice(0, 4)}`} value={brl(item.cents)} />
+                    <ValueRow key={item.month} label={`${capitalize(MONTHS_SHORT[+item.month.slice(5) - 1])}/${item.month.slice(0, 4)}`} value={<Masked text={brl(item.cents)} />} />
                   ))}
                 </Group>
               </Section>

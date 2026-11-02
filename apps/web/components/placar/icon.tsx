@@ -1,4 +1,7 @@
 import {
+  Eye,
+  Gauge,
+  EyeOff,
   Bell,
   Camera,
   Check,
@@ -35,6 +38,9 @@ const ICONS = {
   house: House,
   receipt: Receipt,
   bell: Bell,
+  gauge: Gauge,
+  eye: Eye,
+  "eye-off": EyeOff,
   search: Search,
   plus: Plus,
   fuel: Fuel,

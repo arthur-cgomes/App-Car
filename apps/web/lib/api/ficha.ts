@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
+import type { Vehicle } from "./vehicles";
 
 export type DocumentType = "IPVA" | "LICENSING" | "CRLV" | "OTHER";
 
@@ -69,7 +70,7 @@ export interface Report {
   costs: { partsCents: number; laborCents: number; maintenanceUnsplitCents: number };
 }
 
-export type Fipe = { available: false } | { available: true; code: string; valueCents: number; referenceMonth: string };
+export type Fipe = { available: false } | { available: true; manual: boolean; code: string | null; valueCents: number; referenceMonth: string | null; ipvaEstimateCents: number };
 
 const v = (vehicleId: string) => `/vehicles/${vehicleId}`;
 
@@ -126,6 +127,7 @@ export const fichaApi = {
   saveInsurance: (vehicleId: string, input: InsuranceInput, id?: string) =>
     id ? api(`${v(vehicleId)}/insurances/${id}`, { method: "PATCH", body: input }) : api(`${v(vehicleId)}/insurances`, { body: input }),
   deleteInsurance: (vehicleId: string, id: string) => api(`${v(vehicleId)}/insurances/${id}`, { method: "DELETE" }),
-  updateVehicle: (vehicleId: string, body: { serviceIntervalKm?: number }) => api(v(vehicleId), { method: "PATCH", body }),
+  updateVehicle: (vehicleId: string, body: { serviceIntervalKm?: number; currentOdometer?: number; fipeValueCents?: number | null }) =>
+    api<Vehicle>(v(vehicleId), { method: "PATCH", body }),
   deleteVehicle: (vehicleId: string) => api(v(vehicleId), { method: "DELETE" }),
 };

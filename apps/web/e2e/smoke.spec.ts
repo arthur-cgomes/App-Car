@@ -54,13 +54,13 @@ async function signUp(page: Page, email: string) {
   await page.getByLabel("Celular").fill(`119${random(8)}`);
   await page.getByRole("button", { name: "Continuar" }).click();
 
-  await page.getByLabel("Senha").fill("fraca");
+  await page.getByLabel("Senha", { exact: true }).fill("fraca");
   await page.getByLabel("Confirmar").fill("fraca");
   await page.getByRole("switch", { name: /Aceitar os Termos/ }).click();
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page.getByText(/ao menos 8 caracteres/)).toBeVisible();
 
-  await page.getByLabel("Senha").fill(PASSWORD);
+  await page.getByLabel("Senha", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Confirmar").fill(PASSWORD);
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page.getByText("Seu carro")).toBeVisible();
@@ -103,7 +103,7 @@ test("cadastro, veículo, gasto, perfil e novo login", async ({ page }) => {
   await page.waitForLoadState("networkidle");
 
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill(PASSWORD);
+  await page.getByLabel("Senha", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page.getByRole("button", { name: "Trocar veículo" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");

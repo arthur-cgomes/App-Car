@@ -7,6 +7,7 @@ import { cx } from "@/lib/cx";
 import { CategoryIcon } from "./category-icon";
 import { ROW_BODY } from "./grouped-list";
 import { Icon } from "./icon";
+import { Masked } from "./masked";
 
 export function ExpenseRow({ expense, onClick }: { expense: Expense; onClick: () => void }) {
   return (
@@ -26,7 +27,7 @@ export function ExpenseRow({ expense, onClick }: { expense: Expense; onClick: ()
             <Icon name="clip" size={15} />
           </span>
         )}
-        <span className="text-base whitespace-nowrap text-ios-label tabular-nums">{brl(expense.amountCents)}</span>
+        <span className="text-base whitespace-nowrap text-ios-label tabular-nums"><Masked text={brl(expense.amountCents)} /></span>
         <span className="text-ios-label3">
           <Icon name="right" />
         </span>
