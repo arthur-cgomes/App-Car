@@ -60,7 +60,7 @@ test/                                        Testes de integração (*.int-spec.
 | `expenses` | `/vehicles/:id/expenses`, `/months`, `/:expenseId` | Gastos: categoria, local, data e hora, odômetro, litros, peças e mão de obra, fotos |
 | `files` | `/files`, `/files/:id` | Upload validado pelo conteúdo (imagem ou PDF, até 10 MB) e download só pelo dono |
 | `reminders` | `/vehicles/:id/reminders`, `/:reminderId/done`, `/undo` | Lembretes manuais e automáticos (débitos, IPVA, revisão, troca de óleo `AUTO_OIL`, seguro) |
-| `documents` / `insurances` | `/vehicles/:id/documents`, `/insurances` | IPVA, licenciamento, CRLV e apólices (pagar vira gasto; fim da vigência vira lembrete) |
+| `documents` / `insurances` | `/vehicles/:id/documents`, `/insurances` | IPVA, licenciamento, CRLV e apólices (pagar vira gasto; fim da vigência vira lembrete; parcelas viram gastos na data, pelo job diário) |
 | `emergency-contacts` | `/vehicles/:id/emergency-contacts` | Seguradora, guincho, concessionária da rodovia, oficina |
 | `dashboard` | `/vehicles/:id/summary` | Resumo do mês |
 | `reports` | `/vehicles/:id/reports`, `/fuel-stats` | Relatórios (JSON, CSV, PDF), custos de peças e mão de obra, consumo médio |

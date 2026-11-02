@@ -129,7 +129,7 @@ entram editando a própria `InitialSchema`. Como um banco que já rodou a migra�
 mudança à mão antes do deploy (ou recrie o banco vazio). Colunas adicionadas depois da primeira publicação:
 
 ```bash
-docker exec postgres psql -U appcar -d appcar -c 'ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS purchase_odometer integer; ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fipe_manual boolean NOT NULL DEFAULT false; ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS oil_change_interval_km integer NOT NULL DEFAULT 10000; ALTER TABLE fuel_logs ALTER COLUMN liters TYPE numeric(7,3);'
+docker exec postgres psql -U appcar -d appcar -c 'ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS purchase_odometer integer; ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fipe_manual boolean NOT NULL DEFAULT false; ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS oil_change_interval_km integer NOT NULL DEFAULT 10000; ALTER TABLE fuel_logs ALTER COLUMN liters TYPE numeric(7,3); ALTER TABLE insurances ADD COLUMN IF NOT EXISTS installment_cents integer; ALTER TABLE insurances ADD COLUMN IF NOT EXISTS first_installment_number smallint; ALTER TABLE insurances ADD COLUMN IF NOT EXISTS first_installment_date date;'
 ```
 
 Para recriar o banco vazio (apaga todos os dados do App Car): pare `appcar-api`, rode

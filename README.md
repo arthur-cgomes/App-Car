@@ -80,7 +80,9 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
   Vencidos; ao lançar uma manutenção o app oferece um lembrete para daqui a 3, 6 ou 12 meses.
 - **Ficha do veículo:** FIPE automática (pelo código ou, sem ele, pela placa) ou informada pelo usuário, com IPVA
   estimado em 4% do valor, dados, intervalo de revisão, troca de óleo (6 meses ou 5 mil km, 1 ano ou 10 mil km; o lembrete vence no que
-  chegar primeiro e recomeça na última troca de óleo lançada em Gastos), documentos, seguros, abastecimentos (consumo médio),
+  chegar primeiro e recomeça na última troca de óleo lançada em Gastos), documentos, seguros (valor total, franquia e parcelas:
+  cada parcela entra sozinha em Gastos na data da cobrança, inclusive de uma apólice transferida a partir da parcela N),
+  abastecimentos (consumo médio),
   contatos de emergência e relatórios (JSON, CSV e PDF) com o total de peças e mão de obra.
 - **Veículos:** cadastro com a placa e os dados do documento (marca entre as 10 mais vendidas, modelo, versão, cor, km com
   separador de milhar, data e odômetro da compra); com um provedor de placa, os dados podem vir da consulta. Fora do
