@@ -1,9 +1,11 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import type { Request, Response } from 'express';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { AuditLog } from '../../audit/audit-log.entity';
 import { AuditService } from '../../audit/audit.service';
+import { Env } from '../../config/env';
 import { RateLimiter } from '../../infra/redis/rate-limiter';
 import { OTP_RESEND_SECONDS, OtpService } from '../auth/otp.service';
 import { PasswordService } from '../auth/password.service';
@@ -33,6 +35,7 @@ export class AccountService {
     private readonly passwords: PasswordService,
     private readonly limiter: RateLimiter,
     private readonly audit: AuditService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   async me(userId: string) {
@@ -42,7 +45,11 @@ export class AccountService {
   }
 
   view(user: User) {
-    return { ...user, smsAvailable: this.otps.smsAvailable };
+    return {
+      ...user,
+      smsAvailable: this.otps.smsAvailable,
+      plateLookupAvailable: this.config.get('PLATE_PROVIDER', { infer: true }) !== 'none',
+    };
   }
 
   async update(userId: string, dto: UpdateProfileDto) {

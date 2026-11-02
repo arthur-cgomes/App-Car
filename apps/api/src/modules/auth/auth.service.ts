@@ -1,14 +1,15 @@
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { isValidCpf, normalizeCpf } from '@monitoring-car/shared';
 import type { Request, Response } from 'express';
-import { IsNull, MoreThan, Not, Repository } from 'typeorm';
+import { DataSource, IsNull, MoreThan, Not, Repository } from 'typeorm';
 import { AuditService } from '../../audit/audit.service';
 import { currentRequestContext } from '../../common/context/request-context';
 import { Env } from '../../config/env';
 import { RateLimiter, tooManyRequests } from '../../infra/redis/rate-limiter';
 import { MailProvider } from '../../notifications/mail/mail.provider';
+import { linkEmail } from '../../notifications/mail/templates';
 import { User } from '../users/user.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { randomToken, sha256 } from './crypto';
@@ -45,34 +46,39 @@ export class AuthService {
     private readonly mail: MailProvider,
     private readonly audit: AuditService,
     private readonly config: ConfigService<Env, true>,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async register(dto: RegisterDto, response: Response) {
     if (await this.users.exists({ where: { email: dto.email } })) {
       throw new ConflictException('Já existe uma conta com este e-mail.');
     }
-    if (dto.cpf && (await this.users.exists({ where: { cpf: dto.cpf } }))) {
+    if (await this.users.exists({ where: { cpf: dto.cpf } })) {
       throw new ConflictException('Já existe uma conta com este CPF.');
     }
-    if (dto.phone && (await this.users.exists({ where: { phone: dto.phone, phoneVerifiedAt: Not(IsNull()) } }))) {
+    if (await this.users.exists({ where: { phone: dto.phone, phoneVerifiedAt: Not(IsNull()) } })) {
       throw new ConflictException('Este celular já está em uso em outra conta.');
     }
 
-    const user = await this.users.save(
-      this.users.create({
-        name: dto.name,
-        email: dto.email,
-        cpf: dto.cpf ?? null,
-        phone: dto.phone ?? null,
-        passwordHash: await this.passwords.hash(dto.password),
-        termsAcceptedAt: new Date(),
-      }),
-    );
+    const passwordHash = await this.passwords.hash(dto.password);
+    const delivery = this.otps.email(dto.email);
+    const user = await this.dataSource.transaction(async (manager) => {
+      const created = await manager.save(
+        manager.create(User, {
+          name: dto.name,
+          email: dto.email,
+          cpf: dto.cpf,
+          phone: dto.phone,
+          passwordHash,
+          termsAcceptedAt: new Date(),
+        }),
+      );
+      await this.otps.issue({ userId: created.id, purpose: 'EMAIL_VERIFY', ...delivery }, manager);
+      return created;
+    });
+    await this.limiter.cooldown(`email-verify:${user.id}`, OTP_RESEND_SECONDS, resendMessage);
     await this.audit.logSecurityEvent('ACCOUNT_CREATED', {}, user.id);
     await this.sessions.start(response, user.id);
-    const delivery = this.otps.email(user.email);
-    await this.limiter.cooldown(`email-verify:${user.id}`, OTP_RESEND_SECONDS, resendMessage);
-    await this.otps.issue({ userId: user.id, purpose: 'EMAIL_VERIFY', ...delivery });
     return { user: toSessionUser(user), channel: delivery.channel, sentTo: delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
   }
 
@@ -217,12 +223,20 @@ export class AuthService {
       expiresAt: new Date(Date.now() + RESET_TTL_SECONDS * 1000),
       usedAt: null,
     });
-    const link = `${this.config.get('WEB_URL', { infer: true })}/nova-senha?token=${token}`;
+    const webUrl = this.config.get('WEB_URL', { infer: true });
+    const link = `${webUrl}/reset-password?token=${token}`;
     await this.mail.send({
       to: user.email,
-      subject: 'App Car: redefinir sua senha',
-      text: `Olá, ${user.name}.\n\nPara criar uma nova senha, acesse:\n${link}\n\nO link vale por 30 minutos. Se não foi você, ignore este e-mail.`,
-      html: `<p>Olá, ${escapeHtml(user.name)}.</p><p>Para criar uma nova senha, <a href="${link}">toque aqui</a>.</p><p>O link vale por 30 minutos. Se não foi você, ignore este e-mail.</p>`,
+      ...linkEmail({
+        subject: 'App Car: redefinir sua senha',
+        title: 'Redefinir sua senha',
+        name: user.name,
+        intro: 'Recebemos um pedido para criar uma nova senha para a sua conta no App Car.',
+        buttonLabel: 'Criar nova senha',
+        url: link,
+        footnote: 'O link vale por 30 minutos e só pode ser usado uma vez. Se não foi você, ignore este e-mail: sua senha continua a mesma.',
+        webUrl,
+      }),
     });
     await this.audit.logSecurityEvent('PASSWORD_RESET_REQUESTED', {}, user.id);
   }
@@ -249,8 +263,4 @@ function loginKey(login: string) {
 
 function toSessionUser(user: Pick<User, 'id' | 'name' | 'email'>): SessionUser {
   return { id: user.id, name: user.name, email: user.email };
-}
-
-function escapeHtml(text: string) {
-  return text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }

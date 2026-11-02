@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { PASSWORD_RULES_MESSAGE, isStrongPassword, isValidCpf, normalizeBrMobile, normalizeCpf, normalizePlate } from '@monitoring-car/shared';
 import { Transform } from 'class-transformer';
 import {
   Equals,
   IsEmail,
-  IsOptional,
+  IsNotEmpty,
   IsString,
   Length,
   Matches,
@@ -69,17 +69,17 @@ export class RegisterDto {
   @MaxLength(254)
   email: string;
 
-  @ApiPropertyOptional({ example: '529.982.247-25' })
-  @IsOptional()
+  @ApiProperty({ example: '529.982.247-25' })
+  @IsNotEmpty({ message: 'Informe seu CPF.' })
   @Validate(CpfConstraint)
-  @Transform(({ value }) => (typeof value === 'string' && value.trim() ? normalizeCpf(value) : undefined))
-  cpf?: string;
+  @Transform(({ value }) => (typeof value === 'string' ? normalizeCpf(value) : value))
+  cpf: string;
 
-  @ApiPropertyOptional({ example: '(21) 98765-4821' })
-  @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? (value.trim() ? (normalizeBrMobile(value) ?? value) : undefined) : value))
+  @ApiProperty({ example: '(21) 98765-4821' })
+  @IsNotEmpty({ message: 'Informe seu celular.' })
+  @Transform(({ value }) => (typeof value === 'string' ? (normalizeBrMobile(value) ?? value.trim()) : value))
   @Matches(/^\+55\d{11}$/, { message: 'Celular incompleto.' })
-  phone?: string;
+  phone: string;
 
   @ApiProperty({ description: '8+ caracteres, com maiúscula, número e caractere especial' })
   @IsString()

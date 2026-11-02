@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Not, Repository } from 'typeorm';
 import { BaseCrudService } from '../../common/services/base-crud.service';
@@ -48,6 +48,7 @@ export class VehiclesService extends BaseCrudService<Vehicle> {
       );
     }
 
+    if (!dto.manual && !this.plates.available) throw new BadRequestException('Preencha os dados do veículo.');
     const data = dto.manual
       ? { ...EMPTY_PLATE_DATA, ...dto.manual }
       : { ...EMPTY_PLATE_DATA, ...(await this.plates.vehicle(userId, dto.plate)) };

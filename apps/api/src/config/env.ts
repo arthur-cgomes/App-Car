@@ -13,7 +13,7 @@ const envSchema = z
     REFRESH_COOKIE_PATH: z.string().default('/api/v1/auth'),
     SMS_PROVIDER: z.enum(['console', 'smsdev', 'disabled']).default('console'),
     SMSDEV_KEY: z.string().optional(),
-    PLATE_PROVIDER: z.enum(['mock']).default('mock'),
+    PLATE_PROVIDER: z.enum(['mock', 'none']).default('mock'),
     PLATE_LOOKUP_DAILY_LIMIT: z.coerce.number().int().min(1).default(10),
     STORAGE_PROVIDER: z.enum(['s3', 'gdrive']).default('s3'),
     GOOGLE_DRIVE_CLIENT_ID: z.string().optional(),
@@ -39,6 +39,9 @@ const envSchema = z
       (env.GOOGLE_DRIVE_CLIENT_ID && env.GOOGLE_DRIVE_CLIENT_SECRET && env.GOOGLE_DRIVE_REFRESH_TOKEN && env.GOOGLE_DRIVE_FOLDER_ID),
     { message: 'Com STORAGE_PROVIDER=gdrive defina GOOGLE_DRIVE_CLIENT_ID, _CLIENT_SECRET, _REFRESH_TOKEN e _FOLDER_ID' },
   )
+  .refine((env) => env.NODE_ENV !== 'production' || env.PLATE_PROVIDER !== 'mock', {
+    message: 'Em produção a consulta simulada de placa não é permitida (PLATE_PROVIDER=none)',
+  })
   .refine((env) => env.NODE_ENV !== 'production' || env.SMS_PROVIDER !== 'console', {
     message: 'Em produção use SMS_PROVIDER=smsdev ou SMS_PROVIDER=disabled',
   });

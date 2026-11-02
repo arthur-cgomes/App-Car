@@ -24,6 +24,7 @@ export interface PlateDebt {
 }
 
 export abstract class PlateProvider {
+  readonly available: boolean = true;
   abstract readonly name: string;
   abstract lookupVehicle(plate: string): Promise<PlateVehicleData | null>;
   abstract lookupDebts(plate: string): Promise<PlateDebt[]>;

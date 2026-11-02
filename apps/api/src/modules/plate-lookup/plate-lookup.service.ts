@@ -36,6 +36,10 @@ export class PlateLookupService {
     this.dailyLimit = config.get('PLATE_LOOKUP_DAILY_LIMIT', { infer: true });
   }
 
+  get available() {
+    return this.provider.available;
+  }
+
   async vehicle(userId: string, plate: string): Promise<PlateVehicleData> {
     const vehicle = await this.cached(userId, plate, 'VEHICLE', () =>
       this.provider.lookupVehicle(plate),

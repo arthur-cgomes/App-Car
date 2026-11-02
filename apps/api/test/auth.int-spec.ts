@@ -4,7 +4,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AuditLog } from '../src/audit/audit-log.entity';
 import { User } from '../src/modules/users/user.entity';
-import type { MailMessage } from '../src/notifications/mail/mail.provider';
+import { MailProvider, type MailMessage } from '../src/notifications/mail/mail.provider';
 import type { ConsoleSmsProvider } from '../src/notifications/sms/console-sms.provider';
 import { CSRF, createTestApp, lastCode, lastMailCode } from './helpers';
 
@@ -69,9 +69,22 @@ describe('Autenticação (integração)', () => {
       expect(me.body).toMatchObject({ cpf: '52998224725', phone: MARINA_PHONE, phoneVerifiedAt: null, emailVerifiedAt: null, pinChannel: 'EMAIL', pinLoginEnabled: true, smsAvailable: true });
     });
 
-    it('celular é opcional no cadastro', async () => {
-      const res = await post('/v1/auth/register', { ...MARINA, email: 'sem-celular@email.com', cpf: undefined, phone: '' }).expect(201);
-      expect(res.body.channel).toBe('EMAIL');
+    it('exige celular e CPF no cadastro', async () => {
+      const res = await post('/v1/auth/register', { ...MARINA, email: 'sem-dados@email.com', cpf: '', phone: '' }).expect(400);
+      expect(res.body.message).toEqual(expect.arrayContaining(['Informe seu CPF.', 'Informe seu celular.']));
+    });
+
+    it('se o e-mail de confirmação falha, não cria a conta nem abre sessão', async () => {
+      const mailer = app.get(MailProvider);
+      const send = mailer.send;
+      mailer.send = async () => {
+        throw new Error('SMTP fora do ar');
+      };
+      const res = await post('/v1/auth/register', { ...MARINA, email: 'falha@email.com', cpf: '111.444.777-35', phone: '(21) 97777-6666' }).expect(500);
+      mailer.send = send;
+      expect(cookieNames(res)).toHaveLength(0);
+      expect(await dataSource.getRepository(User).exists({ where: { email: 'falha@email.com' } })).toBe(false);
+      await post('/v1/auth/register', { ...MARINA, email: 'falha@email.com', cpf: '111.444.777-35', phone: '(21) 97777-6666' }).expect(201);
     });
 
     it('não aceita e-mail ou CPF repetidos', async () => {
@@ -141,7 +154,8 @@ describe('Autenticação (integração)', () => {
       const res = await post('/v1/auth/pin/request', { plate: 'rio-2a18' }).expect(200);
       expect(res.body).toEqual({ channel: 'EMAIL', sentTo: 'ma••••@email.com', resendIn: 30 });
       expect(pinMail()).toHaveLength(1);
-      expect(pinMail()[0].text).toMatch(/^Use este PIN para entrar no App Car com a placa do seu veículo:\n\n\d{6}\n/);
+      expect(pinMail()[0].text).toMatch(/^Seu PIN de acesso\n\nUse este PIN para entrar no App Car com a placa do seu veículo\.\n\n\d{6}\n/);
+      expect(pinMail()[0].html).toContain('Seu PIN de acesso');
       await post('/v1/auth/pin/request', { plate: PLATE }).expect(429);
     });
 
@@ -246,7 +260,7 @@ describe('Autenticação (integração)', () => {
       const agent = request.agent(server());
       await agent.post('/v1/auth/login').set(CSRF).send({ login: MARINA.email, password: MARINA.password }).expect(200);
 
-      const token = /nova-senha\?token=([\w-]+)/.exec(mail.find((item) => item.subject === 'App Car: redefinir sua senha')!.text)![1];
+      const token = /reset-password\?token=([\w-]+)/.exec(mail.find((item) => item.subject === 'App Car: redefinir sua senha')!.text)![1];
       const weak = await post('/v1/auth/password/reset', { token, password: 'nova-senha-123' }).expect(400);
       expect(weak.body.message).toEqual(['A senha precisa ter ao menos 8 caracteres, com 1 letra maiúscula, 1 número e 1 caractere especial.']);
       await post('/v1/auth/password/reset', { token, password: 'Nova-senha-123' }).expect(200);

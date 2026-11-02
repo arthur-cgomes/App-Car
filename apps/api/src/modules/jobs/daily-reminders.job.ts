@@ -34,7 +34,7 @@ export class DailyRemindersJob {
     const vehicles = await this.vehicles.find({ where: { active: true } });
     for (const vehicle of vehicles) {
       try {
-        const debts = refreshDebts ? await this.plates.debts(null, vehicle.plate) : undefined;
+        const debts = refreshDebts && this.plates.available ? await this.plates.debts(null, vehicle.plate) : undefined;
         await this.sync.sync(vehicle, debts, today);
       } catch (error) {
         this.logger.warn(`Falha ao sincronizar ${vehicle.plate}: ${(error as Error).message}`);
