@@ -43,6 +43,26 @@ export class SaveInsuranceDto {
   @Max(24)
   installments?: number | null;
 
+  @ApiPropertyOptional({ example: 15550 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100_000_000)
+  installmentCents?: number | null;
+
+  @ApiPropertyOptional({ example: 11 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  firstInstallmentNumber?: number | null;
+
+  @ApiPropertyOptional({ example: '2026-11-10' })
+  @IsOptional()
+  @Matches(DATE, { message: 'Informe a data da parcela.' })
+  @IsISO8601({ strict: true }, { message: 'Informe a data da parcela.' })
+  firstInstallmentDate?: string | null;
+
   @ApiPropertyOptional({ example: 350000 })
   @IsOptional()
   @IsInt()

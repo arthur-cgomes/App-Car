@@ -172,7 +172,7 @@ describe('Lembretes e Resumo (integração)', () => {
       const job = app.get(DailyRemindersJob);
       await dataSource.query(`UPDATE vehicles SET current_odometer = 50100 WHERE id = $1`, [vehicleId]);
       const monday = addDays(today, (8 - new Date(`${today}T12:00:00Z`).getUTCDay()) % 7 || 7);
-      expect(await job.run(monday)).toEqual({ vehicles: 1 });
+      expect(await job.run(monday)).toEqual({ vehicles: 1, insurances: 0 });
       const titles = (await list()).items.filter((r) => !r.doneAt).map((r) => r.title);
       expect(titles).toContain('Revisão dos 60.000 km');
       expect(titles).toContain('Pagar multa de velocidade');

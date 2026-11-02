@@ -32,6 +32,15 @@ export class Insurance extends BaseEntity {
   installments: number | null;
 
   @Column({ type: 'integer', nullable: true })
+  installmentCents: number | null;
+
+  @Column({ type: 'smallint', nullable: true })
+  firstInstallmentNumber: number | null;
+
+  @Column({ type: 'date', nullable: true })
+  firstInstallmentDate: string | null;
+
+  @Column({ type: 'integer', nullable: true })
   deductibleCents: number | null;
 
   @Column({ type: 'varchar', length: 120, nullable: true })

@@ -5,6 +5,7 @@ import type { Redis } from 'ioredis';
 import { Repository } from 'typeorm';
 import { todayInBrazil } from '../../common/today';
 import { REDIS } from '../../infra/redis/redis.constants';
+import { InsurancesService } from '../insurances/insurances.service';
 import { PlateLookupService } from '../plate-lookup/plate-lookup.service';
 import { ReminderSyncService } from '../reminders/reminder-sync.service';
 import { Vehicle } from '../vehicles/vehicle.entity';
@@ -18,6 +19,7 @@ export class DailyRemindersJob {
     @Inject(REDIS) private readonly redis: Redis,
     private readonly sync: ReminderSyncService,
     private readonly plates: PlateLookupService,
+    private readonly insurances: InsurancesService,
   ) {}
 
   @Cron('0 8 * * *', { timeZone: 'America/Sao_Paulo' })
@@ -40,6 +42,10 @@ export class DailyRemindersJob {
         this.logger.warn(`Falha ao sincronizar ${vehicle.plate}: ${(error as Error).message}`);
       }
     }
-    return { vehicles: vehicles.length };
+    const insurances = await this.insurances.syncAllInstallments(today).catch((error: Error) => {
+      this.logger.warn(`Falha ao lançar parcelas de seguro: ${error.message}`);
+      return 0;
+    });
+    return { vehicles: vehicles.length, insurances };
   }
 }

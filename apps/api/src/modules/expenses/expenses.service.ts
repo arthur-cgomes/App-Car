@@ -7,7 +7,7 @@ import {
   type ExpenseCategoryCode,
   type PartSystemCode,
 } from '@monitoring-car/shared';
-import { Between, DataSource, EntityManager, FindOptionsWhere, Repository } from 'typeorm';
+import { Between, DataSource, EntityManager, FindOptionsWhere, Like, Repository } from 'typeorm';
 import { BaseCrudService } from '../../common/services/base-crud.service';
 import { FilesService } from '../files/files.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
@@ -43,6 +43,15 @@ export interface ExpenseOrigin {
   source?: ExpenseSource;
   occurredAt?: Date | null;
   externalId?: string | null;
+}
+
+export interface ScheduledExpense {
+  externalId: string;
+  category: ExpenseCategoryCode;
+  amountCents: number;
+  date: string;
+  description: string;
+  establishment: string | null;
 }
 
 interface Normalized {
@@ -178,6 +187,29 @@ export class ExpensesService extends BaseCrudService<Expense> {
     await this.load(userId, vehicleId, id);
     await this.removeOwned(userId, id);
     await this.vehicles.refreshOdometer(vehicleId);
+  }
+
+  async syncScheduled(vehicleId: string, prefix: string, source: ExpenseSource, items: ScheduledExpense[], overwrite: boolean) {
+    const existing = await this.repository.find({ where: { vehicleId, externalId: Like(`${prefix}%`) }, withDeleted: true });
+    const live = existing.filter((expense) => !expense.deletedAt);
+    const wanted = new Set(items.map((item) => item.externalId));
+    if (overwrite) {
+      const stale = live.filter((expense) => !wanted.has(expense.externalId!));
+      if (stale.length) await this.repository.softRemove(stale);
+    }
+    for (const item of items) {
+      const current = live.find((expense) => expense.externalId === item.externalId);
+      if (!overwrite && existing.some((expense) => expense.externalId === item.externalId)) continue;
+      const values = {
+        categoryId: await this.categoryId(item.category),
+        amountCents: item.amountCents,
+        date: item.date,
+        description: item.description,
+        establishment: item.establishment,
+      };
+      if (current) await this.repository.save(this.repository.merge(current, values));
+      else await this.repository.save(this.repository.create({ vehicleId, ...values, externalId: item.externalId, source }));
+    }
   }
 
   private async load(userId: string, vehicleId: string, id: string) {

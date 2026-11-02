@@ -5,6 +5,8 @@ import { DataSource } from 'typeorm';
 import { todayInBrazil } from '../src/common/today';
 import { FipeProvider } from '../src/modules/fipe/fipe-provider';
 import { MockFipeProvider } from '../src/modules/fipe/mock-fipe.provider';
+import { InsurancesService } from '../src/modules/insurances/insurances.service';
+import { addMonths } from '../src/modules/reminders/reminder-rules';
 import { User } from '../src/modules/users/user.entity';
 import { CSRF, createTestApp } from './helpers';
 
@@ -176,6 +178,55 @@ describe('Ficha do veículo (integração)', () => {
 
       await request(server()).delete(`${v}/insurances/${insuranceId}`).set(asAlice).expect(204);
       expect(await reminders()).toEqual([]);
+    });
+
+    it('valida as parcelas', async () => {
+      const base = { insurer: 'Porto Seguro', startDate: '2026-03-05', endDate: '2027-03-05' };
+      const send = (body: object) => request(server()).post(`${v}/insurances`).set(asAlice).send({ ...base, ...body }).expect(400);
+      expect((await send({ installmentCents: 15550, firstInstallmentDate: today })).body.message).toBe('Informe o total de parcelas.');
+      expect((await send({ installments: 24, firstInstallmentDate: today })).body.message).toBe('Informe o valor da parcela.');
+      expect((await send({ installments: 24, installmentCents: 15550 })).body.message).toBe('Informe a data da parcela.');
+      expect((await send({ installments: 12, installmentCents: 15550, firstInstallmentDate: today, firstInstallmentNumber: 13 })).body.message).toBe(
+        'A parcela não pode passar do total de parcelas.',
+      );
+    });
+
+    it('lança em Gastos as parcelas cuja data chegou, sem recriar as excluídas', async () => {
+      const installments = async () =>
+        (await request(server()).get(`${v}/expenses`).set(asAlice)).body
+          .filter((expense: { source: string }) => expense.source === 'INSURANCE')
+          .sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date));
+      const plan = { insurer: 'Porto Seguro', startDate: '2025-12-01', endDate: '2027-12-01', premiumCents: 373200, installments: 24, deductibleCents: 350000 };
+      const id = (
+        await request(server())
+          .post(`${v}/insurances`)
+          .set(asAlice)
+          .send({ ...plan, installmentCents: 15550, firstInstallmentNumber: 11, firstInstallmentDate: addMonths(today, -2) })
+          .expect(201)
+      ).body.id;
+
+      const first = await installments();
+      expect(first.map((e: { description: string }) => e.description)).toEqual(['Seguro parcela 11/24', 'Seguro parcela 12/24', 'Seguro parcela 13/24']);
+      expect(first[0]).toMatchObject({ category: 'INSURANCE', amountCents: 15550, establishment: 'Porto Seguro', date: addMonths(today, -2) });
+
+      await request(server()).delete(`${v}/expenses/${first[1].id}`).set(asAlice).expect(204);
+      await app.get(InsurancesService).syncAllInstallments(addMonths(today, 1));
+      expect((await installments()).map((e: { description: string }) => e.description)).toEqual(['Seguro parcela 11/24', 'Seguro parcela 13/24', 'Seguro parcela 14/24']);
+
+      await request(server())
+        .patch(`${v}/insurances/${id}`)
+        .set(asAlice)
+        .send({ ...plan, installmentCents: 16000, firstInstallmentNumber: 12, firstInstallmentDate: addMonths(today, -1) })
+        .expect(200);
+      const edited = await installments();
+      expect(edited.map((e: { description: string; amountCents: number }) => [e.description, e.amountCents])).toEqual([
+        ['Seguro parcela 12/24', 16000],
+        ['Seguro parcela 13/24', 16000],
+      ]);
+
+      await request(server()).delete(`${v}/insurances/${id}`).set(asAlice).expect(204);
+      expect(await installments()).toHaveLength(2);
+      for (const expense of edited) await request(server()).delete(`${v}/expenses/${expense.id}`).set(asAlice).expect(204);
     });
   });
 

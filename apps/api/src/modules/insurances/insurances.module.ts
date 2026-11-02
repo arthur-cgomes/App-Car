@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthUser } from '../../common/auth/auth-user';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ExpensesModule } from '../expenses/expenses.module';
 import { FilesModule } from '../files/files.module';
 import { RemindersModule } from '../reminders/reminders.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
@@ -47,8 +48,9 @@ export class InsurancesController {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Insurance]), VehiclesModule, FilesModule, RemindersModule],
+  imports: [TypeOrmModule.forFeature([Insurance]), VehiclesModule, FilesModule, RemindersModule, ExpensesModule],
   controllers: [InsurancesController],
   providers: [InsurancesService],
+  exports: [InsurancesService],
 })
 export class InsurancesModule {}
