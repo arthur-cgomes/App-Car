@@ -247,7 +247,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
           <>
             <label className={CELL_LABEL}>
               <span>Litros</span>
-              <input value={form.liters} onChange={(event) => set("liters", event.target.value)} inputMode="decimal" placeholder="Opcional" className={CELL_INPUT} />
+              <input value={form.liters} onChange={(event) => set("liters", event.target.value.replace(/[^\d,.]/g, ""))} inputMode="decimal" maxLength={8} placeholder="Opcional" className={CELL_INPUT} />
             </label>
             <div className={CELL_LABEL}>
               <span className="flex-1">Tanque cheio</span>
