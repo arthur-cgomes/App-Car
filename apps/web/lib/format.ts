@@ -25,6 +25,15 @@ export function previousMonth(month: string) {
   return m === 1 ? `${year - 1}-12` : `${year}-${String(m - 1).padStart(2, "0")}`;
 }
 
+const MONEY_FORMAT = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export const centsToMoneyInput = (cents: number) => MONEY_FORMAT.format(cents / 100);
+
+export function formatMoneyInput(raw: string) {
+  const digits = raw.replace(/\D/g, "").replace(/^0+/, "").slice(0, 11);
+  return digits ? centsToMoneyInput(Number(digits)) : "";
+}
+
 export function parseMoneyInput(raw: string): number | null {
   const text = raw.trim();
   if (!text) return null;

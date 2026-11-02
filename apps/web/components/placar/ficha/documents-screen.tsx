@@ -4,7 +4,7 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { DOCUMENT_TYPES, documentTypeName, fichaApi, useDocuments, useFichaMutation, type DocumentInput, type VehicleDocument } from "@/lib/api/ficha";
 import { useActiveVehicle } from "@/lib/api/vehicles";
-import { brl, parseMoneyInput } from "@/lib/format";
+import { brl, formatMoneyInput, parseMoneyInput } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { TintedButton } from "../buttons";
 import { CategoryIcon } from "../category-icon";
@@ -148,7 +148,7 @@ function DocumentSheet({ open, vehicleId, document, onClose }: { open: boolean; 
       </Section>
       <Group className="mx-4 text-[17px]">
         <InputCell label="Ano" value={form.year} onChange={(e) => set("year", e.target.value)} inputMode="numeric" placeholder="Opcional" />
-        <InputCell label="Valor" value={form.amount} onChange={(e) => set("amount", e.target.value)} inputMode="decimal" placeholder="R$ 0,00" />
+        <InputCell label="Valor" value={form.amount} onChange={(e) => set("amount", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
         <DateCell label="Vencimento" value={form.dueDate} onChange={(value) => set("dueDate", value)} />
         <InputCell label="Notas" value={form.notes} onChange={(e) => set("notes", e.target.value)} maxLength={300} placeholder="Opcional" />
       </Group>

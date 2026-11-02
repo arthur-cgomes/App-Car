@@ -84,7 +84,7 @@ test("cadastro, veículo, gasto, perfil e novo login", async ({ page }) => {
   await page.getByRole("button", { name: "Novo gasto" }).click();
   const expense = page.getByRole("dialog", { name: "Novo gasto" });
   await expense.getByLabel("Valor").fill("123,45");
-  await expense.getByPlaceholder("Ex.: troca de pastilhas").fill("Abastecimento E2E");
+  await expense.getByLabel("Descrição").fill("Abastecimento E2E");
   await expense.getByRole("button", { name: "Salvar" }).click();
   await expect(page.getByText("Abastecimento E2E").first()).toBeVisible();
 

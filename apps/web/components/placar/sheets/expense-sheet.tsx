@@ -11,7 +11,7 @@ import {
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fileUrl, uploadFile, useSaveExpense, type Expense } from "@/lib/api/expenses";
-import { brl, formatKmInput, parseMoneyInput } from "@/lib/format";
+import { centsToMoneyInput, formatKmInput, formatMoneyInput, parseMoneyInput } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { CategoryGrid } from "../category-grid";
 import { Chip } from "../chip";
@@ -59,25 +59,36 @@ const EMPTY_FORM: ExpenseFormValues = {
   photos: [],
 };
 
-const centsInput = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
 const decimal = (value: number) => value.toLocaleString("pt-BR", { maximumFractionDigits: 2, useGrouping: false });
 
 function fromExpense(expense: Expense): ExpenseFormValues {
   return {
     category: expense.category,
-    amount: (expense.amountCents / 100).toFixed(2).replace(".", ","),
+    amount: centsToMoneyInput(expense.amountCents),
     date: expense.date,
     description: expense.description === EXPENSE_CATEGORY_BY_CODE[expense.category].name ? "" : expense.description,
     odometer: expense.odometer ? formatKmInput(String(expense.odometer)) : "",
     establishment: expense.establishment ?? "",
-    parts: expense.partsCents === null ? "" : centsInput(expense.partsCents),
-    labor: expense.laborCents === null ? "" : centsInput(expense.laborCents),
+    parts: expense.partsCents === null ? "" : centsToMoneyInput(expense.partsCents),
+    labor: expense.laborCents === null ? "" : centsToMoneyInput(expense.laborCents),
     partSystem: expense.partSystem,
     liters: expense.fuel ? decimal(expense.fuel.liters) : "",
     fullTank: expense.fuel?.fullTank ?? false,
     photos: expense.attachments.map(({ id }) => ({ key: id, preview: fileUrl(id), fileId: id })),
   };
 }
+
+const FUEL_SUGGESTIONS = ["Gasolina comum", "Gasolina aditivada"];
+
+const EXAMPLES: Record<ExpenseCategoryCode, { establishment: string; description: string }> = {
+  FUEL: { establishment: "Ex.: Posto Shell", description: "Ex.: Gasolina comum" },
+  MAINTENANCE: { establishment: "Ex.: Oficina do Zé", description: "Ex.: Troca de pastilhas" },
+  PARTS: { establishment: "Ex.: Auto Peças Central", description: "Ex.: Jogo de pastilhas" },
+  DOCUMENTS: { establishment: "Ex.: Detran", description: "Ex.: Licenciamento 2026" },
+  FINES: { establishment: "Opcional", description: "Ex.: Excesso de velocidade" },
+  INSURANCE: { establishment: "Ex.: Porto Seguro", description: "Ex.: Parcela do seguro" },
+  OTHER: { establishment: "Opcional", description: "Ex.: Lavagem" },
+};
 
 const CELL_LABEL = "flex min-h-[46px] items-center gap-3 border-b-[0.5px] border-ios-sep px-4 last:border-b-0";
 const CELL_INPUT = "min-w-0 flex-1 border-0 bg-transparent text-right text-[17px] text-ios-label outline-0";
@@ -112,7 +123,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
   const isMaintenance = form.category === "MAINTENANCE";
   const split = isMaintenance && !!(form.parts.trim() || form.labor.trim());
   const splitCents = (value: string) => (value.trim() ? (parseMoneyInput(value) ?? Number.NaN) : 0);
-  const amountShown = split ? centsInput(splitCents(form.parts) + splitCents(form.labor)) : form.amount;
+  const amountShown = split ? centsToMoneyInput(splitCents(form.parts) + splitCents(form.labor)) : form.amount;
 
   const submit = async () => {
     if (busy) return;
@@ -173,9 +184,9 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
           <span className="text-[28px] font-semibold text-ios-label2">R$</span>
           <input
             value={amountShown}
-            onChange={(event) => set("amount", event.target.value)}
+            onChange={(event) => set("amount", formatMoneyInput(event.target.value))}
             readOnly={split}
-            inputMode="decimal"
+            inputMode="numeric"
             placeholder="0,00"
             aria-label="Valor"
             className="w-[200px] border-0 bg-transparent font-rounded text-[52px] font-bold tracking-[-.02em] text-ios-label tabular-nums outline-0"
@@ -220,11 +231,11 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
           <Group className="mx-4 text-[17px]">
             <label className={CELL_LABEL}>
               <span>Peças</span>
-              <input value={form.parts} onChange={(event) => set("parts", event.target.value)} inputMode="decimal" placeholder="R$ 0,00" className={CELL_INPUT} />
+              <input value={form.parts} onChange={(event) => set("parts", formatMoneyInput(event.target.value))} inputMode="numeric" placeholder="R$ 0,00" className={CELL_INPUT} />
             </label>
             <label className={CELL_LABEL}>
               <span>Mão de obra</span>
-              <input value={form.labor} onChange={(event) => set("labor", event.target.value)} inputMode="decimal" placeholder="R$ 0,00" className={CELL_INPUT} />
+              <input value={form.labor} onChange={(event) => set("labor", formatMoneyInput(event.target.value))} inputMode="numeric" placeholder="R$ 0,00" className={CELL_INPUT} />
             </label>
           </Group>
         </Section>
@@ -254,15 +265,31 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
             value={form.establishment}
             onChange={(event) => set("establishment", event.target.value)}
             maxLength={120}
-            placeholder={isFuel ? "Ex.: Posto Shell" : isMaintenance ? "Ex.: Oficina do Zé" : "Opcional"}
+            placeholder={EXAMPLES[form.category].establishment}
             className={CELL_INPUT}
           />
         </label>
         <label className={CELL_LABEL}>
           <span>Descrição</span>
-          <input value={form.description} onChange={(event) => set("description", event.target.value)} maxLength={200} placeholder="Ex.: troca de pastilhas" className={CELL_INPUT} />
+          <input
+            value={form.description}
+            onChange={(event) => set("description", event.target.value)}
+            maxLength={200}
+            placeholder={EXAMPLES[form.category].description}
+            className={CELL_INPUT}
+          />
         </label>
       </Group>
+
+      {isFuel && (
+        <div className="-mt-3 mx-4 flex flex-wrap gap-2">
+          {FUEL_SUGGESTIONS.map((suggestion) => (
+            <Chip key={suggestion} size="sm" active={form.description === suggestion} onClick={() => set("description", suggestion)}>
+              {suggestion}
+            </Chip>
+          ))}
+        </div>
+      )}
 
       <Section
         header={<SectionHeader>Notas e comprovantes</SectionHeader>}
@@ -291,8 +318,4 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
       </Section>
     </Sheet>
   );
-}
-
-export function expenseSavedMessage(expense: Expense) {
-  return `Gasto de ${brl(expense.amountCents)} salvo em ${EXPENSE_CATEGORY_BY_CODE[expense.category].name}.`;
 }

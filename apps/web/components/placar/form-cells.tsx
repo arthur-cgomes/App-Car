@@ -3,6 +3,7 @@
 import { useState, type InputHTMLAttributes } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fileUrl, uploadFile } from "@/lib/api/expenses";
+import { centsToMoneyInput } from "@/lib/format";
 
 const CELL = "flex min-h-[46px] items-center gap-3 border-b-[0.5px] border-ios-sep px-4 last:border-b-0";
 
@@ -57,5 +58,5 @@ export function AttachmentCell({ fileId, onChange, onError }: { fileId: string |
   );
 }
 
-export const centsToInput = (cents: number | null) => (cents ? (cents / 100).toFixed(2).replace(".", ",") : "");
+export const centsToInput = (cents: number | null) => (cents ? centsToMoneyInput(cents) : "");
 export const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;

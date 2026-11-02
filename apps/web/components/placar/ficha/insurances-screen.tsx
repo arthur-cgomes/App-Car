@@ -5,7 +5,7 @@ import { errorMessage } from "@/lib/api/client";
 import { fichaApi, useFichaMutation, useInsurances, type Insurance, type InsuranceInput } from "@/lib/api/ficha";
 import { fileUrl } from "@/lib/api/expenses";
 import { useActiveVehicle } from "@/lib/api/vehicles";
-import { brl, parseMoneyInput } from "@/lib/format";
+import { brl, formatMoneyInput, parseMoneyInput } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { InlineEmpty } from "../empty-state";
 import { AttachmentCell, DateCell, InputCell, brDate, centsToInput } from "../form-cells";
@@ -156,9 +156,9 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
       </Section>
       <Section header={<SectionHeader>Valores</SectionHeader>}>
         <Group className="mx-4 text-[17px]">
-          <InputCell label="Prêmio" value={form.premium} onChange={(e) => set("premium", e.target.value)} inputMode="decimal" placeholder="R$ 0,00" />
+          <InputCell label="Prêmio" value={form.premium} onChange={(e) => set("premium", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
           <InputCell label="Parcelas" value={form.installments} onChange={(e) => set("installments", e.target.value)} inputMode="numeric" placeholder="Opcional" />
-          <InputCell label="Franquia" value={form.deductible} onChange={(e) => set("deductible", e.target.value)} inputMode="decimal" placeholder="R$ 0,00" />
+          <InputCell label="Franquia" value={form.deductible} onChange={(e) => set("deductible", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
           <InputCell label="Corretor" value={form.brokerContact} onChange={(e) => set("brokerContact", e.target.value)} maxLength={120} placeholder="Telefone ou e-mail" />
         </Group>
       </Section>

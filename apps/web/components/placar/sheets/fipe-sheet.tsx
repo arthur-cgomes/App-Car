@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fichaApi, type Fipe } from "@/lib/api/ficha";
-import { parseMoneyInput } from "@/lib/format";
+import { formatMoneyInput, parseMoneyInput } from "@/lib/format";
 import { LinkButton } from "../buttons";
 import { InputCell, centsToInput } from "../form-cells";
 import { Footnote, Group, Section } from "../grouped-list";
@@ -52,10 +52,10 @@ export function FipeSheet({ open, vehicleId, fipe, onClose }: { open: boolean; v
             label="Valor FIPE"
             value={value}
             onChange={(event) => {
-              setValue(event.target.value);
+              setValue(formatMoneyInput(event.target.value));
               setError("");
             }}
-            inputMode="decimal"
+            inputMode="numeric"
             placeholder="R$ 0,00"
             maxLength={14}
             autoFocus

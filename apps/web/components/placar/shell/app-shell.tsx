@@ -19,7 +19,7 @@ import { GlassIconButton } from "../buttons";
 import { ExpenseDetail } from "../expense-detail";
 import { Icon } from "../icon";
 import { ActionPanel, ActionPanelButton, ActionPanelMessage, Backdrop, Banner, PhotoViewer } from "../overlays";
-import { ExpenseSheet, expenseSavedMessage, type ExpenseFormValues } from "../sheets/expense-sheet";
+import { ExpenseSheet, type ExpenseFormValues } from "../sheets/expense-sheet";
 import { OdometerSheet } from "../sheets/odometer-sheet";
 import { ReminderSheet } from "../sheets/reminder-sheet";
 import { VehicleSheet } from "../sheets/vehicle-sheet";
@@ -274,7 +274,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             onCancel={() => setSheetOpen(false)}
             onSaved={(saved) => {
               setSheetOpen(false);
-              setTimeout(() => toast(sheet.expense ? "Gasto atualizado." : expenseSavedMessage(saved)), 350);
               if (!sheet.expense && saved.category === "MAINTENANCE") {
                 setTimeout(() => {
                   setReminderOffer(saved);
