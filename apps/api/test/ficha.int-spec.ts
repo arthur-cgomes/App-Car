@@ -45,13 +45,65 @@ describe('Ficha do veículo (integração)', () => {
   it('FIPE: busca uma vez por mês de referência e guarda no veículo', async () => {
     const provider = app.get(FipeProvider) as MockFipeProvider;
     const first = await request(server()).get(`${v}/fipe`).set(asAlice).expect(200);
-    expect(first.body).toEqual({ available: true, code: '005476-3', valueCents: 7932600, referenceMonth: today.slice(0, 7) });
+    expect(first.body).toEqual({ available: true, manual: false, code: '005476-3', valueCents: 7932600, referenceMonth: today.slice(0, 7), ipvaEstimateCents: 317304 });
     await request(server()).get(`${v}/fipe`).set(asAlice).expect(200);
     expect(provider.calls).toBe(1);
 
     const other = (await request(server()).post('/v1/vehicles').set(asAlice).send({ plate: 'BRA4E21' })).body.id;
     expect((await request(server()).get(`/v1/vehicles/${other}/fipe`).set(asAlice).expect(200)).body).toEqual({ available: false });
     await request(server()).get(`${v}/fipe`).set(asBob).expect(404);
+  });
+
+  it('FIPE pela placa quando o veículo não tem código FIPE, consultando a placa uma vez só', async () => {
+    const provider = app.get(FipeProvider) as MockFipeProvider;
+    const manual = { brand: 'Volkswagen', model: 'Polo' };
+    const found = (await request(server()).post('/v1/vehicles').set(asAlice).send({ plate: 'FIP3E21', manual })).body.id;
+    const missing = (await request(server()).post('/v1/vehicles').set(asAlice).send({ plate: 'SEM1F23', manual })).body.id;
+    const before = provider.plateCalls;
+
+    const res = await request(server()).get(`/v1/vehicles/${found}/fipe`).set(asAlice).expect(200);
+    expect(res.body).toEqual({ available: true, manual: false, code: '005476-3', valueCents: 7932600, referenceMonth: today.slice(0, 7), ipvaEstimateCents: 317304 });
+    await request(server()).get(`/v1/vehicles/${found}/fipe`).set(asAlice).expect(200);
+    expect((await request(server()).get(v.replace(vehicleId, found)).set(asAlice).expect(200)).body).toMatchObject({ fipeCode: '005476-3', yearModel: 2019 });
+
+    expect((await request(server()).get(`/v1/vehicles/${missing}/fipe`).set(asAlice).expect(200)).body).toEqual({ available: false });
+    await request(server()).get(`/v1/vehicles/${missing}/fipe`).set(asAlice).expect(200);
+    expect(provider.plateCalls - before).toBe(2);
+
+    await request(server()).delete(`/v1/vehicles/${found}`).set(asAlice).expect(204);
+    await request(server()).delete(`/v1/vehicles/${missing}`).set(asAlice).expect(204);
+  });
+
+  it('FIPE informada pelo usuário prevalece e pode voltar ao valor automático', async () => {
+    const provider = app.get(FipeProvider) as MockFipeProvider;
+    const manual = (await request(server()).post('/v1/vehicles').set(asAlice).send({ plate: 'MAN4D56', manual: { brand: 'Fiat', model: 'Argo' } })).body.id;
+    const fipe = `/v1/vehicles/${manual}/fipe`;
+    expect((await request(server()).get(fipe).set(asAlice).expect(200)).body).toEqual({ available: false });
+
+    const invalid = await request(server()).patch(`/v1/vehicles/${manual}`).set(asAlice).send({ fipeValueCents: 12.5 }).expect(400);
+    expect(invalid.body.message).toContain('Informe o valor FIPE em reais.');
+
+    await request(server()).patch(`/v1/vehicles/${manual}`).set(asAlice).send({ fipeValueCents: 6500000 }).expect(200);
+    const calls = provider.plateCalls + provider.calls;
+    expect((await request(server()).get(fipe).set(asAlice).expect(200)).body).toEqual({
+      available: true,
+      manual: true,
+      code: null,
+      valueCents: 6500000,
+      referenceMonth: today.slice(0, 7),
+      ipvaEstimateCents: 260000,
+    });
+    expect(provider.plateCalls + provider.calls).toBe(calls);
+
+    await request(server()).patch(`/v1/vehicles/${manual}`).set(asAlice).send({ fipeValueCents: null }).expect(200);
+    expect((await request(server()).get(fipe).set(asAlice).expect(200)).body).toEqual({ available: false });
+    await request(server()).patch(`/v1/vehicles/${manual}`).set(asBob).send({ fipeValueCents: 100000 }).expect(404);
+    await request(server()).delete(`/v1/vehicles/${manual}`).set(asAlice).expect(204);
+  });
+
+  it('atualiza só a km do carro', async () => {
+    const res = await request(server()).patch(v).set(asAlice).send({ currentOdometer: 41250 }).expect(200);
+    expect(res.body.currentOdometer).toBe(41250);
   });
 
   describe('documentos', () => {

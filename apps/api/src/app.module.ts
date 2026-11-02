@@ -10,6 +10,7 @@ import { ClsModule } from 'nestjs-cls';
 import { AuditModule } from './audit/audit.module';
 import { CsrfGuard } from './common/auth/csrf.guard';
 import { JwtAuthGuard } from './common/auth/jwt-auth.guard';
+import { InternalErrorFilter } from './common/filters/internal-error.filter';
 import { PayloadTooLargeFilter } from './common/filters/payload-too-large.filter';
 import { QueryFailedFilter } from './common/filters/query-failed.filter';
 import { Env, validateEnv } from './config/env';
@@ -96,6 +97,7 @@ const REQUEST_ID_PATTERN = /^[\w-]{1,64}$/;
   providers: [
     { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_FILTER, useClass: InternalErrorFilter },
     { provide: APP_FILTER, useClass: QueryFailedFilter },
     { provide: APP_FILTER, useClass: PayloadTooLargeFilter },
   ],

@@ -15,4 +15,11 @@ export class UpdateVehicleDto {
   @Min(1000)
   @Max(100_000)
   serviceIntervalKm?: number;
+
+  @ApiPropertyOptional({ example: 7932600, nullable: true, description: 'Valor FIPE informado pelo usuário, em centavos; null volta ao valor automático' })
+  @IsOptional()
+  @IsInt({ message: 'Informe o valor FIPE em reais.' })
+  @Min(100, { message: 'Informe o valor FIPE em reais.' })
+  @Max(100_000_000, { message: 'Valor FIPE muito alto.' })
+  fipeValueCents?: number | null;
 }

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Not, Repository } from 'typeorm';
 import { BaseCrudService } from '../../common/services/base-crud.service';
+import { todayInBrazil } from '../../common/today';
 import { Expense } from '../expenses/expense.entity';
 import { PlateLookupService } from '../plate-lookup/plate-lookup.service';
 import { ReminderSyncService } from '../reminders/reminder-sync.service';
@@ -48,6 +49,9 @@ export class VehiclesService extends BaseCrudService<Vehicle> {
       );
     }
 
+    if (dto.purchaseOdometer != null && dto.purchaseOdometer > (dto.currentOdometer ?? 0)) {
+      throw new BadRequestException('O odômetro na compra não pode ser maior que o atual.');
+    }
     if (!dto.manual && !this.plates.available) throw new BadRequestException('Preencha os dados do veículo.');
     const data = dto.manual
       ? { ...EMPTY_PLATE_DATA, ...dto.manual }
@@ -68,6 +72,7 @@ export class VehiclesService extends BaseCrudService<Vehicle> {
         restrictions: data.restrictions,
         fipeCode: data.fipeCode,
         purchaseDate: dto.purchaseDate ?? null,
+        purchaseOdometer: dto.purchaseOdometer ?? null,
         currentOdometer: dto.currentOdometer ?? 0,
         baseOdometer: dto.currentOdometer ?? 0,
       }),
@@ -84,12 +89,18 @@ export class VehiclesService extends BaseCrudService<Vehicle> {
   }
 
   async updateOwned(userId: string, id: string, data: Parameters<BaseCrudService<Vehicle>['updateOwned']>[2]) {
-    const { currentOdometer, ...rest } = data;
+    const { currentOdometer, fipeValueCents, ...rest } = data;
     const odometer =
       currentOdometer === undefined
         ? {}
         : { baseOdometer: currentOdometer, currentOdometer: Math.max(currentOdometer, await this.highestExpenseOdometer(id)) };
-    const vehicle = await super.updateOwned(userId, id, { ...rest, ...odometer });
+    const fipe =
+      fipeValueCents === undefined
+        ? {}
+        : fipeValueCents === null
+          ? { fipeValueCents: null, fipeRefMonth: null, fipeManual: false }
+          : { fipeValueCents, fipeRefMonth: todayInBrazil().slice(0, 7), fipeManual: true };
+    const vehicle = await super.updateOwned(userId, id, { ...rest, ...odometer, ...fipe });
     await this.reminderSync.sync(vehicle);
     return vehicle;
   }

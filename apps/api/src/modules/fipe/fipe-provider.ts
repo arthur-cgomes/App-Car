@@ -4,8 +4,27 @@ export interface FipePrice {
   model: string;
 }
 
+export interface PlateFipe {
+  fipeCode: string;
+  model: string;
+  yearModel: number | null;
+  priceCents: number;
+}
+
 export abstract class FipeProvider {
   abstract price(fipeCode: string, yearModel: number): Promise<FipePrice | null>;
+  abstract byPlate(plate: string): Promise<PlateFipe | null>;
+}
+
+export const IPVA_RATE = 0.04;
+
+export function ipvaEstimateCents(fipeValueCents: number) {
+  return Math.round(fipeValueCents * IPVA_RATE);
+}
+
+export function parseYearModel(text: string): number | null {
+  const years = text.match(/\d{4}/g);
+  return years ? Number(years[years.length - 1]) : null;
 }
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];

@@ -61,6 +61,13 @@ export class CreateVehicleDto {
   @IsISO8601({ strict: true }, { message: 'Data da compra inválida.' })
   purchaseDate?: string | null;
 
+  @ApiPropertyOptional({ example: 12000 })
+  @IsOptional()
+  @IsInt({ message: 'Informe o odômetro na compra em km.' })
+  @Min(0)
+  @Max(2_000_000)
+  purchaseOdometer?: number | null;
+
   @ApiPropertyOptional({ type: ManualVehicleDto })
   @IsOptional()
   @ValidateNested()

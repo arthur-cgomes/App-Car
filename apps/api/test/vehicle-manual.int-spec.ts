@@ -39,6 +39,7 @@ describe('Cadastro manual do veículo e contatos de emergência (integração)',
           plate: 'man-1a23',
           currentOdometer: 108000,
           purchaseDate: '2021-03-15',
+          purchaseOdometer: 12500,
           manual: { brand: 'Volkswagen', model: ' Polo ', modelVersion: 'Highline 1.0 200 TSI', color: 'Prata', yearModel: 2019 },
         })
         .expect(201);
@@ -54,6 +55,7 @@ describe('Cadastro manual do veículo e contatos de emergência (integração)',
         municipality: null,
         fipeCode: null,
         purchaseDate: '2021-03-15',
+        purchaseOdometer: 12500,
         currentOdometer: 108000,
       });
 
@@ -68,6 +70,15 @@ describe('Cadastro manual do veículo e contatos de emergência (integração)',
         .send({ plate: 'MAN2B34', purchaseDate: '2021-02-30', manual: { brand: '', model: '' } })
         .expect(400);
       expect(res.body.message).toEqual(expect.arrayContaining(['Data da compra inválida.', 'manual.Informe a marca.', 'manual.Informe o modelo.']));
+    });
+
+    it('recusa odômetro na compra maior que o atual', async () => {
+      const res = await request(server())
+        .post('/v1/vehicles')
+        .set(asAlice)
+        .send({ plate: 'MAN3C45', currentOdometer: 5000, purchaseOdometer: 9000, manual: { brand: 'Fiat', model: 'Argo' } })
+        .expect(400);
+      expect(res.body.message).toBe('O odômetro na compra não pode ser maior que o atual.');
     });
   });
 

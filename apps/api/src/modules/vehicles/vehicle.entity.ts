@@ -61,11 +61,17 @@ export class Vehicle extends BaseEntity {
   @Column({ type: 'varchar', length: 7, nullable: true })
   fipeRefMonth: string | null;
 
+  @Column({ type: 'boolean', default: false })
+  fipeManual: boolean;
+
   @Column({ type: 'integer', default: 0 })
   currentOdometer: number;
 
   @Column({ type: 'date', nullable: true })
   purchaseDate: string | null;
+
+  @Column({ type: 'integer', nullable: true })
+  purchaseOdometer: number | null;
 
   @Column({ type: 'integer', default: 0 })
   baseOdometer: number;

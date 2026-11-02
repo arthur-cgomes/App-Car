@@ -1,10 +1,11 @@
 import { JwtService } from '@nestjs/jwt';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { DataSource } from 'typeorm';
+import { DataSource, QueryFailedError } from 'typeorm';
 import { AuditLog } from '../src/audit/audit-log.entity';
 import { User } from '../src/modules/users/user.entity';
 import { Vehicle } from '../src/modules/vehicles/vehicle.entity';
+import { VehiclesService } from '../src/modules/vehicles/vehicles.service';
 import { CSRF, createTestApp } from './helpers';
 
 describe('Fundação da API (integração)', () => {
@@ -157,6 +158,22 @@ describe('Fundação da API (integração)', () => {
     expect(created.action).toBe('CREATE');
     expect(created.snapshot).toMatchObject({ email: 'alice@test.dev' });
     expect(created.snapshot).not.toHaveProperty('passwordHash');
+  });
+
+  it('erro inesperado responde em português sem detalhes internos', async () => {
+    const failure = jest.spyOn(app.get(VehiclesService), 'list').mockRejectedValueOnce(new Error('column vehicles.secret does not exist'));
+    const res = await request(app.getHttpServer()).get('/v1/vehicles').set(auth(aliceToken)).expect(500);
+    expect(res.body).toEqual({ statusCode: 500, message: 'Erro interno no servidor.' });
+    failure.mockRestore();
+  });
+
+  it('erro de banco também responde em português', async () => {
+    const failure = jest
+      .spyOn(app.get(VehiclesService), 'list')
+      .mockRejectedValueOnce(Object.assign(new QueryFailedError('SELECT 1', [], new Error('column does not exist')), { code: '42703' }));
+    const res = await request(app.getHttpServer()).get('/v1/vehicles').set(auth(aliceToken)).expect(500);
+    expect(res.body).toEqual({ statusCode: 500, message: 'Erro interno no servidor.' });
+    failure.mockRestore();
   });
 
   it('audit_logs é append-only no banco', async () => {
