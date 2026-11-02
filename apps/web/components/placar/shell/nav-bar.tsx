@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cx } from "@/lib/cx";
+import { GlassIconButton } from "../buttons";
 
 export function NavBar({ title, collapsed, actions }: { title: string; collapsed: boolean; actions?: ReactNode }) {
   return (
@@ -31,17 +32,12 @@ export function PushHeader({ title, onBack, trailing }: { title: string; onBack:
       className="glass sticky top-0 z-[2] bg-[color-mix(in_srgb,var(--ios-bg)_80%,transparent)]"
       style={{ height: "calc(env(safe-area-inset-top) + 44px)" }}
     >
-      <button
-        type="button"
-        onClick={onBack}
-        className="absolute bottom-1 left-1.5 flex h-9 cursor-pointer items-center border-0 bg-transparent text-[17px] text-ios-tint active:opacity-50"
-      >
-        <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <GlassIconButton aria-label="Voltar" onClick={onBack} className="absolute bottom-1 left-4">
+        <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6" />
         </svg>
-        Voltar
-      </button>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-11 items-center justify-center text-[17px] font-semibold">
+      </GlassIconButton>
+      <div className="pointer-events-none absolute inset-x-16 bottom-0 flex h-11 items-center justify-center truncate text-[17px] font-semibold">
         {title}
       </div>
       {trailing && <div className="absolute right-4 bottom-1">{trailing}</div>}

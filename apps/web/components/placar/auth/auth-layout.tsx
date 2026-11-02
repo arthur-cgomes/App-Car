@@ -3,7 +3,7 @@ import { PushHeader } from "../shell/nav-bar";
 
 export function AuthScreen({ children, header }: { children: ReactNode; header?: { title: string; onBack: () => void } }) {
   return (
-    <div className="no-scrollbar fixed inset-0 overflow-y-auto bg-ios-bg">
+    <div className="no-scrollbar app-frame overflow-y-auto bg-ios-bg">
       {header && <PushHeader title={header.title} onBack={header.onBack} />}
       <div
         className="mx-auto flex min-h-full w-full max-w-[430px] flex-col gap-[26px] px-5"

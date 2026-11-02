@@ -8,7 +8,7 @@ export function Backdrop({ open, onClose, z = 20, strength = 30 }: { open: boole
     <div
       aria-hidden
       onClick={onClose}
-      className="fixed inset-0 transition-opacity duration-300"
+      className="app-frame transition-opacity duration-300"
       style={{
         zIndex: z,
         background: `color-mix(in srgb, #000 ${strength}%, transparent)`,
@@ -27,11 +27,11 @@ export function ActionPanel({ open, onCancel, cancelLabel = "Cancelar", children
       className="fixed inset-x-2.5 z-[31] mx-auto flex max-w-[480px] flex-col gap-2 transition-transform duration-400 ease-ios"
       style={{ bottom: "max(10px, env(safe-area-inset-bottom))", transform: open ? "translateY(0)" : "translateY(130%)" }}
     >
-      <div className="glass overflow-hidden rounded-[14px] bg-ios-glass">{children}</div>
+      <div className="glass overflow-hidden rounded-[26px] bg-ios-glass">{children}</div>
       <button
         type="button"
         onClick={onCancel}
-        className="h-[57px] w-full cursor-pointer rounded-[14px] border-0 bg-ios-cell text-xl font-semibold text-ios-tint active:bg-ios-fill"
+        className="h-[57px] w-full cursor-pointer rounded-full border-0 bg-ios-cell text-xl font-semibold text-ios-tint active:bg-ios-fill"
       >
         {cancelLabel}
       </button>
@@ -63,10 +63,10 @@ export function Banner({ banner, open, onTap }: { banner: { title: string; body:
     <div
       role="status"
       onClick={onTap}
-      className="fixed inset-x-2.5 z-40 mx-auto flex max-w-[480px] cursor-pointer items-center gap-2.5 rounded-[22px] bg-ios-glass px-3.5 py-3 shadow-[0_10px_30px_color-mix(in_srgb,var(--color-neutral-900)_20%,transparent)] transition-transform duration-500 ease-ios [-webkit-backdrop-filter:blur(24px)_saturate(180%)] [backdrop-filter:blur(24px)_saturate(180%)]"
+      className="fixed inset-x-2.5 z-40 mx-auto flex max-w-[480px] cursor-pointer items-center gap-2.5 rounded-[28px] bg-ios-glass px-3.5 py-3 shadow-[0_10px_30px_color-mix(in_srgb,var(--color-neutral-900)_20%,transparent)] transition-transform duration-500 ease-ios [-webkit-backdrop-filter:blur(24px)_saturate(180%)] [backdrop-filter:blur(24px)_saturate(180%)]"
       style={{ top: "calc(env(safe-area-inset-top) + 10px)", transform: open ? "translateY(0)" : "translateY(-180%)" }}
     >
-      <div className="grid size-[38px] flex-none place-items-center rounded-[9px] bg-accent-800 text-white" style={{ font: "600 18px/1 var(--font-barlow-condensed)", letterSpacing: ".04em" }}>
+      <div className="grid size-[38px] flex-none place-items-center rounded-[11px] bg-accent-800 text-white" style={{ font: "600 18px/1 var(--font-barlow-condensed)", letterSpacing: ".04em" }}>
         {banner?.icon}
       </div>
       <div className="min-w-0 flex-1 text-sm leading-[1.3]">
@@ -85,7 +85,7 @@ export function PhotoViewer({ src, onClose }: { src: string | null; onClose: () 
     <div
       onClick={onClose}
       inert={!src}
-      className="fixed inset-0 z-[45] flex flex-col bg-black transition-opacity duration-300"
+      className="app-frame z-[45] flex flex-col bg-black transition-opacity duration-300"
       style={{ opacity: src ? 1 : 0, pointerEvents: src ? "auto" : "none" }}
     >
       <div className="flex flex-none items-end justify-end px-4 pb-2" style={{ height: "calc(env(safe-area-inset-top) + 52px)" }}>

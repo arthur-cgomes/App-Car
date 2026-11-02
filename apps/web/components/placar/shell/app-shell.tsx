@@ -12,6 +12,7 @@ import { cx } from "@/lib/cx";
 import { MAINTENANCE_REMINDER_MONTHS, maintenanceReminder } from "@/lib/reminder-format";
 import { applyTheme, readTheme } from "@/lib/theme";
 import { Avatar } from "../avatar";
+import { GlassIconButton } from "../buttons";
 import { ExpenseDetail } from "../expense-detail";
 import { Icon } from "../icon";
 import { ActionPanel, ActionPanelButton, ActionPanelMessage, Backdrop, Banner, PhotoViewer } from "../overlays";
@@ -129,11 +130,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ShellContext.Provider value={api}>
-      <div className="fixed inset-0 overflow-clip bg-black">
+      <div className="app-frame overflow-clip bg-black">
         <div
           className={cx(
             "absolute inset-0 overflow-clip bg-ios-bg transition-[scale,translate,border-radius] duration-450 ease-ios",
-            sheetOpen && "max-md:translate-y-3.5 max-md:scale-[.92] max-md:rounded-[14px]",
+            sheetOpen && "max-md:translate-y-3.5 max-md:scale-[.92] max-md:rounded-[38px]",
           )}
         >
           <div className="absolute inset-0 transition-transform duration-450 ease-ios" style={{ transform: detailId ? "translateX(-30%)" : "none" }}>
@@ -157,32 +158,25 @@ export function AppShell({ children }: { children: ReactNode }) {
               actions={
                 activeTab === "/" ? (
                   <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      aria-label={accountTheme === "light" ? "Usar tema escuro" : "Usar tema claro"}
-                      onClick={toggleTheme}
-                      className="grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-ios-fill text-ios-tint active:opacity-60"
-                    >
+                    <GlassIconButton aria-label={accountTheme === "light" ? "Usar tema escuro" : "Usar tema claro"} onClick={toggleTheme}>
                       <Icon name={accountTheme === "light" ? "moon" : "sun"} size={18} stroke={2} />
-                    </button>
+                    </GlassIconButton>
                     <button
                       type="button"
                       aria-label="Perfil"
                       onClick={() => router.push("/profile")}
                       className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
                     >
-                      {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={32} />}
+                      {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={36} />}
                     </button>
                   </div>
                 ) : activeTab === "/expenses" || activeTab === "/reminders" ? (
-                  <button
-                    type="button"
+                  <GlassIconButton
                     aria-label={activeTab === "/expenses" ? "Novo gasto" : "Novo lembrete"}
                     onClick={() => (activeTab === "/expenses" ? api.openExpenseSheet() : vehicle && api.openReminderSheet())}
-                    className="flex h-8 cursor-pointer items-center border-0 bg-transparent text-ios-tint active:opacity-50"
                   >
                     <Icon name="plus" />
-                  </button>
+                  </GlassIconButton>
                 ) : null
               }
             />}

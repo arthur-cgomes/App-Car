@@ -170,7 +170,7 @@ function MonthYearWheels({ year, month, onChange }: { year: number; month: numbe
   const years = Array.from({ length: current + 11 - 1950 }, (_, i) => 1950 + i);
   return (
     <div className="relative flex h-[170px] justify-center gap-2 px-6">
-      <div aria-hidden className="pointer-events-none absolute inset-x-3 top-1/2 h-[34px] -translate-y-1/2 rounded-lg bg-ios-fill" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-3 top-1/2 h-[34px] -translate-y-1/2 rounded-full bg-ios-fill" />
       <Wheel label="Mês" items={MONTHS_LONG} index={month} onChange={(next) => onChange(year, next)} align="right" />
       <Wheel label="Ano" items={years.map(String)} index={years.indexOf(year)} onChange={(next) => onChange(years[next], month)} align="left" />
     </div>

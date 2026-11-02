@@ -21,13 +21,13 @@ export function SegmentedControl<T extends string>({ options, value, onChange, t
     <div
       role="tablist"
       className={cx(
-        "relative flex rounded-[9px] p-0.5",
+        "relative flex rounded-full p-0.5",
         tone === "fill" ? "bg-ios-fill" : "bg-[color-mix(in_srgb,var(--ios-label2)_16%,transparent)]",
       )}
     >
       <div
         aria-hidden
-        className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[7px] bg-ios-thumb shadow-[0_3px_8px_color-mix(in_srgb,#000_14%,transparent),0_0_0_.5px_color-mix(in_srgb,#000_4%,transparent)] transition-transform duration-300 ease-ios"
+        className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-ios-thumb shadow-[0_3px_8px_color-mix(in_srgb,#000_14%,transparent),0_0_0_.5px_color-mix(in_srgb,#000_4%,transparent)] transition-transform duration-300 ease-ios"
         style={{ transform: index === 1 ? "translateX(100%)" : "none" }}
       />
       {options.map((option) => (
@@ -39,7 +39,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, t
           disabled={option.disabled}
           onClick={() => onChange(option.value)}
           className={cx(
-            "relative h-8 flex-1 cursor-pointer border-0 bg-transparent text-[13px] text-ios-label disabled:cursor-default disabled:opacity-40",
+            "relative h-9 flex-1 cursor-pointer border-0 bg-transparent text-[13px] text-ios-label disabled:cursor-default disabled:opacity-40",
             option.value === value ? "font-semibold" : "font-medium",
           )}
         >

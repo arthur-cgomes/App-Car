@@ -14,7 +14,7 @@ export function CategoryGrid({ value, onChange }: { value: ExpenseCategoryCode; 
             type="button"
             aria-pressed={on}
             onClick={() => onChange(category.code)}
-            className="flex h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[14px] border-0 bg-ios-cell px-0.5 py-1 text-center text-[11px] leading-[1.15] transition-[box-shadow,transform] duration-200 active:scale-95"
+            className="flex h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[22px] border-0 bg-ios-cell px-0.5 py-1 text-center text-[11px] leading-[1.15] transition-[box-shadow,transform] duration-200 active:scale-95"
             style={{
               boxShadow: `inset 0 0 0 2px ${on ? "var(--color-accent)" : "transparent"}`,
               color: on ? "var(--ios-tintfg)" : "var(--ios-label)",

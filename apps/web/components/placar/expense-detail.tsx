@@ -5,6 +5,7 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fileUrl, uploadFile, useExpense, useSaveExpense, type Expense } from "@/lib/api/expenses";
 import { brTime, brl, km, longDate } from "@/lib/format";
+import { GlassTextButton } from "./buttons";
 import { CategoryIcon } from "./category-icon";
 import { Footnote, Group, Section, SectionHeader, ValueRow } from "./grouped-list";
 import { AddPhotoButton, PhotoThumb } from "./sheets/photo-picker";
@@ -57,13 +58,7 @@ export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDe
         onBack={onBack}
         trailing={
           expense && (
-            <button
-              type="button"
-              onClick={() => onEdit(expense)}
-              className="h-9 cursor-pointer border-0 bg-transparent text-[17px] text-ios-tint active:opacity-50"
-            >
-              Editar
-            </button>
+            <GlassTextButton onClick={() => onEdit(expense)}>Editar</GlassTextButton>
           )
         }
       />

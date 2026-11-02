@@ -10,6 +10,7 @@ import { uploadFile } from "@/lib/api/expenses";
 import { useActivateVehicle, useActiveVehicle, vehicleName } from "@/lib/api/vehicles";
 import { applyTheme } from "@/lib/theme";
 import { Avatar } from "../avatar";
+import { GlassTextButton } from "../buttons";
 import { Footnote, Group, Section, SectionHeader } from "../grouped-list";
 import { Icon } from "../icon";
 import { Backdrop } from "../overlays";
@@ -151,14 +152,9 @@ function ProfileForm({ me }: { me: Me }) {
       title="Perfil"
       backHref="/"
       trailing={
-        <button
-          type="button"
-          onClick={save}
-          className="h-9 cursor-pointer border-0 bg-transparent text-[17px] font-semibold active:opacity-50"
-          style={{ color: dirty && !busy ? "var(--ios-tint)" : "var(--ios-label3)" }}
-        >
+        <GlassTextButton onClick={save} disabled={!dirty || busy}>
           {busy ? "Salvando…" : "Salvar"}
-        </button>
+        </GlassTextButton>
       }
     >
       <div className="flex flex-col items-center gap-2">
