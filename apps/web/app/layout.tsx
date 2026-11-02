@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { DEFAULT_THEME, THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
+import { VIEWPORT_BOOTSTRAP_SCRIPT } from "@/lib/viewport";
 import "./globals.css";
 
 const barlowCondensed = Barlow_Condensed({
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="pt-BR" data-theme={DEFAULT_THEME} className={barlowCondensed.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: VIEWPORT_BOOTSTRAP_SCRIPT }} />
       </head>
       <body>
         <Providers>{children}</Providers>

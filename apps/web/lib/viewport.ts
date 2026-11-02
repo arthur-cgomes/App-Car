@@ -1,0 +1,1 @@
+export const VIEWPORT_BOOTSTRAP_SCRIPT = `(function(){try{if(navigator.standalone!==true)return;var r=document.documentElement;var f=function(){var p=matchMedia("(orientation: portrait)").matches;r.style.setProperty("--app-height",Math.max(innerHeight,p?screen.height:screen.width)+"px")};f();addEventListener("resize",f)}catch(e){}})()`;
