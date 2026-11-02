@@ -59,7 +59,7 @@ test/                                        Testes de integração (*.int-spec.
 | `fipe` | `/vehicles/:id/fipe` | Valor FIPE (Parallelum) guardado por mês de referência; sem código FIPE, consulta a placa uma vez a cada 30 dias; o valor informado pelo usuário (`fipe_manual`) prevalece; IPVA estimado em 4% |
 | `expenses` | `/vehicles/:id/expenses`, `/months`, `/:expenseId` | Gastos: categoria, local, data e hora, odômetro, litros, peças e mão de obra, fotos |
 | `files` | `/files`, `/files/:id` | Upload validado pelo conteúdo (imagem ou PDF, até 10 MB) e download só pelo dono |
-| `reminders` | `/vehicles/:id/reminders`, `/:reminderId/done`, `/undo` | Lembretes manuais e automáticos |
+| `reminders` | `/vehicles/:id/reminders`, `/:reminderId/done`, `/undo` | Lembretes manuais e automáticos (débitos, IPVA, revisão, troca de óleo `AUTO_OIL`, seguro) |
 | `documents` / `insurances` | `/vehicles/:id/documents`, `/insurances` | IPVA, licenciamento, CRLV e apólices (pagar vira gasto; fim da vigência vira lembrete) |
 | `emergency-contacts` | `/vehicles/:id/emergency-contacts` | Seguradora, guincho, concessionária da rodovia, oficina |
 | `dashboard` | `/vehicles/:id/summary` | Resumo do mês |
@@ -74,7 +74,7 @@ Tabelas em `snake_case`; toda tabela de negócio tem `id`, `created_at`, `update
 | Tabela | Conteúdo |
 |---|---|
 | `users` | Conta, tema, login por placa + PIN e canal do PIN (`pin_channel`), e-mail confirmado, veículo ativo |
-| `vehicles` | Placa, marca, modelo, versão, cor, ano, data e odômetro da compra, odômetro (`current_odometer` e `base_odometer`), FIPE (`fipe_code`, `fipe_value_cents`, `fipe_ref_month`, `fipe_manual`) |
+| `vehicles` | Placa, marca, modelo, versão, cor, ano, data e odômetro da compra, odômetro (`current_odometer` e `base_odometer`), FIPE (`fipe_code`, `fipe_value_cents`, `fipe_ref_month`, `fipe_manual`), intervalos de revisão e troca de óleo |
 | `expenses` | Gastos; `occurred_at`, `establishment`, `parts_cents`, `labor_cents`, `source` (`MANUAL`, `API`…) e `external_id` (idempotência da integração) |
 | `expense_categories` | 7 categorias fixas (criadas pela migração) |
 | `expense_attachments` / `files` / `fuel_logs` | Fotos da nota, arquivos enviados e litros |
@@ -91,7 +91,7 @@ app/
 ├── (auth)/                  login, signup, forgot-password, reset-password
 ├── (app)/                   Telas autenticadas, dentro do AppShell
 │   ├── page.tsx             Resumo
-│   ├── expenses/ reminders/ lookup/
+│   ├── expenses/ reminders/ lookup/ (Consulta oculta: redireciona ao Resumo)
 │   ├── vehicle/             Ficha: documents, insurances, fuel, contacts, reports
 │   └── profile/             Perfil e integrations (chaves de API)
 ├── layout.tsx manifest.ts robots.ts globals.css

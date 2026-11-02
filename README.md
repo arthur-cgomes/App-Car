@@ -68,24 +68,25 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 - **Entrar:** e-mail ou CPF + senha (8+ caracteres com maiúscula, número e caractere especial) ou **placa + PIN**, enviado por e-mail ou SMS conforme a preferência do usuário (por enquanto, só e-mail).
   O cadastro começa pelo e-mail: o usuário recebe um código e, com ele confirmado, informa nome, CPF (validado pelos
   dígitos verificadores), celular e senha. A conta só é criada no último passo.
-- **Resumo:** foto do perfil no canto superior esquerdo e, à direita, três botões: olho (mostra ou embaça todos os valores em
-  R$ do app; começam embaçados e a escolha fica salva no aparelho), velocímetro (atualiza só a km atual do carro) e sino (com ponto vermelho quando há lembretes vencidos, abre
+- **Resumo:** foto do perfil no canto superior esquerdo e, à direita, quatro botões: olho (mostra ou embaça todos os valores em
+  R$ do app; começam embaçados e a escolha fica salva no aparelho), velocímetro (atualiza só a km atual do carro), sol/lua (tema claro ou escuro) e sino (com ponto vermelho quando há lembretes vencidos, abre
   Lembretes já em "Vencidos"). Mostra o veículo ativo como marca + modelo + versão, gasto do mês, custo por km, próximos
   lembretes e atalhos para Ficha e contatos de emergência.
 - **Gastos:** lançamento com categoria, valor, data (seletor estilo iOS), local, odômetro, litros e fotos da nota.
   Em **Manutenção**, peças e mão de obra são informadas separadamente e o total é a soma das duas.
 - **Odômetro:** o km do carro é o maior entre o informado no cadastro/Ficha e o maior km lançado; corrigir ou excluir um
   lançamento recalcula.
-- **Lembretes:** automáticos (débitos, IPVA, revisão por km, renovação do seguro) e manuais, com filtro Todos |
+- **Lembretes:** automáticos (débitos, IPVA estimado em 4% da FIPE, como na Ficha, revisão por km, troca de óleo, renovação do seguro) e manuais, com filtro Todos |
   Vencidos; ao lançar uma manutenção o app oferece um lembrete para daqui a 3, 6 ou 12 meses.
 - **Ficha do veículo:** FIPE automática (pelo código ou, sem ele, pela placa) ou informada pelo usuário, com IPVA
-  estimado em 4% do valor, dados, intervalo de revisão, documentos, seguros, abastecimentos (consumo médio),
+  estimado em 4% do valor, dados, intervalo de revisão, troca de óleo (6 meses ou 5 mil km, 1 ano ou 10 mil km; o lembrete vence no que
+  chegar primeiro e recomeça na última troca de óleo lançada em Gastos), documentos, seguros, abastecimentos (consumo médio),
   contatos de emergência e relatórios (JSON, CSV e PDF) com o total de peças e mão de obra.
 - **Veículos:** cadastro com a placa e os dados do documento (marca entre as 10 mais vendidas, modelo, versão, cor, km com
   separador de milhar, data e odômetro da compra); com um provedor de placa, os dados podem vir da consulta. Fora do
   cadastro, a Volkswagen aparece abreviada como "VW".
-- **Consulta:** dados e débitos de qualquer placa, com "Lançar como gasto" (quando houver provedor de placa). O app só
-  acompanha débitos; não há pagamento.
+- **Consulta:** oculta por enquanto (fora da barra inferior e do Resumo; `/lookup` leva ao Resumo). A tela continua no
+  código (`consulta-screen.tsx`) para quando houver um provedor de placa.
 - **Erros:** falhas inesperadas aparecem como "Erro interno no servidor." e o detalhe fica só no log da API.
 - **Perfil:** dados pessoais, foto, tema, canal do PIN (e-mail ou SMS), confirmação do e-mail, link para trocar a senha, **Integrações** (chaves de
   API) e Privacidade (exportar dados e excluir conta; a exclusão definitiva acontece em 30 dias).
