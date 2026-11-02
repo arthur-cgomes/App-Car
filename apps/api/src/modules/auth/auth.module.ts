@@ -10,11 +10,12 @@ import { RefreshToken } from './entities/refresh-token.entity';
 import { OtpService } from './otp.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
+import { SignupService } from './signup.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, Vehicle, RefreshToken, AuthOtp, PasswordResetToken])],
   controllers: [AuthController, MeSecurityController],
-  providers: [AuthService, SessionService, OtpService, PasswordService],
+  providers: [AuthService, SessionService, OtpService, PasswordService, SignupService],
   exports: [SessionService, OtpService, PasswordService],
 })
 export class AuthModule {}

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PIN_CHANNELS, type PinChannel, isValidCpf, normalizeBrMobile, normalizeCpf } from '@monitoring-car/shared';
+import { PIN_CHANNELS, type PinChannel, normalizeBrMobile } from '@monitoring-car/shared';
 import { Transform } from 'class-transformer';
+import { CpfOrEmptyConstraint, toCpfOrNull } from '../../common/validators/cpf';
 import {
   IsBoolean,
   IsEmail,
@@ -12,20 +13,8 @@ import {
   Matches,
   MaxLength,
   Validate,
-  ValidatorConstraint,
-  type ValidatorConstraintInterface,
 } from 'class-validator';
 import type { UserTheme } from '../users/user.entity';
-
-@ValidatorConstraint({ name: 'cpfOrEmpty' })
-class CpfConstraint implements ValidatorConstraintInterface {
-  validate(value: unknown) {
-    return value === null || (typeof value === 'string' && isValidCpf(value));
-  }
-  defaultMessage() {
-    return 'CPF inválido.';
-  }
-}
 
 export class UpdateProfileDto {
   @ApiPropertyOptional()
@@ -44,8 +33,8 @@ export class UpdateProfileDto {
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? normalizeCpf(value) || null : value))
-  @Validate(CpfConstraint)
+  @Transform(toCpfOrNull)
+  @Validate(CpfOrEmptyConstraint)
   cpf?: string | null;
 
   @ApiPropertyOptional({ nullable: true, description: 'Foto enviada em POST /files' })

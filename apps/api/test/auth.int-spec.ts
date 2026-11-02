@@ -46,9 +46,44 @@ describe('Autenticação (integração)', () => {
     await request(server()).post('/v1/auth/login').send({ login: 'x@y.z', password: 'x' }).expect(403);
   });
 
-  describe('cadastro e confirmação do e-mail', () => {
-    it('valida os dados com as mensagens do app', async () => {
-      const res = await post('/v1/auth/register', { ...MARINA, cpf: '111.111.111-11', password: '123', acceptTerms: false }).expect(400);
+  describe('cadastro: e-mail e código primeiro, dados depois', () => {
+    const MARINA_DATA = { name: MARINA.name, cpf: MARINA.cpf, phone: MARINA.phone, password: MARINA.password, acceptTerms: MARINA.acceptTerms };
+    const signupToken = async (email: string) => {
+      await redis.del(`cd:signup-resend:${email}`);
+      await post('/v1/auth/signup/start', { email }).expect(200);
+      const res = await post('/v1/auth/signup/verify', { email, code: lastMailCode(mail, email) }).expect(200);
+      return res.body.signupToken as string;
+    };
+
+    it('envia o código para o e-mail antes de pedir qualquer outro dado', async () => {
+      const res = await post('/v1/auth/signup/start', { email: ' MARINA@email.com ' }).expect(200);
+      expect(res.body).toEqual({ channel: 'EMAIL', sentTo: 'ma••••@email.com', resendIn: 30 });
+      expect(mail.at(-1)).toMatchObject({ to: MARINA_EMAIL, subject: 'App Car: confirme seu e-mail' });
+      expect(await dataSource.getRepository(User).exists({ where: { email: MARINA_EMAIL } })).toBe(false);
+      expect((await post('/v1/auth/signup/start', { email: 'invalido' }).expect(400)).body.message).toEqual(['E-mail inválido.']);
+    });
+
+    it('limita o reenvio do código a cada 30 s', async () => {
+      const res = await post('/v1/auth/signup/start', { email: MARINA_EMAIL }).expect(429);
+      expect(res.body.message).toMatch(/^Aguarde \d+ s para pedir um novo código\.$/);
+    });
+
+    it('confere o código, conta as tentativas e devolve o comprovante uma única vez', async () => {
+      const wrong = await post('/v1/auth/signup/verify', { email: MARINA_EMAIL, code: '000000' }).expect(401);
+      expect(wrong.body).toMatchObject({ message: 'Código incorreto. Restam 4 tentativas.', attemptsLeft: 4 });
+
+      const code = lastMailCode(mail, MARINA_EMAIL);
+      const ok = await post('/v1/auth/signup/verify', { email: MARINA_EMAIL, code }).expect(200);
+      expect(ok.body).toEqual({ signupToken: expect.any(String), expiresIn: 1800 });
+      expect((await post('/v1/auth/signup/verify', { email: MARINA_EMAIL, code }).expect(401)).body.message).toBe('Código expirado. Peça um novo código.');
+    });
+
+    it('valida o comprovante e os dados, com CPF de verdade (não só 11 dígitos)', async () => {
+      const token = await signupToken(MARINA_EMAIL);
+      const noToken = await post('/v1/auth/register', { ...MARINA_DATA, signupToken: 'x'.repeat(40) }).expect(400);
+      expect(noToken.body.message).toBe('Sua confirmação de e-mail expirou. Comece o cadastro de novo.');
+
+      const res = await post('/v1/auth/register', { ...MARINA_DATA, signupToken: token, cpf: '123.456.789-00', password: '123', acceptTerms: false }).expect(400);
       expect(res.body.message).toEqual(
         expect.arrayContaining([
           'CPF inválido.',
@@ -56,57 +91,43 @@ describe('Autenticação (integração)', () => {
           'Aceite os Termos de uso e a Política de privacidade.',
         ]),
       );
+      for (const cpf of ['12345678901', '000.000.000-00', '529.982.247-25x', '52998224']) {
+        expect((await post('/v1/auth/register', { ...MARINA_DATA, signupToken: token, cpf }).expect(400)).body.message).toEqual(['CPF inválido.']);
+      }
+      const missing = await post('/v1/auth/register', { ...MARINA_DATA, signupToken: token, cpf: '', phone: '' }).expect(400);
+      expect(missing.body.message).toEqual(expect.arrayContaining(['Informe seu CPF.', 'Informe seu celular.']));
     });
 
-    it('cria a conta, abre a sessão e envia o código de confirmação por e-mail', async () => {
-      const res = await marina.post('/v1/auth/register').set(CSRF).send(MARINA).expect(201);
-      expect(res.body).toMatchObject({ user: { name: 'Marina Souza', email: MARINA_EMAIL }, channel: 'EMAIL', sentTo: 'ma••••@email.com', resendIn: 30 });
+    it('cria a conta já com o e-mail confirmado e abre a sessão', async () => {
+      const token = await signupToken(MARINA_EMAIL);
+      const res = await marina.post('/v1/auth/register').set(CSRF).send({ ...MARINA_DATA, signupToken: token }).expect(201);
+      expect(res.body).toEqual({ user: { id: expect.any(String), name: 'Marina Souza', email: MARINA_EMAIL } });
       expect(cookieNames(res)).toEqual(expect.arrayContaining(['access_token', 'refresh_token', 'placar_session']));
-      expect(mail.at(-1)).toMatchObject({ to: MARINA_EMAIL, subject: 'App Car: confirme seu e-mail' });
-      expect(sms.lastTo(MARINA_PHONE)).toBeUndefined();
 
       const me = await marina.get('/v1/me').expect(200);
-      expect(me.body).toMatchObject({ cpf: '52998224725', phone: MARINA_PHONE, phoneVerifiedAt: null, emailVerifiedAt: null, pinChannel: 'EMAIL', pinLoginEnabled: true, smsAvailable: true });
+      expect(me.body).toMatchObject({ cpf: '52998224725', phone: MARINA_PHONE, phoneVerifiedAt: null, pinChannel: 'EMAIL', pinLoginEnabled: true, smsAvailable: true });
+      expect(me.body.emailVerifiedAt).not.toBeNull();
+      await marina.post('/v1/auth/email/send').set(CSRF).expect(400);
     });
 
-    it('exige celular e CPF no cadastro', async () => {
-      const res = await post('/v1/auth/register', { ...MARINA, email: 'sem-dados@email.com', cpf: '', phone: '' }).expect(400);
-      expect(res.body.message).toEqual(expect.arrayContaining(['Informe seu CPF.', 'Informe seu celular.']));
+    it('não aceita e-mail ou CPF repetidos', async () => {
+      await redis.del(`cd:signup-resend:${MARINA_EMAIL}`);
+      expect((await post('/v1/auth/signup/start', { email: MARINA_EMAIL }).expect(409)).body.message).toBe('Já existe uma conta com este e-mail.');
+      const token = await signupToken('outra@email.com');
+      expect((await post('/v1/auth/register', { ...MARINA_DATA, signupToken: token }).expect(409)).body.message).toBe('Já existe uma conta com este CPF.');
     });
 
-    it('se o e-mail de confirmação falha, não cria a conta nem abre sessão', async () => {
+    it('se o e-mail não puder ser enviado, nada é guardado', async () => {
       const mailer = app.get(MailProvider);
       const send = mailer.send;
       mailer.send = async () => {
         throw new Error('SMTP fora do ar');
       };
-      const res = await post('/v1/auth/register', { ...MARINA, email: 'falha@email.com', cpf: '111.444.777-35', phone: '(21) 97777-6666' }).expect(500);
+      await post('/v1/auth/signup/start', { email: 'falha@email.com' }).expect(500);
       mailer.send = send;
-      expect(cookieNames(res)).toHaveLength(0);
+      await post('/v1/auth/signup/verify', { email: 'falha@email.com', code: '123456' }).expect(401);
       expect(await dataSource.getRepository(User).exists({ where: { email: 'falha@email.com' } })).toBe(false);
-      await post('/v1/auth/register', { ...MARINA, email: 'falha@email.com', cpf: '111.444.777-35', phone: '(21) 97777-6666' }).expect(201);
-    });
-
-    it('não aceita e-mail ou CPF repetidos', async () => {
-      expect((await post('/v1/auth/register', MARINA).expect(409)).body.message).toBe('Já existe uma conta com este e-mail.');
-      expect((await post('/v1/auth/register', { ...MARINA, email: 'outra@email.com' }).expect(409)).body.message).toBe(
-        'Já existe uma conta com este CPF.',
-      );
-    });
-
-    it('limita o reenvio do código a cada 30 s', async () => {
-      const res = await marina.post('/v1/auth/email/send').set(CSRF).expect(429);
-      expect(res.body.message).toMatch(/^Aguarde \d+ s para pedir um novo código\.$/);
-    });
-
-    it('confirma o e-mail com o código e conta as tentativas', async () => {
-      const wrong = await marina.post('/v1/auth/email/verify').set(CSRF).send({ code: '000000' }).expect(401);
-      expect(wrong.body).toMatchObject({ message: 'Código incorreto. Restam 4 tentativas.', attemptsLeft: 4 });
-
-      await marina.post('/v1/auth/email/verify').set(CSRF).send({ code: lastMailCode(mail, MARINA_EMAIL) }).expect(200);
-      const me = await marina.get('/v1/me').expect(200);
-      expect(me.body.emailVerifiedAt).not.toBeNull();
-      await marina.post('/v1/auth/email/send').set(CSRF).expect(400);
+      await redis.del(...(await redis.keys('rl:signup-ip:*')), ...(await redis.keys('rl:register-ip:*')));
     });
 
     it('confirma o celular por SMS quando o SMS está disponível', async () => {
@@ -277,7 +298,7 @@ describe('Autenticação (integração)', () => {
     const logs = await dataSource.getRepository(AuditLog).find();
     const events = logs.filter((log) => log.action === 'SECURITY').map((log) => log.snapshot?.event);
     expect(events).toEqual(
-      expect.arrayContaining(['ACCOUNT_CREATED', 'EMAIL_VERIFIED', 'PHONE_VERIFIED', 'LOGIN', 'LOGIN_FAILED', 'PIN_SENT', 'PASSWORD_RESET_REQUESTED', 'PASSWORD_CHANGED']),
+      expect.arrayContaining(['ACCOUNT_CREATED', 'PHONE_VERIFIED', 'LOGIN', 'LOGIN_FAILED', 'PIN_SENT', 'PASSWORD_RESET_REQUESTED', 'PASSWORD_CHANGED']),
     );
     expect(JSON.stringify(logs)).not.toMatch(/\$argon2/);
   });

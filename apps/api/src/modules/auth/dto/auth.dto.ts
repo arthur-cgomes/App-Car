@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PASSWORD_RULES_MESSAGE, isStrongPassword, isValidCpf, normalizeBrMobile, normalizeCpf, normalizePlate } from '@monitoring-car/shared';
+import { PASSWORD_RULES_MESSAGE, isStrongPassword, normalizeBrMobile, normalizePlate } from '@monitoring-car/shared';
 import { Transform } from 'class-transformer';
+import { CpfConstraint, toCpf } from '../../../common/validators/cpf';
 import {
   Equals,
   IsEmail,
@@ -31,16 +32,6 @@ class StrongPasswordConstraint implements ValidatorConstraintInterface {
   }
 }
 
-@ValidatorConstraint({ name: 'cpf' })
-class CpfConstraint implements ValidatorConstraintInterface {
-  validate(value: unknown) {
-    return typeof value === 'string' && isValidCpf(value);
-  }
-  defaultMessage() {
-    return 'CPF inválido.';
-  }
-}
-
 export class LoginDto {
   @ApiProperty({ description: 'E-mail ou CPF', example: 'marina@email.com' })
   @Transform(trim)
@@ -56,23 +47,38 @@ export class LoginDto {
   password: string;
 }
 
+const toEmail = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
+
+export class SignupStartDto {
+  @ApiProperty({ example: 'marina@email.com' })
+  @Transform(toEmail)
+  @IsEmail({}, { message: 'E-mail inválido.' })
+  @MaxLength(254)
+  email: string;
+}
+
+export class SignupVerifyDto extends SignupStartDto {
+  @ApiProperty({ example: '123456' })
+  @Matches(/^\d{6}$/, { message: 'Digite os 6 dígitos do código.' })
+  code: string;
+}
+
 export class RegisterDto {
+  @ApiProperty({ description: 'Token devolvido por /auth/signup/verify depois de confirmar o e-mail' })
+  @IsString()
+  @Length(20, 2000, { message: 'Confirme seu e-mail para continuar.' })
+  signupToken: string;
+
   @ApiProperty({ example: 'Marina Souza' })
   @Transform(trim)
   @IsString()
   @Length(2, 120, { message: 'Informe seu nome.' })
   name: string;
 
-  @ApiProperty({ example: 'marina@email.com' })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
-  @IsEmail({}, { message: 'E-mail inválido.' })
-  @MaxLength(254)
-  email: string;
-
   @ApiProperty({ example: '529.982.247-25' })
   @IsNotEmpty({ message: 'Informe seu CPF.' })
+  @Transform(toCpf)
   @Validate(CpfConstraint)
-  @Transform(({ value }) => (typeof value === 'string' ? normalizeCpf(value) : value))
   cpf: string;
 
   @ApiProperty({ example: '(21) 98765-4821' })

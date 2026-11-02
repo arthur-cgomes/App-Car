@@ -1,9 +1,9 @@
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { isValidCpf, normalizeCpf } from '@monitoring-car/shared';
 import type { Request, Response } from 'express';
-import { DataSource, IsNull, MoreThan, Not, Repository } from 'typeorm';
+import { IsNull, MoreThan, Not, Repository } from 'typeorm';
 import { AuditService } from '../../audit/audit.service';
 import { currentRequestContext } from '../../common/context/request-context';
 import { Env } from '../../config/env';
@@ -18,6 +18,7 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { OTP_RESEND_SECONDS, OtpService } from './otp.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
+import { SignupService } from './signup.service';
 
 const LOGIN_MAX_FAILURES = 5;
 const LOGIN_LOCK_SECONDS = 15 * 60;
@@ -46,11 +47,14 @@ export class AuthService {
     private readonly mail: MailProvider,
     private readonly audit: AuditService,
     private readonly config: ConfigService<Env, true>,
-    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly signup: SignupService,
   ) {}
 
   async register(dto: RegisterDto, response: Response) {
-    if (await this.users.exists({ where: { email: dto.email } })) {
+    const { ip } = currentRequestContext();
+    await this.limiter.consume(`register-ip:${ip}`, 10, 3600, () => 'Muitas tentativas. Tente novamente mais tarde.');
+    const email = await this.signup.verifiedEmail(dto.signupToken);
+    if (await this.users.exists({ where: { email } })) {
       throw new ConflictException('Já existe uma conta com este e-mail.');
     }
     if (await this.users.exists({ where: { cpf: dto.cpf } })) {
@@ -60,26 +64,20 @@ export class AuthService {
       throw new ConflictException('Este celular já está em uso em outra conta.');
     }
 
-    const passwordHash = await this.passwords.hash(dto.password);
-    const delivery = this.otps.email(dto.email);
-    const user = await this.dataSource.transaction(async (manager) => {
-      const created = await manager.save(
-        manager.create(User, {
-          name: dto.name,
-          email: dto.email,
-          cpf: dto.cpf,
-          phone: dto.phone,
-          passwordHash,
-          termsAcceptedAt: new Date(),
-        }),
-      );
-      await this.otps.issue({ userId: created.id, purpose: 'EMAIL_VERIFY', ...delivery }, manager);
-      return created;
-    });
-    await this.limiter.cooldown(`email-verify:${user.id}`, OTP_RESEND_SECONDS, resendMessage);
+    const user = await this.users.save(
+      this.users.create({
+        name: dto.name,
+        email,
+        cpf: dto.cpf,
+        phone: dto.phone,
+        passwordHash: await this.passwords.hash(dto.password),
+        emailVerifiedAt: new Date(),
+        termsAcceptedAt: new Date(),
+      }),
+    );
     await this.audit.logSecurityEvent('ACCOUNT_CREATED', {}, user.id);
     await this.sessions.start(response, user.id);
-    return { user: toSessionUser(user), channel: delivery.channel, sentTo: delivery.sentTo, resendIn: OTP_RESEND_SECONDS };
+    return { user: toSessionUser(user) };
   }
 
   async login(dto: LoginDto, response: Response) {

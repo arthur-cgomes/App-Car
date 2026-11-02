@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { maskBrPhone, maskEmail, type PinChannel } from '@monitoring-car/shared';
 import { randomUUID } from 'node:crypto';
-import { EntityManager, IsNull, MoreThan, Repository } from 'typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
 import { currentRequestContext } from '../../common/context/request-context';
 import { Env } from '../../config/env';
 import { RateLimiter } from '../../infra/redis/rate-limiter';
@@ -110,14 +110,13 @@ export class OtpService {
     return null;
   }
 
-  async issue({ userId, purpose, channel, target, vehicleId = null }: IssueOptions, manager?: EntityManager) {
-    const otps = manager ? manager.getRepository(AuthOtp) : this.otps;
+  async issue({ userId, purpose, channel, target, vehicleId = null }: IssueOptions) {
     await this.limiter.consume(`otp-target:${target}`, OTP_PER_TARGET_PER_HOUR, 3600, () => 'Muitos códigos enviados. Tente novamente mais tarde.');
-    await otps.update({ userId, purpose, consumedAt: IsNull(), expiresAt: MoreThan(new Date()) }, { expiresAt: new Date() });
+    await this.otps.update({ userId, purpose, consumedAt: IsNull(), expiresAt: MoreThan(new Date()) }, { expiresAt: new Date() });
 
     const id = randomUUID();
     const code = randomCode();
-    await otps.insert({
+    await this.otps.insert({
       id,
       userId,
       purpose,

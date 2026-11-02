@@ -5,12 +5,30 @@ import { AuthUser } from '../../common/auth/auth-user';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
-import { CodeDto, ForgotPasswordDto, LoginDto, PinRequestDto, PinVerifyDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
+import { CodeDto, ForgotPasswordDto, LoginDto, PinRequestDto, PinVerifyDto, RegisterDto, ResetPasswordDto, SignupStartDto, SignupVerifyDto } from './dto/auth.dto';
+import { SignupService } from './signup.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly signup: SignupService,
+  ) {}
+
+  @Public()
+  @Post('signup/start')
+  @HttpCode(200)
+  startSignup(@Body() dto: SignupStartDto) {
+    return this.signup.start(dto.email);
+  }
+
+  @Public()
+  @Post('signup/verify')
+  @HttpCode(200)
+  verifySignup(@Body() dto: SignupVerifyDto) {
+    return this.signup.verify(dto.email, dto.code);
+  }
 
   @Public()
   @Post('register')

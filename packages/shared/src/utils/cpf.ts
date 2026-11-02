@@ -13,6 +13,15 @@ export function isValidCpf(input: string): boolean {
   return digit(9) === Number(cpf[9]) && digit(10) === Number(cpf[10]);
 }
 
+const CPF_FORMAT = /^(\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})$/;
+
+export function parseCpf(input: string): string | null {
+  const value = input.trim();
+  if (!CPF_FORMAT.test(value)) return null;
+  const cpf = normalizeCpf(value);
+  return isValidCpf(cpf) ? cpf : null;
+}
+
 export function formatCpf(input: string): string {
   const d = normalizeCpf(input).slice(0, 11);
   return d
