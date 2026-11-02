@@ -25,7 +25,7 @@ export function ActionPanel({ open, onCancel, cancelLabel = "Cancelar", children
       role="dialog"
       inert={!open}
       className="fixed inset-x-2.5 z-[31] mx-auto flex max-w-[480px] flex-col gap-2 transition-transform duration-400 ease-ios"
-      style={{ bottom: "max(34px, calc(env(safe-area-inset-bottom) + 8px))", transform: open ? "translateY(0)" : "translateY(130%)" }}
+      style={{ bottom: "max(10px, env(safe-area-inset-bottom))", transform: open ? "translateY(0)" : "translateY(130%)" }}
     >
       <div className="glass overflow-hidden rounded-[14px] bg-ios-glass">{children}</div>
       <button

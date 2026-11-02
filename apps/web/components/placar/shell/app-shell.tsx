@@ -1,8 +1,9 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useMe } from "@/lib/api/auth";
+import { accountApi, useMe, type Me } from "@/lib/api/auth";
 import { errorMessage } from "@/lib/api/client";
 import { useActivateVehicle, useActiveVehicle, vehicleName } from "@/lib/api/vehicles";
 import { useDeleteExpense, type Expense } from "@/lib/api/expenses";
@@ -38,6 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const deleteReminder = useDeleteReminder();
   const saveReminder = useSaveReminder();
   const me = useMe();
+  const queryClient = useQueryClient();
   const { vehicle, vehicles } = useActiveVehicle();
   const activate = useActivateVehicle();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,6 +71,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (accountTheme && accountTheme !== readTheme()) applyTheme(accountTheme);
   }, [accountTheme]);
+
+  const toggleTheme = () => {
+    const next = accountTheme === "light" ? "DARK" : "LIGHT";
+    applyTheme(next === "LIGHT" ? "light" : "dark");
+    queryClient.setQueryData<Me>(["me"], (current) => current && { ...current, theme: next });
+    accountApi.update({ theme: next }).catch((failure) => toast(errorMessage(failure)));
+  };
 
   const toast = useCallback((message: string) => {
     const next = { title: "App Car", body: message, icon: "A" };
@@ -137,7 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="no-scrollbar absolute inset-0 overflow-y-auto"
               style={{
                 paddingTop: isTabRoot ? "calc(env(safe-area-inset-top) + 44px)" : 0,
-                paddingBottom: "calc(env(safe-area-inset-bottom) + 130px)",
+                paddingBottom: "calc(var(--tabbar-bottom) + 96px)",
               }}
             >
               {isTabRoot ? <div className="mx-auto w-full max-w-[720px]">{children}</div> : children}
@@ -147,14 +156,24 @@ export function AppShell({ children }: { children: ReactNode }) {
               collapsed={collapsed}
               actions={
                 activeTab === "/" ? (
-                  <button
-                    type="button"
-                    aria-label="Perfil"
-                    onClick={() => router.push("/profile")}
-                    className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
-                  >
-                    {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={32} />}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      aria-label={accountTheme === "light" ? "Usar tema escuro" : "Usar tema claro"}
+                      onClick={toggleTheme}
+                      className="grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-ios-fill text-ios-tint active:opacity-60"
+                    >
+                      <Icon name={accountTheme === "light" ? "moon" : "sun"} size={18} stroke={2} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Perfil"
+                      onClick={() => router.push("/profile")}
+                      className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
+                    >
+                      {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={32} />}
+                    </button>
+                  </div>
                 ) : activeTab === "/expenses" || activeTab === "/reminders" ? (
                   <button
                     type="button"

@@ -68,7 +68,7 @@ export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDe
         }
       />
       {expense && (
-        <div className="mx-auto flex max-w-[720px] flex-col gap-6 pt-2" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 130px)" }}>
+        <div className="mx-auto flex max-w-[720px] flex-col gap-6 pt-2" style={{ paddingBottom: "calc(var(--tabbar-bottom) + 96px)" }}>
           <div className="flex flex-col items-center gap-2.5 px-6 py-2 text-center">
             <CategoryIcon code={expense.category} size="lg" />
             <div className="font-rounded text-[40px] font-bold tracking-[-.02em] tabular-nums">{brl(expense.amountCents)}</div>

@@ -24,19 +24,21 @@ import { FieldRow } from "./field-row";
 import { FormError } from "./form-error";
 import { resendLabel, useCountdown } from "./use-countdown";
 
-type Step = "data" | "password" | "email" | "vehicle";
+type Step = "email" | "code" | "data" | "password" | "vehicle";
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+const PREVIOUS: Partial<Record<Step, Step>> = { code: "email", data: "code", password: "data" };
 
 export function SignupScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const countdown = useCountdown();
-  const [step, setStep] = useState<Step>("data");
+  const [step, setStep] = useState<Step>("email");
   const [form, setForm] = useState({ name: "", email: "", cpf: "", phone: "", password: "", confirm: "" });
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [sentTo, setSentTo] = useState("");
   const [code, setCode] = useState("");
+  const [signupToken, setSignupToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -63,9 +65,35 @@ export function SignupScreen() {
     router.refresh();
   };
 
+  const sendCode = () =>
+    run(async () => {
+      const sent = await authApi.signupStart(form.email.trim());
+      setSentTo(sent.sentTo);
+      setCode("");
+      countdown.start(sent.resendIn);
+      setStep("code");
+    });
+
+  const submitEmail = () => {
+    if (!EMAIL_PATTERN.test(form.email.trim())) return setError("E-mail inválido.");
+    sendCode();
+  };
+
+  const submitCode = () => {
+    if (code.length < 6) return setError("Digite os 6 dígitos do código.");
+    run(async () => {
+      try {
+        setSignupToken((await authApi.signupVerify(form.email.trim(), code)).signupToken);
+        setStep("data");
+      } catch (failure) {
+        setCode("");
+        throw failure;
+      }
+    });
+  };
+
   const submitData = () => {
     if (form.name.trim().length < 2) return setError("Informe seu nome.");
-    if (!EMAIL_PATTERN.test(form.email.trim())) return setError("E-mail inválido.");
     if (!form.cpf.trim()) return setError("Informe seu CPF.");
     if (!isValidCpf(form.cpf)) return setError("CPF inválido.");
     if (!form.phone.trim()) return setError("Informe seu celular.");
@@ -78,63 +106,40 @@ export function SignupScreen() {
     if (form.password !== form.confirm) return setError("As senhas não conferem.");
     if (!acceptTerms) return setError("Aceite os Termos de uso e a Política de privacidade.");
     run(async () => {
-      const created = await authApi.register({
+      await authApi.register({
+        signupToken,
         name: form.name.trim(),
-        email: form.email.trim(),
         cpf: form.cpf,
         phone: form.phone,
         password: form.password,
         acceptTerms,
       });
-      setSentTo(created.sentTo);
-      countdown.start(created.resendIn);
-      setStep("email");
+      setStep("vehicle");
     });
   };
-
-  const submitCode = () => {
-    if (code.length < 6) return setError("Digite os 6 dígitos do código.");
-    run(async () => {
-      try {
-        await authApi.verifyEmail(code);
-        setStep("vehicle");
-      } catch (failure) {
-        setCode("");
-        throw failure;
-      }
-    });
-  };
-
-  const resend = () =>
-    countdown.seconds === 0 &&
-    run(async () => {
-      const sent = await authApi.sendEmailCode();
-      countdown.start(sent.resendIn);
-    });
 
   const back =
-    step === "data"
+    step === "email"
       ? () => router.push("/login")
-      : step === "password"
+      : PREVIOUS[step]
         ? () => {
             setError("");
-            setStep("data");
+            setStep(PREVIOUS[step]!);
           }
         : undefined;
 
   return (
     <AuthScreen header={back ? { title: "Criar conta", onBack: back } : undefined}>
-      {step === "data" && (
+      {step === "email" && (
         <form
           className="flex flex-col gap-3.5"
           onSubmit={(event) => {
             event.preventDefault();
-            submitData();
+            submitEmail();
           }}
         >
-          <StepIntro title="Seus dados">Passo 1 de 4</StepIntro>
+          <StepIntro title="Seu e-mail">Passo 1 de 5 · enviaremos um código para confirmar que o e-mail é seu.</StepIntro>
           <Group>
-            <FieldRow label="Nome" value={form.name} onChange={(e) => set("name", e.target.value)} autoComplete="name" maxLength={120} placeholder="Obrigatório" />
             <FieldRow
               label="E-mail"
               type="email"
@@ -145,7 +150,48 @@ export function SignupScreen() {
               maxLength={254}
               placeholder="voce@email.com"
             />
-            <FieldRow label="CPF" value={form.cpf} onChange={(e) => set("cpf", formatCpf(e.target.value))} inputMode="numeric" placeholder="Obrigatório" />
+          </Group>
+          <PrimaryButton type="submit" disabled={busy}>
+            {busy ? "Enviando…" : "Enviar código"}
+          </PrimaryButton>
+        </form>
+      )}
+
+      {step === "code" && (
+        <div className="flex flex-col gap-4">
+          <StepIntro title="Confirme seu e-mail">Passo 2 de 5 · enviamos um código para {sentTo}.</StepIntro>
+          <PinInput
+            value={code}
+            onChange={(value) => {
+              setCode(value);
+              setError("");
+            }}
+          />
+          <PrimaryButton onClick={submitCode} disabled={busy}>
+            {busy ? "Verificando…" : "Confirmar"}
+          </PrimaryButton>
+          <LinkButton
+            onClick={() => countdown.seconds === 0 && sendCode()}
+            className="self-end px-1 py-2 tabular-nums"
+            style={{ color: countdown.seconds > 0 ? "var(--ios-label3)" : "var(--ios-tint)" }}
+          >
+            {resendLabel(countdown.seconds)}
+          </LinkButton>
+        </div>
+      )}
+
+      {step === "data" && (
+        <form
+          className="flex flex-col gap-3.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitData();
+          }}
+        >
+          <StepIntro title="Seus dados">Passo 3 de 5 · e-mail {form.email.trim()} confirmado.</StepIntro>
+          <Group>
+            <FieldRow label="Nome" value={form.name} onChange={(e) => set("name", e.target.value)} autoComplete="name" maxLength={120} placeholder="Obrigatório" />
+            <FieldRow label="CPF" value={form.cpf} onChange={(e) => set("cpf", formatCpf(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" />
             <FieldRow
               label="Celular"
               value={form.phone}
@@ -168,7 +214,7 @@ export function SignupScreen() {
             submitPassword();
           }}
         >
-          <StepIntro title="Crie uma senha">Passo 2 de 4 · {PASSWORD_HINT}</StepIntro>
+          <StepIntro title="Crie uma senha">Passo 4 de 5 · {PASSWORD_HINT}</StepIntro>
           <Group>
             <FieldRow label="Senha" type="password" value={form.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" maxLength={128} placeholder="Obrigatória" />
             <FieldRow label="Confirmar" type="password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} autoComplete="new-password" maxLength={128} placeholder="Repita a senha" />
@@ -192,33 +238,10 @@ export function SignupScreen() {
         </form>
       )}
 
-      {step === "email" && (
-        <div className="flex flex-col gap-4">
-          <StepIntro title="Confirme seu e-mail">Passo 3 de 4 · enviamos um código para {sentTo}.</StepIntro>
-          <PinInput
-            value={code}
-            onChange={(value) => {
-              setCode(value);
-              setError("");
-            }}
-          />
-          <PrimaryButton onClick={submitCode} disabled={busy}>
-            {busy ? "Verificando…" : "Confirmar"}
-          </PrimaryButton>
-          <LinkButton
-            onClick={resend}
-            className="self-end px-1 py-2 tabular-nums"
-            style={{ color: countdown.seconds > 0 ? "var(--ios-label3)" : "var(--ios-tint)" }}
-          >
-            {resendLabel(countdown.seconds)}
-          </LinkButton>
-        </div>
-      )}
-
       {step === "vehicle" && (
         <div className="flex flex-col gap-3.5">
           <StepIntro title="Seu carro">
-            Passo 4 de 4 · cadastre seu veículo com a placa e os dados do documento: marca, modelo, versão, cor, km e data da compra.
+            Passo 5 de 5 · conta criada! Cadastre seu veículo com a placa e os dados do documento: marca, modelo, versão, cor, km e data da compra.
           </StepIntro>
           <PrimaryButton onClick={() => goHome("/?add=vehicle")}>Cadastrar veículo</PrimaryButton>
           <LinkButton onClick={() => goHome()} className="self-center p-2">
@@ -229,7 +252,7 @@ export function SignupScreen() {
 
       <FormError message={error} />
 
-      {step === "data" && (
+      {step === "email" && (
         <div className="mt-auto text-center text-[15px] text-ios-label2">
           Já tem conta?{" "}
           <Link href="/login" className="p-1 font-semibold text-ios-tint no-underline active:opacity-50">

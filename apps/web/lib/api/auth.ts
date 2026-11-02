@@ -36,8 +36,10 @@ export const authApi = {
   login: (login: string, password: string) => api<{ user: SessionUser }>("/auth/login", { body: { login, password } }),
   requestPin: (plate: string) => api<CodeSent>("/auth/pin/request", { body: { plate } }),
   verifyPin: (plate: string, code: string) => api<{ user: SessionUser }>("/auth/pin/verify", { body: { plate, code } }),
-  register: (body: { name: string; email: string; cpf?: string; phone?: string; password: string; acceptTerms: boolean }) =>
-    api<CodeSent & { user: SessionUser }>("/auth/register", { body }),
+  signupStart: (email: string) => api<CodeSent>("/auth/signup/start", { body: { email } }),
+  signupVerify: (email: string, code: string) => api<{ signupToken: string; expiresIn: number }>("/auth/signup/verify", { body: { email, code } }),
+  register: (body: { signupToken: string; name: string; cpf: string; phone: string; password: string; acceptTerms: boolean }) =>
+    api<{ user: SessionUser }>("/auth/register", { body }),
   sendEmailCode: () => api<CodeSent>("/auth/email/send", { method: "POST" }),
   verifyEmail: (code: string) => api<{ emailVerified: true }>("/auth/email/verify", { body: { code } }),
   sendPhoneCode: () => api<CodeSent>("/auth/phone/send", { method: "POST" }),

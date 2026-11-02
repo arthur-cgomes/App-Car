@@ -17,7 +17,7 @@ export function TabBar({ active, onAdd }: { active: TabHref; onAdd: () => void }
   return (
     <div
       className="absolute inset-x-4 z-10 mx-auto flex max-w-[480px] items-center gap-2.5"
-      style={{ bottom: "max(24px, env(safe-area-inset-bottom))" }}
+      style={{ bottom: "var(--tabbar-bottom)" }}
     >
       <nav
         aria-label="Navegação principal"

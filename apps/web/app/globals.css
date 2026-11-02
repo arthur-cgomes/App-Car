@@ -32,6 +32,7 @@
   --danger-soft: oklch(0.62 0.19 27);
 
   --ios-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --tabbar-bottom: max(10px, calc(env(safe-area-inset-bottom) - 12px));
 }
 
 :root,

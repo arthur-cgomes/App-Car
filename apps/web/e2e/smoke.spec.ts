@@ -27,10 +27,29 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+const MAILPIT_URL = process.env.E2E_MAILPIT_URL ?? "http://localhost:8025";
+
+async function codeSentTo(email: string) {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const response = await fetch(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}&limit=1`);
+    const { messages } = (await response.json()) as { messages: { Snippet: string }[] };
+    const code = messages[0] && /\b(\d{6})\b/.exec(messages[0].Snippet)?.[1];
+    if (code) return code;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Nenhum código no Mailpit para ${email}`);
+}
+
 async function signUp(page: Page, email: string) {
   await page.goto("/signup");
-  await page.getByLabel("Nome").fill("Pessoa E2E");
   await page.getByLabel("E-mail").fill(email);
+  await page.getByRole("button", { name: "Enviar código" }).click();
+  await expect(page.getByText("Confirme seu e-mail")).toBeVisible();
+  await page.getByLabel("Código de 6 dígitos").fill(await codeSentTo(email));
+  await page.getByRole("button", { name: "Confirmar" }).click();
+
+  await expect(page.getByText("Seus dados")).toBeVisible();
+  await page.getByLabel("Nome").fill("Pessoa E2E");
   await page.getByLabel("CPF").fill(randomCpf());
   await page.getByLabel("Celular").fill(`119${random(8)}`);
   await page.getByRole("button", { name: "Continuar" }).click();
@@ -44,7 +63,7 @@ async function signUp(page: Page, email: string) {
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByLabel("Confirmar").fill(PASSWORD);
   await page.getByRole("button", { name: "Criar conta" }).click();
-  await expect(page.getByText("Confirme seu e-mail")).toBeVisible();
+  await expect(page.getByText("Seu carro")).toBeVisible();
 }
 
 test("cadastro, veículo, gasto, perfil e novo login", async ({ page }) => {
