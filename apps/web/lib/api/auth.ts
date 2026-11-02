@@ -18,6 +18,7 @@ export interface Me extends SessionUser {
   pinLoginEnabled: boolean;
   pinChannel: PinChannel;
   smsAvailable: boolean;
+  plateLookupAvailable: boolean;
   activeVehicleId: string | null;
   avatarFileId: string | null;
 }

@@ -3,6 +3,7 @@
 import type { ExpenseCategoryCode } from "@monitoring-car/shared";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
+import { formatKmInput } from "@/lib/format";
 import { useSaveReminder, type Reminder } from "@/lib/api/reminders";
 import { CategoryGrid } from "../category-grid";
 import { Chip } from "../chip";
@@ -43,7 +44,7 @@ export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, on
   const [title, setTitle] = useState(reminder?.title ?? "");
   const [category, setCategory] = useState<ExpenseCategoryCode>(reminder?.category ?? "MAINTENANCE");
   const [dueDate, setDueDate] = useState(reminder?.dueDate ?? "");
-  const [dueOdometer, setDueOdometer] = useState(reminder?.dueOdometer ? String(reminder.dueOdometer) : "");
+  const [dueOdometer, setDueOdometer] = useState(reminder?.dueOdometer ? formatKmInput(String(reminder.dueOdometer)) : "");
   const [repeat, setRepeat] = useState<Repeat>(repeatOf(reminder));
   const [error, setError] = useState("");
 
@@ -123,7 +124,7 @@ export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, on
             <input
               value={dueOdometer}
               onChange={(event) => {
-                setDueOdometer(event.target.value);
+                setDueOdometer(formatKmInput(event.target.value));
                 setError("");
               }}
               inputMode="numeric"

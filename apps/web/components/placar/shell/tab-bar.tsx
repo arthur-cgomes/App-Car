@@ -6,9 +6,9 @@ import { Icon, type IconName } from "../icon";
 
 export const TABS = [
   { href: "/", title: "Resumo", icon: "house" },
-  { href: "/gastos", title: "Gastos", icon: "receipt" },
-  { href: "/lembretes", title: "Lembretes", icon: "bell" },
-  { href: "/consulta", title: "Consulta", icon: "search" },
+  { href: "/expenses", title: "Gastos", icon: "receipt" },
+  { href: "/reminders", title: "Lembretes", icon: "bell" },
+  { href: "/lookup", title: "Consulta", icon: "search" },
 ] as const satisfies readonly { href: string; title: string; icon: IconName }[];
 
 export type TabHref = (typeof TABS)[number]["href"];

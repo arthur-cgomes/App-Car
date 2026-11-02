@@ -4,6 +4,7 @@ import { VEHICLE_BRANDS, formatPlate, isValidPlate } from "@monitoring-car/share
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { plateApi, useAddVehicle, vehiclePlace, vehicleYears, type NewVehicle, type PlateVehicleData, type Vehicle } from "@/lib/api/vehicles";
+import { formatKmInput } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { LinkButton, PrimaryButton } from "../buttons";
 import { Chip } from "../chip";
@@ -16,19 +17,20 @@ import { Sheet } from "./sheet";
 const OTHER_BRAND = "Outra";
 
 interface VehicleSheetProps {
+  lookupAvailable: boolean;
   open: boolean;
   vehicles: Vehicle[];
   onCancel: () => void;
   onAdded: (vehicle: Vehicle) => void;
 }
 
-export function VehicleSheet({ open, vehicles, onCancel, onAdded }: VehicleSheetProps) {
+export function VehicleSheet({ open, lookupAvailable, vehicles, onCancel, onAdded }: VehicleSheetProps) {
   const today = useToday() ?? undefined;
   const addVehicle = useAddVehicle();
   const [plate, setPlate] = useState("");
   const [busy, setBusy] = useState(false);
   const [found, setFound] = useState<PlateVehicleData | null>(null);
-  const [manual, setManual] = useState(false);
+  const [manual, setManual] = useState(!lookupAvailable);
   const [form, setForm] = useState({ brand: "", otherBrand: "", model: "", version: "", color: "", odometer: "", purchaseDate: "" });
   const [error, setError] = useState("");
 
@@ -83,7 +85,7 @@ export function VehicleSheet({ open, vehicles, onCancel, onAdded }: VehicleSheet
 
   const ownership = (
     <>
-      <InputCell label="Odômetro atual" value={form.odometer} onChange={(e) => set("odometer", e.target.value)} inputMode="numeric" placeholder="km" />
+      <InputCell label="Odômetro atual" value={form.odometer} onChange={(e) => set("odometer", formatKmInput(e.target.value))} inputMode="numeric" placeholder="km" />
       <DatePickerCell label="Data da compra" value={form.purchaseDate} onChange={(value) => set("purchaseDate", value)} optional max={today} />
     </>
   );
@@ -109,7 +111,7 @@ export function VehicleSheet({ open, vehicles, onCancel, onAdded }: VehicleSheet
             }}
           />
           {!found && !manual && <PrimaryButton onClick={search}>{busy ? "Buscando…" : "Buscar dados do veículo"}</PrimaryButton>}
-          {!found && (
+          {!found && lookupAvailable && (
             <LinkButton
               onClick={() => {
                 setManual((current) => !current);

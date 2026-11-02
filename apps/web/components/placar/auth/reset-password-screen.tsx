@@ -37,11 +37,11 @@ export function ResetPasswordScreen() {
   };
 
   return (
-    <AuthScreen header={{ title: "Nova senha", onBack: () => router.push("/entrar") }}>
+    <AuthScreen header={{ title: "Nova senha", onBack: () => router.push("/login") }}>
       {done ? (
         <div className="flex flex-col gap-4">
           <StepIntro title="Senha alterada">Por segurança, encerramos as sessões abertas. Entre com a nova senha.</StepIntro>
-          <PrimaryButton onClick={() => router.push("/entrar")}>Entrar</PrimaryButton>
+          <PrimaryButton onClick={() => router.push("/login")}>Entrar</PrimaryButton>
         </div>
       ) : (
         <form

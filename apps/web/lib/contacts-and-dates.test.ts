@@ -16,3 +16,13 @@ describe("contatos de emergência", () => {
     expect(telHref(" +55 21 99999-0001")).toBe("tel:+5521999990001");
   });
 });
+
+describe("odômetro", () => {
+  it("mostra o km com ponto de milhar enquanto digita", async () => {
+    const { formatKmInput } = await import("@/lib/format");
+    expect(formatKmInput("108000")).toBe("108.000");
+    expect(formatKmInput("108.0005")).toBe("1.080.005");
+    expect(formatKmInput("0042")).toBe("42");
+    expect(formatKmInput("abc")).toBe("");
+  });
+});

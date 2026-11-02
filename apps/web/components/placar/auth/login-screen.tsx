@@ -152,7 +152,7 @@ export function LoginScreen() {
           <PrimaryButton type="submit" disabled={busy}>
             {busy ? "Entrando…" : "Entrar"}
           </PrimaryButton>
-          <Link href="/esqueci-senha" className="self-center p-2 text-[15px] text-ios-tint no-underline active:opacity-50">
+          <Link href="/forgot-password" className="self-center p-2 text-[15px] text-ios-tint no-underline active:opacity-50">
             Esqueci minha senha
           </Link>
         </form>
@@ -222,7 +222,7 @@ export function LoginScreen() {
 
       <div className="mt-auto text-center text-[15px] text-ios-label2">
         Novo por aqui?{" "}
-        <Link href="/criar-conta" className="p-1 font-semibold text-ios-tint no-underline active:opacity-50">
+        <Link href="/signup" className="p-1 font-semibold text-ios-tint no-underline active:opacity-50">
           Criar conta
         </Link>
       </div>

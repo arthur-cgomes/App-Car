@@ -5,9 +5,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
+import { useMe } from "@/lib/api/auth";
 import { plateApi, usePlateHistory, vehiclePlace, vehicleYears } from "@/lib/api/vehicles";
 import { brl } from "@/lib/format";
 import { PrimaryButton } from "../buttons";
+import { EmptyState } from "../empty-state";
 import { Footnote, Group, Section, SectionHeader, ValueRow } from "../grouped-list";
 import { LargeTitle } from "../large-title";
 import { PlateInput, cleanPlateInput } from "../plate";
@@ -16,16 +18,17 @@ import { useShell } from "../shell/shell-context";
 export function ConsultaScreen() {
   const shell = useShell();
   const queryClient = useQueryClient();
+  const me = useMe();
   const history = usePlateHistory();
   const searchParams = useSearchParams();
-  const [initialPlate] = useState(() => cleanPlateInput(searchParams.get("placa") ?? ""));
+  const [initialPlate] = useState(() => cleanPlateInput(searchParams.get("plate") ?? ""));
   const [plate, setPlate] = useState(initialPlate);
   const [submitted, setSubmitted] = useState(isValidPlate(initialPlate) ? initialPlate : null);
   const [inputError, setInputError] = useState("");
 
   const consultation = useQuery({
     queryKey: ["plates", submitted, "lookup"],
-    enabled: !!submitted,
+    enabled: !!submitted && me.data?.plateLookupAvailable !== false,
     staleTime: 5 * 60_000,
     retry: false,
     queryFn: async () => {
@@ -51,6 +54,19 @@ export function ConsultaScreen() {
   };
 
   const openDebts = result?.debts.filter((d) => d.status === "OPEN") ?? [];
+
+  if (me.data && !me.data.plateLookupAvailable) {
+    return (
+      <div className="flex flex-col gap-[18px]">
+        <LargeTitle title="Consulta" subtitle="Dados do veículo, IPVA, licenciamento e multas." />
+        <EmptyState
+          icon="search"
+          title="Consulta em breve"
+          description="A consulta de débitos e dados pela placa ainda não está disponível. Enquanto isso, lance IPVA, licenciamento e multas em Gastos e acompanhe os vencimentos em Lembretes."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[18px]">

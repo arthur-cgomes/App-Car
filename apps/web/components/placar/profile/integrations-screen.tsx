@@ -32,7 +32,7 @@ export function IntegrationsScreen() {
   };
 
   return (
-    <PushPage title="Integrações" backHref="/perfil" trailing={<HeaderAddButton label="Nova chave" onClick={openSheet} />}>
+    <PushPage title="Integrações" backHref="/profile" trailing={<HeaderAddButton label="Nova chave" onClick={openSheet} />}>
       {created && (
         <Section header={<SectionHeader>Chave criada</SectionHeader>} footer={<Footnote>Copie agora: por segurança ela não aparece de novo.</Footnote>}>
           <Group className="mx-4">

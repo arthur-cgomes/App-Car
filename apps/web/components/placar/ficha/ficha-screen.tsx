@@ -118,11 +118,11 @@ export function FichaScreen() {
       </Section>
 
       <Group className="mx-4">
-        <NavRow href="/veiculo/documentos" icon="file-text" title="Documentos" />
-        <NavRow href="/veiculo/seguros" icon="shield" title="Seguros" />
-        <NavRow href="/veiculo/contatos" icon="phone" title="Contatos de emergência" />
-        <NavRow href="/veiculo/abastecimentos" icon="fuel" title="Abastecimentos" />
-        <NavRow href="/veiculo/relatorios" icon="chart" title="Relatórios" />
+        <NavRow href="/vehicle/documents" icon="file-text" title="Documentos" />
+        <NavRow href="/vehicle/insurances" icon="shield" title="Seguros" />
+        <NavRow href="/vehicle/contacts" icon="phone" title="Contatos de emergência" />
+        <NavRow href="/vehicle/fuel" icon="fuel" title="Abastecimentos" />
+        <NavRow href="/vehicle/reports" icon="chart" title="Relatórios" />
       </Group>
 
       <Group className="mx-4">

@@ -109,6 +109,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     [openSheet, toast, vehicle],
   );
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("add") !== "vehicle") return;
+    router.replace("/");
+    api.openVehicleSheet();
+  }, [api, router]);
+
   const shownBanner = banner ?? lastBanner;
   const shownAction = action ?? lastAction;
 
@@ -144,16 +150,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <button
                     type="button"
                     aria-label="Perfil"
-                    onClick={() => router.push("/perfil")}
+                    onClick={() => router.push("/profile")}
                     className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
                   >
                     {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={32} />}
                   </button>
-                ) : activeTab === "/gastos" || activeTab === "/lembretes" ? (
+                ) : activeTab === "/expenses" || activeTab === "/reminders" ? (
                   <button
                     type="button"
-                    aria-label={activeTab === "/gastos" ? "Novo gasto" : "Novo lembrete"}
-                    onClick={() => (activeTab === "/gastos" ? api.openExpenseSheet() : vehicle && api.openReminderSheet())}
+                    aria-label={activeTab === "/expenses" ? "Novo gasto" : "Novo lembrete"}
+                    onClick={() => (activeTab === "/expenses" ? api.openExpenseSheet() : vehicle && api.openReminderSheet())}
                     className="flex h-8 cursor-pointer items-center border-0 bg-transparent text-ios-tint active:opacity-50"
                   >
                     <Icon name="plus" />
@@ -248,6 +254,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <VehicleSheet
             key={sheet.key}
             open={sheetOpen}
+            lookupAvailable={me.data?.plateLookupAvailable ?? true}
             vehicles={vehicles}
             onCancel={() => setSheetOpen(false)}
             onAdded={(added) => {

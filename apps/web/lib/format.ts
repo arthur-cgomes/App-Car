@@ -6,6 +6,10 @@ export const MONTHS_LONG = ["janeiro", "fevereiro", "março", "abril", "maio", "
 export const brl = formatCents;
 export const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 export const km = (value: number) => `${value.toLocaleString("pt-BR")} km`;
+export const formatKmInput = (raw: string) => {
+  const digits = raw.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 7);
+  return digits ? Number(digits).toLocaleString("pt-BR") : "";
+};
 export const brTime = (iso: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 export const longDate = (iso: string) => `${+iso.slice(8, 10)} de ${MONTHS_LONG[+iso.slice(5, 7) - 1]} de ${iso.slice(0, 4)}`;

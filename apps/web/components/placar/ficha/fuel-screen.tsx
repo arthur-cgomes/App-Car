@@ -19,7 +19,7 @@ export function FuelScreen() {
   const { data, isLoading } = useFuelStats(vehicle?.id);
 
   return (
-    <PushPage title="Abastecimentos" backHref="/veiculo">
+    <PushPage title="Abastecimentos" backHref="/vehicle">
       {isLoading && <div className="mx-4 h-[160px] animate-pulse rounded-2xl bg-ios-cell" />}
       {data && (
         <>

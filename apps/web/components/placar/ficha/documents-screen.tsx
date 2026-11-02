@@ -42,7 +42,7 @@ export function DocumentsScreen() {
   };
 
   return (
-    <PushPage title="Documentos" backHref="/veiculo" trailing={vehicle && <HeaderAddButton label="Novo documento" onClick={() => openSheet()} />}>
+    <PushPage title="Documentos" backHref="/vehicle" trailing={vehicle && <HeaderAddButton label="Novo documento" onClick={() => openSheet()} />}>
       {isLoading && <div className="mx-4 h-[140px] animate-pulse rounded-xl bg-ios-cell" />}
       {data?.length === 0 && (
         <div className="mx-4">

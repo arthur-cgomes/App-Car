@@ -5,6 +5,18 @@ const letters = (count: number) => Array.from({ length: count }, () => String.fr
 
 const PASSWORD = "Placar-e2e-2026!";
 
+function randomCpf() {
+  const digits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+  const check = (base: number[]) => {
+    const sum = base.reduce((total, digit, index) => total + digit * (base.length + 1 - index), 0);
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  digits.push(check(digits));
+  digits.push(check(digits));
+  return digits.join("");
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     document.addEventListener("DOMContentLoaded", () => {
@@ -16,9 +28,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function signUp(page: Page, email: string) {
-  await page.goto("/criar-conta");
+  await page.goto("/signup");
   await page.getByLabel("Nome").fill("Pessoa E2E");
   await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("CPF").fill(randomCpf());
   await page.getByLabel("Celular").fill(`119${random(8)}`);
   await page.getByRole("button", { name: "Continuar" }).click();
 
@@ -67,7 +80,7 @@ test("cadastro, veículo, gasto, perfil e novo login", async ({ page }) => {
 
   await page.getByRole("button", { name: "Sair da conta" }).click();
   await page.getByRole("button", { name: "Sair", exact: true }).click();
-  await expect(page).toHaveURL(/\/entrar/);
+  await expect(page).toHaveURL(/\/login/);
   await page.waitForLoadState("networkidle");
 
   await page.getByLabel("E-mail").fill(email);
@@ -78,6 +91,6 @@ test("cadastro, veículo, gasto, perfil e novo login", async ({ page }) => {
 });
 
 test("rotas do app exigem sessão", async ({ page }) => {
-  await page.goto("/perfil");
-  await expect(page).toHaveURL(/\/entrar/);
+  await page.goto("/profile");
+  await expect(page).toHaveURL(/\/login/);
 });

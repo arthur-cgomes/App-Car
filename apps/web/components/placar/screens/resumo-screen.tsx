@@ -106,7 +106,7 @@ function VehicleSummary({ vehicle, today }: { vehicle: Vehicle; today: string })
         </button>
         <button
           type="button"
-          onClick={() => router.push(`/consulta?placa=${vehicle.plate}`)}
+          onClick={() => router.push(`/lookup?plate=${vehicle.plate}`)}
           className="flex h-11 w-full cursor-pointer items-center gap-2 border-0 border-t-[0.5px] border-ios-sep bg-transparent px-4 text-[15px] text-ios-tint active:bg-ios-fill"
         >
           <Icon name="search" />
@@ -114,7 +114,7 @@ function VehicleSummary({ vehicle, today }: { vehicle: Vehicle; today: string })
         </button>
         <button
           type="button"
-          onClick={() => router.push("/veiculo")}
+          onClick={() => router.push("/vehicle")}
           className="flex h-11 w-full cursor-pointer items-center gap-2 border-0 border-t-[0.5px] border-ios-sep bg-transparent px-4 text-[15px] text-ios-tint active:bg-ios-fill"
         >
           <Icon name="card" />
@@ -122,7 +122,7 @@ function VehicleSummary({ vehicle, today }: { vehicle: Vehicle; today: string })
         </button>
         <button
           type="button"
-          onClick={() => router.push("/veiculo/contatos")}
+          onClick={() => router.push("/vehicle/contacts")}
           className="flex h-11 w-full cursor-pointer items-center gap-2 border-0 border-t-[0.5px] border-ios-sep bg-transparent px-4 text-[15px] text-ios-tint active:bg-ios-fill"
         >
           <Icon name="phone" />
@@ -188,7 +188,7 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <SectionTitle title="Próximos" onSeeAll={() => router.push("/lembretes")} />
+        <SectionTitle title="Próximos" onSeeAll={() => router.push("/reminders")} />
         {upcoming.items.length === 0 ? (
           <InlineEmpty>Nenhum compromisso pendente.</InlineEmpty>
         ) : (
@@ -197,7 +197,7 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
               <button
                 key={reminder.id}
                 type="button"
-                onClick={() => router.push("/lembretes")}
+                onClick={() => router.push("/reminders")}
                 className="group/row flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent py-0 pr-0 pl-4 text-left active:bg-ios-fill"
               >
                 <CategoryIcon code={reminder.category} />
@@ -243,7 +243,7 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <SectionTitle title="Recentes" onSeeAll={() => router.push("/gastos")} />
+        <SectionTitle title="Recentes" onSeeAll={() => router.push("/expenses")} />
         {summary.recent.length === 0 ? (
           <InlineEmpty>Nenhum lançamento ainda.</InlineEmpty>
         ) : (

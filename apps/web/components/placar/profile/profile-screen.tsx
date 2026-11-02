@@ -128,7 +128,7 @@ function ProfileForm({ me }: { me: Me }) {
 
   const leave = () => {
     client.clear();
-    window.location.replace("/entrar");
+    window.location.replace("/login");
   };
 
   const askDeletion = () =>
@@ -328,7 +328,7 @@ function ProfileForm({ me }: { me: Me }) {
 
       <Section header={<SectionHeader>Integrações</SectionHeader>} footer={<Footnote>Chaves de API para outro app lançar abastecimentos aqui.</Footnote>}>
         <Group className="mx-4 text-[17px]">
-          <Link href="/perfil/integracoes" className={`${ROW} text-ios-label no-underline active:bg-ios-fill`}>
+          <Link href="/profile/integrations" className={`${ROW} text-ios-label no-underline active:bg-ios-fill`}>
             <span className="flex-1">Chaves de API</span>
             <span className="text-ios-label3">
               <Icon name="right" />

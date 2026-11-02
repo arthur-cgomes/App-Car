@@ -7,7 +7,6 @@ import {
   formatCpf,
   isStrongPassword,
   isValidCpf,
-  isValidPlate,
   normalizeBrMobile,
 } from "@monitoring-car/shared";
 import Link from "next/link";
@@ -15,11 +14,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authApi } from "@/lib/api/auth";
-import { api, errorMessage } from "@/lib/api/client";
+import { errorMessage } from "@/lib/api/client";
 import { LinkButton, PrimaryButton } from "../buttons";
 import { Footnote, Group } from "../grouped-list";
 import { PinInput } from "../pin-input";
-import { PlateInput } from "../plate";
 import { Switch } from "../switch";
 import { AuthScreen, StepIntro } from "./auth-layout";
 import { FieldRow } from "./field-row";
@@ -39,8 +37,6 @@ export function SignupScreen() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [sentTo, setSentTo] = useState("");
   const [code, setCode] = useState("");
-  const [plate, setPlate] = useState("");
-  const [odometer, setOdometer] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -61,17 +57,19 @@ export function SignupScreen() {
     }
   };
 
-  const goHome = () => {
+  const goHome = (target = "/") => {
     queryClient.clear();
-    router.replace("/");
+    router.replace(target);
     router.refresh();
   };
 
   const submitData = () => {
     if (form.name.trim().length < 2) return setError("Informe seu nome.");
     if (!EMAIL_PATTERN.test(form.email.trim())) return setError("E-mail inválido.");
-    if (form.cpf && !isValidCpf(form.cpf)) return setError("CPF inválido.");
-    if (form.phone.trim() && !normalizeBrMobile(form.phone)) return setError("Celular incompleto.");
+    if (!form.cpf.trim()) return setError("Informe seu CPF.");
+    if (!isValidCpf(form.cpf)) return setError("CPF inválido.");
+    if (!form.phone.trim()) return setError("Informe seu celular.");
+    if (!normalizeBrMobile(form.phone)) return setError("Celular incompleto.");
     setStep("password");
   };
 
@@ -83,8 +81,8 @@ export function SignupScreen() {
       const created = await authApi.register({
         name: form.name.trim(),
         email: form.email.trim(),
-        cpf: form.cpf || undefined,
-        phone: form.phone.trim() || undefined,
+        cpf: form.cpf,
+        phone: form.phone,
         password: form.password,
         acceptTerms,
       });
@@ -114,19 +112,9 @@ export function SignupScreen() {
       countdown.start(sent.resendIn);
     });
 
-  const submitVehicle = () => {
-    if (!isValidPlate(plate)) return setError("Placa inválida. Use ABC1D23 ou ABC1234.");
-    run(async () => {
-      await api("/vehicles", {
-        body: { plate, currentOdometer: Number.parseInt(odometer.replace(/\D/g, ""), 10) || 0 },
-      });
-      goHome();
-    });
-  };
-
   const back =
     step === "data"
-      ? () => router.push("/entrar")
+      ? () => router.push("/login")
       : step === "password"
         ? () => {
             setError("");
@@ -157,14 +145,14 @@ export function SignupScreen() {
               maxLength={254}
               placeholder="voce@email.com"
             />
-            <FieldRow label="CPF" value={form.cpf} onChange={(e) => set("cpf", formatCpf(e.target.value))} inputMode="numeric" placeholder="Opcional" />
+            <FieldRow label="CPF" value={form.cpf} onChange={(e) => set("cpf", formatCpf(e.target.value))} inputMode="numeric" placeholder="Obrigatório" />
             <FieldRow
               label="Celular"
               value={form.phone}
               onChange={(e) => set("phone", formatBrPhoneInput(e.target.value))}
               inputMode="tel"
               autoComplete="tel-national"
-              placeholder="Opcional"
+              placeholder="(00) 00000-0000"
             />
           </Group>
           <Footnote>Com o CPF você também pode entrar sem o e-mail. Com a placa, você entra com um PIN enviado ao seu e-mail.</Footnote>
@@ -229,24 +217,11 @@ export function SignupScreen() {
 
       {step === "vehicle" && (
         <div className="flex flex-col gap-3.5">
-          <StepIntro title="Seu carro">Passo 4 de 4 · com a placa você também entra com um PIN.</StepIntro>
-          <div className="flex flex-col items-center gap-3.5 rounded-2xl bg-ios-cell px-4 py-[18px]">
-            <PlateInput
-              value={plate}
-              onChange={(value) => {
-                setPlate(value);
-                setError("");
-              }}
-              label="Placa do veículo"
-            />
-          </div>
-          <Group>
-            <FieldRow label="Odômetro" labelWidth={120} value={odometer} onChange={(e) => setOdometer(e.target.value)} inputMode="numeric" placeholder="km" className="text-right" />
-          </Group>
-          <PrimaryButton onClick={submitVehicle} disabled={busy}>
-            {busy ? "Adicionando…" : "Adicionar veículo"}
-          </PrimaryButton>
-          <LinkButton onClick={goHome} className="self-center p-2">
+          <StepIntro title="Seu carro">
+            Passo 4 de 4 · cadastre seu veículo com a placa e os dados do documento: marca, modelo, versão, cor, km e data da compra.
+          </StepIntro>
+          <PrimaryButton onClick={() => goHome("/?add=vehicle")}>Cadastrar veículo</PrimaryButton>
+          <LinkButton onClick={() => goHome()} className="self-center p-2">
             Pular por enquanto
           </LinkButton>
         </div>
@@ -257,7 +232,7 @@ export function SignupScreen() {
       {step === "data" && (
         <div className="mt-auto text-center text-[15px] text-ios-label2">
           Já tem conta?{" "}
-          <Link href="/entrar" className="p-1 font-semibold text-ios-tint no-underline active:opacity-50">
+          <Link href="/login" className="p-1 font-semibold text-ios-tint no-underline active:opacity-50">
             Entrar
           </Link>
         </div>

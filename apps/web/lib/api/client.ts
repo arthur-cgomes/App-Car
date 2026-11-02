@@ -50,7 +50,7 @@ export async function api<T>(path: string, options: { method?: string; body?: un
     if (await refreshSession()) {
       response = await request(path, init);
     } else {
-      window.location.assign(new URL("/entrar", window.location.origin).href);
+      window.location.assign(new URL("/login", window.location.origin).href);
       throw new ApiError(401, "Sessão expirada. Entre novamente.");
     }
   }

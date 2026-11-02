@@ -42,7 +42,7 @@ export function ReportsScreen() {
   const { data, isLoading } = useReport(vehicle?.id, from, to);
 
   return (
-    <PushPage title="Relatórios" backHref="/veiculo">
+    <PushPage title="Relatórios" backHref="/vehicle">
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-0.5">
         {PERIODS.map((option) => (
           <Chip key={option.value} active={period === option.value} onClick={() => setPeriod(option.value)}>

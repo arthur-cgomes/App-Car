@@ -30,7 +30,7 @@ export function InsurancesScreen() {
   const previous = data?.filter((insurance) => insurance !== current) ?? [];
 
   return (
-    <PushPage title="Seguros" backHref="/veiculo" trailing={vehicle && <HeaderAddButton label="Nova apólice" onClick={() => openSheet()} />}>
+    <PushPage title="Seguros" backHref="/vehicle" trailing={vehicle && <HeaderAddButton label="Nova apólice" onClick={() => openSheet()} />}>
       {isLoading && <div className="mx-4 h-[200px] animate-pulse rounded-xl bg-ios-cell" />}
       {data?.length === 0 && (
         <div className="mx-4">

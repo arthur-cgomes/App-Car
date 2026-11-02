@@ -11,7 +11,7 @@ import {
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fileUrl, uploadFile, useSaveExpense, type Expense } from "@/lib/api/expenses";
-import { brl, parseMoneyInput } from "@/lib/format";
+import { brl, formatKmInput, parseMoneyInput } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { CategoryGrid } from "../category-grid";
 import { Chip } from "../chip";
@@ -68,7 +68,7 @@ function fromExpense(expense: Expense): ExpenseFormValues {
     amount: (expense.amountCents / 100).toFixed(2).replace(".", ","),
     date: expense.date,
     description: expense.description === EXPENSE_CATEGORY_BY_CODE[expense.category].name ? "" : expense.description,
-    odometer: expense.odometer ? String(expense.odometer) : "",
+    odometer: expense.odometer ? formatKmInput(String(expense.odometer)) : "",
     establishment: expense.establishment ?? "",
     parts: expense.partsCents === null ? "" : centsInput(expense.partsCents),
     labor: expense.laborCents === null ? "" : centsInput(expense.laborCents),
@@ -234,7 +234,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
         <DatePickerCell label="Data" value={form.date} onChange={(value) => set("date", value)} />
         <label className={CELL_LABEL}>
           <span>Odômetro</span>
-          <input value={form.odometer} onChange={(event) => set("odometer", event.target.value)} inputMode="numeric" placeholder="Opcional" className={CELL_INPUT} />
+          <input value={form.odometer} onChange={(event) => set("odometer", formatKmInput(event.target.value))} inputMode="numeric" placeholder="km" className={CELL_INPUT} />
         </label>
         {isFuel && (
           <>

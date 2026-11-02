@@ -28,7 +28,7 @@ export function ContactsScreen() {
   const groups = EMERGENCY_CONTACT_KINDS.map((kind) => ({ kind, contacts: data?.filter((c) => c.kind === kind.code) ?? [] })).filter((g) => g.contacts.length);
 
   return (
-    <PushPage title="Contatos de emergência" backHref="/veiculo" trailing={vehicle && <HeaderAddButton label="Novo contato" onClick={() => openSheet()} />}>
+    <PushPage title="Contatos de emergência" backHref="/vehicle" trailing={vehicle && <HeaderAddButton label="Novo contato" onClick={() => openSheet()} />}>
       {isLoading && <div className="mx-4 h-[140px] animate-pulse rounded-xl bg-ios-cell" />}
       {data?.length === 0 && (
         <div className="mx-4">

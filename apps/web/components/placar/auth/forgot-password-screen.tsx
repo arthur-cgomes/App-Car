@@ -32,13 +32,13 @@ export function ForgotPasswordScreen() {
   };
 
   return (
-    <AuthScreen header={{ title: "Esqueci minha senha", onBack: () => router.push("/entrar") }}>
+    <AuthScreen header={{ title: "Esqueci minha senha", onBack: () => router.push("/login") }}>
       {sent ? (
         <div className="flex flex-col gap-4">
           <StepIntro title="Confira seu e-mail">
             Se houver uma conta com esses dados, enviamos um link para o e-mail cadastrado. O link vale por 30 minutos.
           </StepIntro>
-          <PrimaryButton onClick={() => router.push("/entrar")}>Voltar para o login</PrimaryButton>
+          <PrimaryButton onClick={() => router.push("/login")}>Voltar para o login</PrimaryButton>
         </div>
       ) : (
         <form

@@ -37,6 +37,25 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API_URL}/:path*` }];
   },
+  async redirects() {
+    return [
+      ["/entrar", "/login"],
+      ["/criar-conta", "/signup"],
+      ["/esqueci-senha", "/forgot-password"],
+      ["/nova-senha", "/reset-password"],
+      ["/gastos", "/expenses"],
+      ["/lembretes", "/reminders"],
+      ["/consulta", "/lookup"],
+      ["/perfil/integracoes", "/profile/integrations"],
+      ["/perfil", "/profile"],
+      ["/veiculo/abastecimentos", "/vehicle/fuel"],
+      ["/veiculo/contatos", "/vehicle/contacts"],
+      ["/veiculo/documentos", "/vehicle/documents"],
+      ["/veiculo/relatorios", "/vehicle/reports"],
+      ["/veiculo/seguros", "/vehicle/insurances"],
+      ["/veiculo", "/vehicle"],
+    ].map(([source, destination]) => ({ source, destination, permanent: true }));
+  },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
