@@ -23,7 +23,7 @@ Content-Type: application/json
 | `amount` | número | sim | Valor em reais, até 2 casas decimais (ex.: `189.90`) |
 | `occurredAt` | ISO 8601 com fuso | sim | Data e hora do abastecimento (ex.: `2026-11-01T14:32:00-03:00`). Não pode estar mais de 1 dia no futuro |
 | `plate` | texto | não | Placa do veículo da conta (`RIO2A18` ou `RIO-2A18`). Sem ela, vai para o veículo ativo |
-| `liters` | número | não | Litros, até 2 casas (habilita o consumo médio) |
+| `liters` | número | não | Litros, até 3 casas (ex.: `37.145`; habilita o consumo médio) |
 | `fullTank` | booleano | não | Tanque cheio |
 | `odometer` | inteiro | não | Odômetro em km (atualiza o km do carro se for maior) |
 | `externalId` | texto (até 80) | não | Id no seu app. Reenviar o mesmo id não cria outro gasto |
