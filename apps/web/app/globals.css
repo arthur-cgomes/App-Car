@@ -96,7 +96,7 @@
 
 html,
 body {
-  background: #000;
+  background: var(--ios-bg);
   color: var(--ios-label);
   font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
