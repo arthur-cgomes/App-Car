@@ -95,7 +95,6 @@ function ProfileForm({ me }: { me: Me }) {
         openCode("phone", result);
       } else {
         setSaved(draft);
-        shell.toast("Perfil atualizado.");
       }
       await refresh();
     } catch (failure) {
@@ -122,7 +121,7 @@ function ProfileForm({ me }: { me: Me }) {
     try {
       await accountApi.update(body);
     } catch (failure) {
-      shell.toast(errorMessage(failure));
+      shell.alert(errorMessage(failure));
     }
     await refresh();
   };
@@ -142,7 +141,7 @@ function ProfileForm({ me }: { me: Me }) {
           if (how.method === "code") openCode("delete", how);
           else setPasswordOpen(true);
         } catch (failure) {
-          shell.toast(errorMessage(failure));
+          shell.alert(errorMessage(failure));
         }
       },
     });
@@ -297,7 +296,7 @@ function ProfileForm({ me }: { me: Me }) {
                 authApi
                   .sendEmailCode()
                   .then((sent) => openCode("email", sent))
-                  .catch((failure) => shell.toast(errorMessage(failure)))
+                  .catch((failure) => shell.alert(errorMessage(failure)))
               }
               className={`${ROW} w-full cursor-pointer border-x-0 border-t-0 bg-transparent text-left text-[17px] text-ios-tint active:bg-ios-fill`}
             >
@@ -309,8 +308,8 @@ function ProfileForm({ me }: { me: Me }) {
             onClick={() =>
               accountApi
                 .sendPasswordLink()
-                .then(() => shell.toast("Enviamos um link para trocar a senha."))
-                .catch((failure) => shell.toast(errorMessage(failure)))
+                .then(() => shell.alert("Enviamos para o seu e-mail um link para trocar a senha."))
+                .catch((failure) => shell.alert(errorMessage(failure)))
             }
             className={`${ROW} w-full cursor-pointer border-x-0 border-t-0 bg-transparent text-left text-[17px] text-ios-label active:bg-ios-fill`}
           >
@@ -358,7 +357,7 @@ function ProfileForm({ me }: { me: Me }) {
                 authApi
                   .logout()
                   .then(leave)
-                  .catch((failure) => shell.toast(errorMessage(failure))),
+                  .catch((failure) => shell.alert(errorMessage(failure))),
             })
           }
           className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-[17px] text-danger-soft active:bg-ios-fill"
@@ -390,13 +389,11 @@ function ProfileForm({ me }: { me: Me }) {
               if (codeFlow.kind === "email") {
                 await authApi.verifyEmail(code);
                 setCodeOpen(false);
-                shell.toast("E-mail confirmado.");
                 await refresh();
               } else if (codeFlow.kind === "phone") {
                 await accountApi.confirmPhoneChange(code);
                 setSaved((current) => ({ ...current, phone: draft.phone }));
                 setCodeOpen(false);
-                shell.toast("Celular confirmado.");
                 await refresh();
               } else {
                 await accountApi.delete({ code });

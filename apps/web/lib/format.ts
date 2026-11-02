@@ -34,6 +34,20 @@ export function formatMoneyInput(raw: string) {
   return digits ? centsToMoneyInput(Number(digits)) : "";
 }
 
+const LITERS_FORMAT = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+export const litersToInput = (liters: number) => LITERS_FORMAT.format(liters);
+
+export function formatLitersInput(raw: string) {
+  const digits = raw.replace(/\D/g, "").replace(/^0+/, "").slice(0, 7);
+  return digits ? LITERS_FORMAT.format(Number(digits) / 1000) : "";
+}
+
+export function parseLitersInput(raw: string): number | null {
+  const digits = raw.replace(/\D/g, "");
+  return digits ? Number(digits) / 1000 : null;
+}
+
 export function parseMoneyInput(raw: string): number | null {
   const text = raw.trim();
   if (!text) return null;

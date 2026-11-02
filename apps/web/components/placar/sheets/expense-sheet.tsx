@@ -8,10 +8,10 @@ import {
   type ExpenseCategoryCode,
   type PartSystemCode,
 } from "@monitoring-car/shared";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fileUrl, uploadFile, useSaveExpense, type Expense } from "@/lib/api/expenses";
-import { centsToMoneyInput, formatKmInput, formatMoneyInput, parseMoneyInput } from "@/lib/format";
+import { centsToMoneyInput, formatKmInput, formatLitersInput, formatMoneyInput, litersToInput, parseLitersInput, parseMoneyInput } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { CategoryGrid } from "../category-grid";
 import { Chip } from "../chip";
@@ -59,7 +59,6 @@ const EMPTY_FORM: ExpenseFormValues = {
   photos: [],
 };
 
-const decimal = (value: number) => value.toLocaleString("pt-BR", { maximumFractionDigits: 2, useGrouping: false });
 
 function fromExpense(expense: Expense): ExpenseFormValues {
   return {
@@ -72,13 +71,15 @@ function fromExpense(expense: Expense): ExpenseFormValues {
     parts: expense.partsCents === null ? "" : centsToMoneyInput(expense.partsCents),
     labor: expense.laborCents === null ? "" : centsToMoneyInput(expense.laborCents),
     partSystem: expense.partSystem,
-    liters: expense.fuel ? decimal(expense.fuel.liters) : "",
+    liters: expense.fuel ? litersToInput(expense.fuel.liters) : "",
     fullTank: expense.fuel?.fullTank ?? false,
     photos: expense.attachments.map(({ id }) => ({ key: id, preview: fileUrl(id), fileId: id })),
   };
 }
 
 const FUEL_SUGGESTIONS = ["Gasolina comum", "Gasolina aditivada"];
+const STATION_SUGGESTIONS = ["Posto Shell Rodoviária", "Posto Chiquito"];
+const snapshot = (form: ExpenseFormValues) => JSON.stringify({ ...form, photos: form.photos.map((photo) => photo.key) });
 
 const EXAMPLES: Record<ExpenseCategoryCode, { establishment: string; description: string }> = {
   FUEL: { establishment: "Ex.: Posto Shell", description: "Ex.: Gasolina comum" },
@@ -100,16 +101,21 @@ interface ExpenseSheetProps {
   prefill?: Partial<ExpenseFormValues>;
   onCancel: () => void;
   onSubmit: (saving: Promise<Expense>) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }
 
-export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSubmit }: ExpenseSheetProps) {
+export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSubmit, onDirtyChange }: ExpenseSheetProps) {
   const today = useToday() ?? "";
   const save = useSaveExpense();
   const [form, setForm] = useState<ExpenseFormValues>(() =>
     expense ? fromExpense(expense) : { ...EMPTY_FORM, date: today, ...prefill },
   );
+  const [initial] = useState(() => snapshot(form));
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const dirty = snapshot(form) !== initial;
+
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
   const busy = uploading || save.isPending;
 
   const set = <K extends keyof ExpenseFormValues>(key: K, value: ExpenseFormValues[K]) => {
@@ -136,7 +142,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
     if (!amountCents || amountCents <= 0) return setError("Informe um valor maior que zero.");
     if (!form.date) return setError("Informe a data.");
     if (partsRequired && !form.partSystem) return setError("Escolha a classificação da peça.");
-    const liters = form.liters.trim() ? Number(form.liters.replace(/\./g, "").replace(",", ".")) : null;
+    const liters = parseLitersInput(form.liters);
     if (isFuel && liters !== null && !(liters > 0)) return setError("Informe os litros.");
 
     setUploading(true);
@@ -156,7 +162,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
           partsCents,
           laborCents,
           attachmentIds,
-          fuel: isFuel && liters ? { liters: Math.round(liters * 100) / 100, fullTank: form.fullTank } : null,
+          fuel: isFuel && liters ? { liters, fullTank: form.fullTank } : null,
         },
       });
       form.photos.forEach((photo) => photo.file && URL.revokeObjectURL(photo.preview));
@@ -247,7 +253,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
           <>
             <label className={CELL_LABEL}>
               <span>Litros</span>
-              <input value={form.liters} onChange={(event) => set("liters", event.target.value.replace(/[^\d,.]/g, ""))} inputMode="decimal" maxLength={8} placeholder="Opcional" className={CELL_INPUT} />
+              <input value={form.liters} onChange={(event) => set("liters", formatLitersInput(event.target.value))} inputMode="numeric" placeholder="Opcional" className={CELL_INPUT} />
             </label>
             <div className={CELL_LABEL}>
               <span className="flex-1">Tanque cheio</span>
@@ -265,6 +271,15 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
             className={CELL_INPUT}
           />
         </label>
+        {isFuel && (
+          <div className="flex flex-wrap gap-2 border-b-[0.5px] border-ios-sep px-4 py-2.5">
+            {STATION_SUGGESTIONS.map((station) => (
+              <Chip key={station} size="sm" active={form.establishment === station} onClick={() => set("establishment", station)}>
+                {station}
+              </Chip>
+            ))}
+          </div>
+        )}
         <label className={CELL_LABEL}>
           <span>Descrição</span>
           <input

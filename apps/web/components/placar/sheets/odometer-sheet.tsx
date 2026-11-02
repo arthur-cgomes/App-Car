@@ -5,12 +5,12 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fichaApi } from "@/lib/api/ficha";
 import type { Vehicle } from "@/lib/api/vehicles";
-import { formatKmInput, km } from "@/lib/format";
+import { formatKmInput } from "@/lib/format";
 import { InputCell } from "../form-cells";
 import { Footnote, Group, Section } from "../grouped-list";
 import { Sheet } from "./sheet";
 
-export function OdometerSheet({ open, vehicle, onClose, onSaved }: { open: boolean; vehicle: Vehicle; onClose: () => void; onSaved: (message: string) => void }) {
+export function OdometerSheet({ open, vehicle, onClose, onSaved }: { open: boolean; vehicle: Vehicle; onClose: () => void; onSaved: () => void }) {
   const client = useQueryClient();
   const [value, setValue] = useState(formatKmInput(String(vehicle.currentOdometer)));
   const [busy, setBusy] = useState(false);
@@ -21,17 +21,13 @@ export function OdometerSheet({ open, vehicle, onClose, onSaved }: { open: boole
     if (!Number.isFinite(odometer)) return setError("Informe a km atual do carro.");
     setBusy(true);
     try {
-      const updated = await fichaApi.updateVehicle(vehicle.id, { currentOdometer: odometer });
+      await fichaApi.updateVehicle(vehicle.id, { currentOdometer: odometer });
       await Promise.all([
         client.invalidateQueries({ queryKey: ["vehicles"] }),
         client.invalidateQueries({ queryKey: ["reminders", vehicle.id] }),
         client.invalidateQueries({ queryKey: ["expenses", vehicle.id] }),
       ]);
-      onSaved(
-        updated.currentOdometer > odometer
-          ? `O carro segue com ${km(updated.currentOdometer)}, a maior km já lançada nos gastos.`
-          : `Km atualizada para ${km(updated.currentOdometer)}.`,
-      );
+      onSaved();
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {

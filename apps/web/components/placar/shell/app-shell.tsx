@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { accountApi, useMe, type Me } from "@/lib/api/auth";
 import { errorMessage } from "@/lib/api/client";
-import { useActivateVehicle, useActiveVehicle, vehicleName } from "@/lib/api/vehicles";
+import { useActivateVehicle, useActiveVehicle } from "@/lib/api/vehicles";
 import { useDeleteExpense, type Expense } from "@/lib/api/expenses";
 import { useDeleteReminder, useReminders, useSaveReminder, type Reminder } from "@/lib/api/reminders";
 import { cx } from "@/lib/cx";
@@ -18,7 +18,7 @@ import { Avatar } from "../avatar";
 import { GlassIconButton } from "../buttons";
 import { ExpenseDetail } from "../expense-detail";
 import { Icon } from "../icon";
-import { ActionPanel, ActionPanelButton, ActionPanelMessage, Backdrop, Banner, PhotoViewer } from "../overlays";
+import { ActionPanel, ActionPanelButton, ActionPanelMessage, Backdrop, PhotoViewer } from "../overlays";
 import { ExpenseSheet, type ExpenseFormValues } from "../sheets/expense-sheet";
 import { OdometerSheet } from "../sheets/odometer-sheet";
 import { ReminderSheet } from "../sheets/reminder-sheet";
@@ -34,7 +34,6 @@ type SheetRequest =
   | { mode: "vehicle" }
   | { mode: "odometer" };
 type SheetState = SheetRequest & { key: number };
-type BannerState = { title: string; body: string; icon: string };
 
 const COLLAPSE_AT = 44;
 
@@ -57,14 +56,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [action, setAction] = useState<ConfirmAction | null>(null);
   const [lastAction, setLastAction] = useState<ConfirmAction | null>(null);
-  const [banner, setBanner] = useState<BannerState | null>(null);
-  const [lastBanner, setLastBanner] = useState<BannerState | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [lastAlertMessage, setLastAlertMessage] = useState<string | null>(null);
+  const [expenseDirty, setExpenseDirty] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [lastDetailId, setLastDetailId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
   const [reminderOffer, setReminderOffer] = useState<Expense | null>(null);
   const [lastReminderOffer, setLastReminderOffer] = useState<Expense | null>(null);
-  const bannerTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const activeTab = (TABS.find((tab) => tab.href !== "/" && pathname.startsWith(tab.href))?.href ?? "/") as TabHref;
   const title = TABS.find((tab) => tab.href === activeTab)!.title;
@@ -83,7 +82,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     const next = accountTheme === "light" ? "DARK" : "LIGHT";
     applyTheme(next === "LIGHT" ? "light" : "dark");
     queryClient.setQueryData<Me>(["me"], (current) => current && { ...current, theme: next });
-    accountApi.update({ theme: next }).catch((failure) => toast(errorMessage(failure)));
+    accountApi.update({ theme: next }).catch((failure) => alert(errorMessage(failure)));
   };
 
   const hidden = usePrivacy();
@@ -95,15 +94,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     applyPrivacy(!hidden);
   };
 
-  const toast = useCallback((message: string) => {
-    const next = { title: "App Car", body: message, icon: "A" };
-    setBanner(next);
-    setLastBanner(next);
-    clearTimeout(bannerTimer.current);
-    bannerTimer.current = setTimeout(() => setBanner(null), 2600);
+  const alert = useCallback((message: string) => {
+    setAlertMessage(message);
+    setLastAlertMessage(message);
   }, []);
-
-  useEffect(() => () => clearTimeout(bannerTimer.current), []);
 
   const openSheet = useCallback((next: SheetRequest) => {
     setPickerOpen(false);
@@ -117,7 +111,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       openExpenseSheet: (prefill) => {
         if (vehicle) return openSheet({ mode: "expense", prefill });
         openSheet({ mode: "vehicle" });
-        toast("Adicione um veículo para lançar gastos.");
       },
       openVehicleSheet: () => openSheet({ mode: "vehicle" }),
       openReminderSheet: (reminder) => openSheet({ mode: "reminder", reminder }),
@@ -130,10 +123,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         setAction(next);
         setLastAction(next);
       },
-      toast,
+      alert,
     }),
-    [openSheet, toast, vehicle],
+    [openSheet, alert, vehicle],
   );
+
+  const closeSheet = () => {
+    if (sheet?.mode === "expense" && expenseDirty) {
+      api.confirm({
+        message: sheet.expense ? "Descartar as alterações deste gasto?" : "Descartar este gasto? O que você preencheu não será salvo.",
+        label: "Descartar",
+        cancelLabel: "Continuar editando",
+        onConfirm: () => setSheetOpen(false),
+      });
+      return;
+    }
+    setSheetOpen(false);
+  };
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("add") !== "vehicle") return;
@@ -141,7 +147,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     api.openVehicleSheet();
   }, [api, router]);
 
-  const shownBanner = banner ?? lastBanner;
   const shownAction = action ?? lastAction;
 
   return (
@@ -241,7 +246,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             expenseId={detailId ?? lastDetailId}
             onBack={() => setDetailId(null)}
             onViewPhoto={setViewer}
-            onMessage={toast}
+            onError={alert}
             onEdit={(expense) => openSheet({ mode: "expense", expense })}
             onDelete={(expense) =>
               api.confirm({
@@ -251,11 +256,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   deleteExpense.mutate(
                     { vehicleId: expense.vehicleId, id: expense.id },
                     {
-                      onSuccess: () => {
-                        setDetailId(null);
-                        setTimeout(() => toast("Gasto excluído."), 400);
-                      },
-                      onError: (error) => toast(errorMessage(error)),
+                      onSuccess: () => setDetailId(null),
+                      onError: (error) => alert(errorMessage(error)),
                     },
                   ),
               })
@@ -265,7 +267,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <TabBar active={activeTab} onAdd={() => api.openExpenseSheet()} />
         </div>
 
-        <Backdrop open={sheetOpen} onClose={() => setSheetOpen(false)} />
+        <Backdrop open={sheetOpen} onClose={closeSheet} />
         {sheet?.mode === "expense" && vehicle && (
           <ExpenseSheet
             key={sheet.key}
@@ -273,7 +275,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             vehicleId={vehicle.id}
             expense={sheet.expense}
             prefill={sheet.prefill}
-            onCancel={() => setSheetOpen(false)}
+            onCancel={closeSheet}
+            onDirtyChange={setExpenseDirty}
             onSubmit={(saving) => {
               const key = sheet.key;
               setSheetOpen(false);
@@ -288,10 +291,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 })
                 .catch(() => {
                   if (sheetKey.current === key) {
-                    toast("Não foi possível salvar o gasto. Confira e tente de novo.");
+                    alert("Não foi possível salvar o gasto. Confira e tente de novo.");
                     setSheetOpen(true);
                   } else {
-                    toast("Não foi possível salvar o gasto. Tente de novo.");
+                    alert("Não foi possível salvar o gasto. Tente de novo.");
                   }
                 });
             }}
@@ -306,7 +309,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             onCancel={() => setSheetOpen(false)}
             onSaved={() => {
               setSheetOpen(false);
-              setTimeout(() => toast(sheet.reminder ? "Lembrete atualizado." : "Lembrete criado."), 350);
             }}
             onDelete={(reminder) =>
               api.confirm({
@@ -316,11 +318,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   deleteReminder.mutate(
                     { vehicleId: vehicle.id, id: reminder.id },
                     {
-                      onSuccess: () => {
-                        setSheetOpen(false);
-                        setTimeout(() => toast("Lembrete excluído."), 350);
-                      },
-                      onError: (error) => toast(errorMessage(error)),
+                      onSuccess: () => setSheetOpen(false),
+                      onError: (error) => alert(errorMessage(error)),
                     },
                   ),
               })
@@ -333,10 +332,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             open={sheetOpen}
             vehicle={vehicle}
             onClose={() => setSheetOpen(false)}
-            onSaved={(message) => {
-              setSheetOpen(false);
-              setTimeout(() => toast(message), 350);
-            }}
+            onSaved={() => setSheetOpen(false)}
           />
         )}
         {sheet?.mode === "vehicle" && (
@@ -346,10 +342,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             lookupAvailable={me.data?.plateLookupAvailable ?? true}
             vehicles={vehicles}
             onCancel={() => setSheetOpen(false)}
-            onAdded={(added) => {
+            onAdded={() => {
               setSheetOpen(false);
               router.push("/");
-              setTimeout(() => toast(`${vehicleName(added)} adicionado à sua conta.`), 350);
             }}
           />
         )}
@@ -363,14 +358,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             setPickerOpen(false);
             setDetailId(null);
             scrollRef.current?.scrollTo({ top: 0 });
-            if (id !== vehicle?.id) activate.mutate(id, { onError: (error) => toast(errorMessage(error)) });
+            if (id !== vehicle?.id) activate.mutate(id, { onError: (error) => alert(errorMessage(error)) });
           }}
           onAdd={() => api.openVehicleSheet()}
           onCancel={() => setPickerOpen(false)}
         />
 
         <Backdrop open={!!action} onClose={() => setAction(null)} z={30} />
-        <ActionPanel open={!!action} onCancel={() => setAction(null)}>
+        <ActionPanel open={!!action} onCancel={() => setAction(null)} cancelLabel={shownAction?.cancelLabel}>
           <ActionPanelMessage>{shownAction?.message}</ActionPanelMessage>
           <ActionPanelButton
             destructive
@@ -400,8 +395,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 saveReminder.mutate(
                   { vehicleId: expense.vehicleId, input },
                   {
-                    onSuccess: () => toast(`Lembrete criado para ${input.dueDate!.split("-").reverse().join("/")}.`),
-                    onError: (error) => toast(errorMessage(error)),
+                    onError: (error) => alert(errorMessage(error)),
                   },
                 );
               }}
@@ -412,7 +406,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </ActionPanel>
 
         <PhotoViewer src={viewer} onClose={() => setViewer(null)} />
-        <Banner banner={shownBanner} open={!!banner} onTap={() => setBanner(null)} />
+        <Backdrop open={!!alertMessage} onClose={() => setAlertMessage(null)} z={30} />
+        <ActionPanel open={!!alertMessage} onCancel={() => setAlertMessage(null)} cancelLabel="OK">
+          <ActionPanelMessage>{alertMessage ?? lastAlertMessage}</ActionPanelMessage>
+        </ActionPanel>
       </div>
     </ShellContext.Provider>
   );

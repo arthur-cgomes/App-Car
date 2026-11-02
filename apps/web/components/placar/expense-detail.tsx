@@ -20,12 +20,12 @@ interface ExpenseDetailProps {
   onEdit: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
   onViewPhoto: (src: string) => void;
-  onMessage: (message: string) => void;
+  onError: (message: string) => void;
 }
 
-const litersLabel = (liters: number) => `${liters.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} L`;
+const litersLabel = (liters: number) => `${liters.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} L`;
 
-export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDelete, onViewPhoto, onMessage }: ExpenseDetailProps) {
+export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDelete, onViewPhoto, onError }: ExpenseDetailProps) {
   const { data: expense } = useExpense(vehicleId, expenseId);
   const save = useSaveExpense();
   const [uploading, setUploading] = useState(false);
@@ -37,9 +37,8 @@ export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDe
       const ids = [];
       for (const file of files) ids.push(await uploadFile(file));
       await save.mutateAsync({ vehicleId, id: expense.id, input: { attachmentIds: [...expense.attachments.map((a) => a.id), ...ids] } });
-      onMessage(ids.length === 1 ? "1 nota anexada." : `${ids.length} notas anexadas.`);
     } catch (failure) {
-      onMessage(errorMessage(failure));
+      onError(errorMessage(failure));
     } finally {
       setUploading(false);
     }

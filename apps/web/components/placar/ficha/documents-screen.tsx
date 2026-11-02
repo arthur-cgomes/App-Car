@@ -124,7 +124,6 @@ function DocumentSheet({ open, vehicleId, document, onClose }: { open: boolean; 
         notes: form.notes.trim() || null,
       });
       onClose();
-      shell.toast(document ? "Documento atualizado." : "Documento adicionado.");
     } catch (failure) {
       setError(errorMessage(failure));
     }
@@ -164,7 +163,6 @@ function DocumentSheet({ open, vehicleId, document, onClose }: { open: boolean; 
               try {
                 await pay.mutateAsync(undefined);
                 onClose();
-                shell.toast("Documento pago e lançado em Gastos.");
               } catch (failure) {
                 setError(errorMessage(failure));
               }
@@ -182,7 +180,7 @@ function DocumentSheet({ open, vehicleId, document, onClose }: { open: boolean; 
               shell.confirm({
                 message: "Este documento será excluído.",
                 label: "Excluir documento",
-                onConfirm: () => remove.mutateAsync(undefined).then(onClose, (failure) => shell.toast(errorMessage(failure))),
+                onConfirm: () => remove.mutateAsync(undefined).then(onClose, (failure) => shell.alert(errorMessage(failure))),
               })
             }
             className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-base text-danger active:bg-ios-fill"

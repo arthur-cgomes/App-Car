@@ -58,28 +58,6 @@ export function ActionPanelButton({ children, onClick, destructive }: { children
   );
 }
 
-export function Banner({ banner, open, onTap }: { banner: { title: string; body: string; icon: string } | null; open: boolean; onTap: () => void }) {
-  return (
-    <div
-      role="status"
-      onClick={onTap}
-      className="fixed inset-x-2.5 z-40 mx-auto flex max-w-[480px] cursor-pointer items-center gap-2.5 rounded-[28px] bg-ios-glass px-3.5 py-3 shadow-[0_10px_30px_color-mix(in_srgb,var(--color-neutral-900)_20%,transparent)] transition-transform duration-500 ease-ios [-webkit-backdrop-filter:blur(24px)_saturate(180%)] [backdrop-filter:blur(24px)_saturate(180%)]"
-      style={{ top: "calc(env(safe-area-inset-top) + 10px)", transform: open ? "translateY(0)" : "translateY(-180%)" }}
-    >
-      <div className="grid size-[38px] flex-none place-items-center rounded-[11px] bg-accent-800 text-white" style={{ font: "600 18px/1 var(--font-barlow-condensed)", letterSpacing: ".04em" }}>
-        {banner?.icon}
-      </div>
-      <div className="min-w-0 flex-1 text-sm leading-[1.3]">
-        <div className="flex justify-between gap-2">
-          <strong className="font-semibold">{banner?.title}</strong>
-          <span className="text-xs text-ios-label2">agora</span>
-        </div>
-        <div className="text-ios-label">{banner?.body}</div>
-      </div>
-    </div>
-  );
-}
-
 export function PhotoViewer({ src, onClose }: { src: string | null; onClose: () => void }) {
   return (
     <div

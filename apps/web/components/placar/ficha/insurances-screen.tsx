@@ -131,7 +131,6 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
         fileId: form.fileId,
       });
       onClose();
-      shell.toast(insurance ? "Apólice atualizada." : "Apólice cadastrada. O lembrete de renovação está em Lembretes.");
     } catch (failure) {
       setError(errorMessage(failure));
     }
@@ -175,7 +174,7 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
               shell.confirm({
                 message: "Esta apólice e o lembrete de renovação serão excluídos.",
                 label: "Excluir apólice",
-                onConfirm: () => remove.mutateAsync(undefined).then(onClose, (failure) => shell.toast(errorMessage(failure))),
+                onConfirm: () => remove.mutateAsync(undefined).then(onClose, (failure) => shell.alert(errorMessage(failure))),
               })
             }
             className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-base text-danger active:bg-ios-fill"

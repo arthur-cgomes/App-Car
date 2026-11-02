@@ -38,7 +38,7 @@ export function LembretesScreen() {
   }
 
   const onToggle = (reminder: Reminder) =>
-    vehicle && toggle.mutate({ vehicleId: vehicle.id, reminder }, { onError: () => shell.toast("Não foi possível atualizar o lembrete.") });
+    vehicle && toggle.mutate({ vehicleId: vehicle.id, reminder }, { onError: () => shell.alert("Não foi possível atualizar o lembrete.") });
 
   return (
     <div className="flex flex-col gap-4">

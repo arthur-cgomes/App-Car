@@ -57,7 +57,7 @@ export function FichaScreen() {
       await Promise.all([client.invalidateQueries({ queryKey: ["vehicles"] }), client.invalidateQueries({ queryKey: ["reminders", vehicle.id] })]);
     } catch (error) {
       setInterval(null);
-      shell.toast(errorMessage(error));
+      shell.alert(errorMessage(error));
     }
   };
 
@@ -69,7 +69,7 @@ export function FichaScreen() {
       await Promise.all([client.invalidateQueries({ queryKey: ["vehicles"] }), client.invalidateQueries({ queryKey: ["reminders", vehicle.id] })]);
     } catch (error) {
       setOilInterval(null);
-      shell.toast(errorMessage(error));
+      shell.alert(errorMessage(error));
     }
   };
 
@@ -82,9 +82,8 @@ export function FichaScreen() {
           await fichaApi.deleteVehicle(vehicle.id);
           await Promise.all([client.invalidateQueries({ queryKey: ["vehicles"] }), client.invalidateQueries({ queryKey: ["me"] })]);
           router.push("/");
-          shell.toast("Veículo removido.");
         } catch (error) {
-          shell.toast(errorMessage(error));
+          shell.alert(errorMessage(error));
         }
       },
     });

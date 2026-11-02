@@ -11,7 +11,7 @@ import { PushPage } from "../push-page";
 import { useShell } from "../shell/shell-context";
 import { Masked } from "../masked";
 
-const liters = (value: number) => `${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} L`;
+const liters = (value: number) => `${value.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} L`;
 const kml = (value: number) => `${value.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km/l`;
 
 export function FuelScreen() {

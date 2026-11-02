@@ -88,7 +88,6 @@ function ContactSheet({ open, vehicleId, contact, onClose }: { open: boolean; ve
     try {
       await save.mutateAsync({ kind, name: form.name.trim(), phone: form.phone.trim(), notes: form.notes.trim() || null });
       onClose();
-      shell.toast(contact ? "Contato atualizado." : "Contato salvo.");
     } catch (failure) {
       setError(errorMessage(failure));
     }
@@ -125,11 +124,8 @@ function ContactSheet({ open, vehicleId, contact, onClose }: { open: boolean; ve
                 label: "Excluir contato",
                 onConfirm: () =>
                   remove.mutateAsync(contact.id).then(
-                    () => {
-                      onClose();
-                      shell.toast("Contato excluído.");
-                    },
-                    (failure) => shell.toast(errorMessage(failure)),
+                    onClose,
+                    (failure) => shell.alert(errorMessage(failure)),
                   ),
               })
             }

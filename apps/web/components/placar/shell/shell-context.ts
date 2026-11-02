@@ -7,6 +7,7 @@ import type { ExpenseFormValues } from "../sheets/expense-sheet";
 export interface ConfirmAction {
   message: string;
   label: string;
+  cancelLabel?: string;
   onConfirm: () => void;
 }
 
@@ -17,7 +18,7 @@ export interface ShellApi {
   openVehiclePicker: () => void;
   openExpenseDetail: (id: string) => void;
   confirm: (action: ConfirmAction) => void;
-  toast: (message: string) => void;
+  alert: (message: string) => void;
 }
 
 export const ShellContext = createContext<ShellApi | null>(null);

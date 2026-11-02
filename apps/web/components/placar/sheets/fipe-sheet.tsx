@@ -8,24 +8,21 @@ import { formatMoneyInput, parseMoneyInput } from "@/lib/format";
 import { LinkButton } from "../buttons";
 import { InputCell, centsToInput } from "../form-cells";
 import { Footnote, Group, Section } from "../grouped-list";
-import { useShell } from "../shell/shell-context";
 import { Sheet } from "./sheet";
 
 export function FipeSheet({ open, vehicleId, fipe, onClose }: { open: boolean; vehicleId: string; fipe?: Fipe; onClose: () => void }) {
-  const shell = useShell();
   const client = useQueryClient();
   const manual = fipe?.available && fipe.manual;
   const [value, setValue] = useState(fipe?.available ? centsToInput(fipe.valueCents) : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const save = async (fipeValueCents: number | null, message: string) => {
+  const save = async (fipeValueCents: number | null) => {
     setBusy(true);
     try {
       await fichaApi.updateVehicle(vehicleId, { fipeValueCents });
       await Promise.all([client.invalidateQueries({ queryKey: ["fipe", vehicleId] }), client.invalidateQueries({ queryKey: ["vehicles"] })]);
       onClose();
-      shell.toast(message);
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
@@ -36,7 +33,7 @@ export function FipeSheet({ open, vehicleId, fipe, onClose }: { open: boolean; v
   const submit = () => {
     const cents = parseMoneyInput(value);
     if (!cents || cents < 100) return setError("Informe o valor FIPE em reais.");
-    save(cents, "Valor FIPE atualizado.");
+    save(cents);
   };
 
   return (
@@ -63,7 +60,7 @@ export function FipeSheet({ open, vehicleId, fipe, onClose }: { open: boolean; v
         </Group>
       </Section>
       {manual && (
-        <LinkButton onClick={() => !busy && save(null, "Voltamos a usar a tabela FIPE automática.")} className="self-center p-2">
+        <LinkButton onClick={() => !busy && save(null)} className="self-center p-2">
           Usar o valor automático da tabela FIPE
         </LinkButton>
       )}

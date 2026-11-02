@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { centsToMoneyInput, formatMoneyInput, parseMoneyInput } from "./format";
+import { centsToMoneyInput, formatLitersInput, formatMoneyInput, parseLitersInput, parseMoneyInput } from "./format";
 
 describe("campos de valor", () => {
   it("a vírgula anda conforme os dígitos são digitados", () => {
@@ -10,6 +10,14 @@ describe("campos de valor", () => {
     expect(formatMoneyInput("12.345,678")).toBe("123.456,78");
     expect(formatMoneyInput("0,0")).toBe("");
     expect(formatMoneyInput("abc")).toBe("");
+  });
+
+  it("litros com três casas: a vírgula anda conforme digita", () => {
+    expect(formatLitersInput("37145")).toBe("37,145");
+    expect(formatLitersInput("5")).toBe("0,005");
+    expect(formatLitersInput("1234567")).toBe("1.234,567");
+    expect(parseLitersInput("37,145")).toBe(37.145);
+    expect(parseLitersInput("")).toBeNull();
   });
 
   it("volta para centavos sem perder nada", () => {

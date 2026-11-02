@@ -40,10 +40,7 @@ export function IntegrationsScreen() {
             <button
               type="button"
               onClick={() =>
-                navigator.clipboard.writeText(created).then(
-                  () => shell.toast("Chave copiada."),
-                  () => shell.toast("Não foi possível copiar. Selecione o texto."),
-                )
+                navigator.clipboard.writeText(created).catch(() => shell.alert("Não foi possível copiar. Selecione o texto."))
               }
               className="h-11 w-full cursor-pointer border-0 border-t-[0.5px] border-ios-sep bg-transparent text-[17px] text-ios-tint active:bg-ios-fill"
             >
@@ -74,10 +71,7 @@ export function IntegrationsScreen() {
                     message: `Revogar "${key.name}"? Os apps que usam esta chave param de enviar gastos.`,
                     label: "Revogar chave",
                     onConfirm: () =>
-                      revoke.mutateAsync(key.id).then(
-                        () => shell.toast("Chave revogada."),
-                        (failure) => shell.toast(errorMessage(failure)),
-                      ),
+                      revoke.mutateAsync(key.id).catch((failure) => shell.alert(errorMessage(failure))),
                   })
                 }
                 className="block w-full cursor-pointer border-0 border-b-[0.5px] border-ios-sep bg-transparent px-4 py-2.5 text-left text-ios-label last:border-b-0 active:bg-ios-fill"
