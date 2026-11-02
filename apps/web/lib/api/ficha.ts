@@ -35,6 +35,9 @@ export interface Insurance {
   endDate: string;
   premiumCents: number | null;
   installments: number | null;
+  installmentCents: number | null;
+  firstInstallmentNumber: number | null;
+  firstInstallmentDate: string | null;
   deductibleCents: number | null;
   brokerContact: string | null;
   fileId: string | null;

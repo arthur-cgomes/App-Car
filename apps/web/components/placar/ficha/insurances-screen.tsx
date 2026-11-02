@@ -6,6 +6,7 @@ import { fichaApi, useFichaMutation, useInsurances, type Insurance, type Insuran
 import { fileUrl } from "@/lib/api/expenses";
 import { useActiveVehicle } from "@/lib/api/vehicles";
 import { brl, formatMoneyInput, parseMoneyInput } from "@/lib/format";
+import { addMonths } from "@/lib/reminder-format";
 import { useToday } from "@/lib/use-today";
 import { InlineEmpty } from "../empty-state";
 import { AttachmentCell, DateCell, InputCell, brDate, centsToInput } from "../form-cells";
@@ -15,6 +16,16 @@ import { HeaderAddButton, PushPage } from "../push-page";
 import { useShell } from "../shell/shell-context";
 import { Sheet } from "../sheets/sheet";
 import { Masked } from "../masked";
+
+function nextInstallment(insurance: Insurance, today: string) {
+  if (!insurance.installments || !insurance.installmentCents || !insurance.firstInstallmentDate) return null;
+  const first = insurance.firstInstallmentNumber ?? 1;
+  for (let number = first; number <= insurance.installments; number++) {
+    const date = addMonths(insurance.firstInstallmentDate, number - first);
+    if (date > today) return { number, date };
+  }
+  return "paid" as const;
+}
 
 export function InsurancesScreen() {
   const today = useToday() ?? "";
@@ -28,6 +39,7 @@ export function InsurancesScreen() {
     setOpen(true);
   };
   const current = data?.find((insurance) => insurance.endDate >= today);
+  const next = current ? nextInstallment(current, today) : null;
   const previous = data?.filter((insurance) => insurance !== current) ?? [];
 
   return (
@@ -50,8 +62,12 @@ export function InsurancesScreen() {
               </div>
             </div>
             {current.premiumCents && (
-              <ValueRow label="Prêmio" value={<Masked text={`${brl(current.premiumCents)}${current.installments ? ` em ${current.installments}x` : ""}`} />} />
+              <ValueRow label="Valor total" value={<Masked text={`${brl(current.premiumCents)}${current.installments ? ` em ${current.installments}x` : ""}`} />} />
             )}
+            {current.installmentCents && (
+              <ValueRow label="Parcela" value={<Masked text={`${brl(current.installmentCents)} · ${current.firstInstallmentNumber ?? 1} a ${current.installments}`} />} />
+            )}
+            {next && <ValueRow label="Próxima parcela" value={next === "paid" ? "Todas lançadas" : `${next.number}/${current.installments} em ${brDate(next.date)}`} />}
             {current.deductibleCents !== null && <ValueRow label="Franquia" value={<Masked text={brl(current.deductibleCents)} />} />}
             {current.brokerContact && <ValueRow label="Corretor" value={current.brokerContact} />}
             {current.fileId && (
@@ -102,6 +118,9 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
     endDate: insurance?.endDate ?? "",
     premium: centsToInput(insurance?.premiumCents ?? null),
     installments: insurance?.installments ? String(insurance.installments) : "",
+    installment: centsToInput(insurance?.installmentCents ?? null),
+    firstInstallmentNumber: insurance?.firstInstallmentNumber ? String(insurance.firstInstallmentNumber) : "",
+    firstInstallmentDate: insurance?.firstInstallmentDate ?? "",
     deductible: centsToInput(insurance?.deductibleCents ?? null),
     brokerContact: insurance?.brokerContact ?? "",
     fileId: insurance?.fileId ?? null,
@@ -118,6 +137,8 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
   const submit = async () => {
     if (form.insurer.trim().length < 2) return setError("Informe a seguradora.");
     if (!form.startDate || !form.endDate) return setError("Informe o início e o fim da vigência.");
+    const installmentCents = money(form.installment);
+    if (installmentCents && !form.firstInstallmentDate) return setError("Informe a data da parcela.");
     try {
       await save.mutateAsync({
         insurer: form.insurer.trim(),
@@ -126,6 +147,9 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
         endDate: form.endDate,
         premiumCents: money(form.premium),
         installments: Number.parseInt(form.installments, 10) || null,
+        installmentCents,
+        firstInstallmentNumber: installmentCents ? Number.parseInt(form.firstInstallmentNumber, 10) || 1 : null,
+        firstInstallmentDate: installmentCents ? form.firstInstallmentDate : null,
         deductibleCents: money(form.deductible),
         brokerContact: form.brokerContact.trim() || null,
         fileId: form.fileId,
@@ -155,13 +179,29 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
       </Section>
       <Section header={<SectionHeader>Valores</SectionHeader>}>
         <Group className="mx-4 text-[17px]">
-          <InputCell label="Prêmio" value={form.premium} onChange={(e) => set("premium", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
-          <InputCell label="Parcelas" value={form.installments} onChange={(e) => set("installments", e.target.value)} inputMode="numeric" placeholder="Opcional" />
+          <InputCell label="Valor total" value={form.premium} onChange={(e) => set("premium", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
           <InputCell label="Franquia" value={form.deductible} onChange={(e) => set("deductible", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
           <InputCell label="Corretor" value={form.brokerContact} onChange={(e) => set("brokerContact", e.target.value)} maxLength={120} placeholder="Telefone ou e-mail" />
         </Group>
       </Section>
-      <Section header={<SectionHeader>Apólice</SectionHeader>} footer={<Footnote>Lance as parcelas em Gastos, na categoria Seguro.</Footnote>}>
+      <Section
+        header={<SectionHeader>Parcelas</SectionHeader>}
+        footer={<Footnote>Cada parcela entra em Gastos, na categoria Seguro, na data da cobrança. Informe a parcela a partir da qual quer o registro e a data dela.</Footnote>}
+      >
+        <Group className="mx-4 text-[17px]">
+          <InputCell label="Total de parcelas" value={form.installments} onChange={(e) => set("installments", e.target.value.replace(/\D/g, "").slice(0, 2))} inputMode="numeric" placeholder="Opcional" />
+          <InputCell label="Valor da parcela" value={form.installment} onChange={(e) => set("installment", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
+          <InputCell
+            label="A partir da parcela"
+            value={form.firstInstallmentNumber}
+            onChange={(e) => set("firstInstallmentNumber", e.target.value.replace(/\D/g, "").slice(0, 2))}
+            inputMode="numeric"
+            placeholder="1"
+          />
+          <DateCell label="Data dessa parcela" value={form.firstInstallmentDate} onChange={(value) => set("firstInstallmentDate", value)} />
+        </Group>
+      </Section>
+      <Section header={<SectionHeader>Apólice</SectionHeader>}>
         <Group className="mx-4 text-[17px]">
           <AttachmentCell fileId={form.fileId} onChange={(id) => set("fileId", id)} onError={setError} />
         </Group>
@@ -172,7 +212,7 @@ function InsuranceSheet({ open, vehicleId, insurance, onClose }: { open: boolean
             type="button"
             onClick={() =>
               shell.confirm({
-                message: "Esta apólice e o lembrete de renovação serão excluídos.",
+                message: "Esta apólice e o lembrete de renovação serão excluídos. As parcelas já lançadas continuam em Gastos.",
                 label: "Excluir apólice",
                 onConfirm: () => remove.mutateAsync(undefined).then(onClose, (failure) => shell.alert(errorMessage(failure))),
               })
