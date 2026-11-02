@@ -24,8 +24,8 @@ const PART_CODES = PART_SYSTEMS.map((p) => p.code);
 const trimOrNull = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() || null : value);
 
 export class FuelDto {
-  @ApiProperty({ example: 38.2 })
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Informe os litros com até 2 casas.' })
+  @ApiProperty({ example: 37.145 })
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Informe os litros com até 3 casas.' })
   @Min(0.01, { message: 'Informe os litros.' })
   @Max(9999)
   liters: number;

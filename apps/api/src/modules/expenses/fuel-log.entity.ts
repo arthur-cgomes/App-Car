@@ -12,7 +12,7 @@ export class FuelLog extends BaseEntity {
   @JoinColumn({ name: 'expense_id' })
   expense?: Expense;
 
-  @Column({ type: 'numeric', precision: 7, scale: 2, transformer: { to: (v: number) => v, from: (v: string) => Number(v) } })
+  @Column({ type: 'numeric', precision: 7, scale: 3, transformer: { to: (v: number) => v, from: (v: string) => Number(v) } })
   liters: number;
 
   @Column({ type: 'boolean', default: false })

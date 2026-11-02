@@ -29,9 +29,9 @@ export class IntegrationFuelExpenseDto {
   @Matches(/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/, { message: 'Placa inválida. Use ABC1D23 ou ABC1234.' })
   plate?: string;
 
-  @ApiPropertyOptional({ example: 32.5 })
+  @ApiPropertyOptional({ example: 37.145 })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Informe os litros com até 2 casas.' })
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Informe os litros com até 3 casas.' })
   @Min(0.01)
   @Max(9999)
   liters?: number;

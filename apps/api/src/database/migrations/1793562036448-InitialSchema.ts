@@ -93,7 +93,7 @@ export class InitialSchema1793562036448 implements MigrationInterface {
       `CREATE UNIQUE INDEX "uq_expense_categories_code" ON "expense_categories" ("code") WHERE "deleted_at" IS NULL`,
     );
     await queryRunner.query(
-      `CREATE TABLE "fuel_logs" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "created_by" uuid, "updated_by" uuid, "version" integer NOT NULL DEFAULT '1', "expense_id" uuid NOT NULL, "liters" numeric(7,2) NOT NULL, "full_tank" boolean NOT NULL DEFAULT false, CONSTRAINT "REL_b1f721843415530b4fb9d4cb06" UNIQUE ("expense_id"), CONSTRAINT "pk_fuel_logs" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "fuel_logs" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "created_by" uuid, "updated_by" uuid, "version" integer NOT NULL DEFAULT '1', "expense_id" uuid NOT NULL, "liters" numeric(7,3) NOT NULL, "full_tank" boolean NOT NULL DEFAULT false, CONSTRAINT "REL_b1f721843415530b4fb9d4cb06" UNIQUE ("expense_id"), CONSTRAINT "pk_fuel_logs" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE UNIQUE INDEX "uq_fuel_logs_expense_id" ON "fuel_logs" ("expense_id") WHERE "deleted_at" IS NULL`,
