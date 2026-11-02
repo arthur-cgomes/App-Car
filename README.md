@@ -66,9 +66,9 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 ## Funcionalidades
 
 - **Entrar:** e-mail ou CPF + senha (8+ caracteres com maiúscula, número e caractere especial) ou **placa + PIN**, enviado por e-mail ou SMS conforme a preferência do usuário (por enquanto, só e-mail).
-  O cadastro pede nome, e-mail, CPF, celular e senha e confirma o e-mail com um código; se o e-mail não puder ser
-  enviado, nada é gravado.
-- **Resumo:** veículo ativo, gasto do mês, custo por km, próximos lembretes e atalhos para Ficha e contatos de emergência.
+  O cadastro começa pelo e-mail: o usuário recebe um código e, com ele confirmado, informa nome, CPF (validado pelos
+  dígitos verificadores), celular e senha. A conta só é criada no último passo.
+- **Resumo:** botão de tema claro/escuro ao lado do perfil, veículo ativo, gasto do mês, custo por km, próximos lembretes e atalhos para Ficha e contatos de emergência.
 - **Gastos:** lançamento com categoria, valor, data (seletor estilo iOS), local, odômetro, litros e fotos da nota.
   Em **Manutenção**, peças e mão de obra são informadas separadamente e o total é a soma das duas.
 - **Odômetro:** o km do carro é o maior entre o informado no cadastro/Ficha e o maior km lançado; corrigir ou excluir um

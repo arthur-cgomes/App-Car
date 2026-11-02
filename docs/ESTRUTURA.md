@@ -49,7 +49,7 @@ test/                                        Testes de integração (*.int-spec.
 
 | Módulo | Rotas (`/v1`) | Responsabilidade |
 |---|---|---|
-| `auth` | `/auth/register`, `/login`, `/pin/request`, `/pin/verify`, `/email/*`, `/phone/*`, `/refresh`, `/logout`, `/password/*` | Cadastro com confirmação do e-mail, login por senha ou placa + PIN (por e-mail ou SMS), sessão em cookies httpOnly, recuperação de senha |
+| `auth` | `/auth/signup/start`, `/signup/verify`, `/register`, `/login`, `/pin/request`, `/pin/verify`, `/email/*`, `/phone/*`, `/refresh`, `/logout`, `/password/*` | Cadastro em etapas (código no e-mail primeiro, dados depois, CPF validado pelos dígitos), login por senha ou placa + PIN (por e-mail ou SMS), sessão em cookies httpOnly, recuperação de senha |
 | `users` / `account` | `/me`, `/me/phone`, `/me/password-link`, `/me/export`, `/me/delete/request` | Perfil, tema, troca de celular, exportação (LGPD) e exclusão de conta |
 | `api-keys` | `/me/api-keys` | Chaves de API do usuário (só o hash é guardado) |
 | `integrations` | `/integrations/fuel-expenses` | API aberta: abastecimentos enviados por outro app ([API_INTEGRACAO.md](API_INTEGRACAO.md)) |
