@@ -30,7 +30,8 @@ src/
 │   ├── decorators/                          @CurrentUser, @Public, @ApiKeyAuth, @AuditIgnore
 │   ├── entities/                            BaseEntity, BaseTechnicalEntity, BaseAppendOnlyEntity
 │   ├── services/base-crud.service.ts        CRUD com filtro pelo dono em toda consulta (404 para outros)
-│   ├── filters/ pipes/ context/ today.ts
+│   ├── filters/                             Erro inesperado vira 500 "Erro interno no servidor."; duplicado vira 409
+│   ├── pipes/ context/ today.ts
 ├── audit/                                   AuditSubscriber e audit_logs
 ├── database/
 │   ├── migrations/<ts>-InitialSchema.ts     Única migração: tabelas, índices, trigger e categorias
@@ -53,9 +54,9 @@ test/                                        Testes de integração (*.int-spec.
 | `users` / `account` | `/me`, `/me/phone`, `/me/password-link`, `/me/export`, `/me/delete/request` | Perfil, tema, troca de celular, exportação (LGPD) e exclusão de conta |
 | `api-keys` | `/me/api-keys` | Chaves de API do usuário (só o hash é guardado) |
 | `integrations` | `/integrations/fuel-expenses` | API aberta: abastecimentos enviados por outro app ([API_INTEGRACAO.md](API_INTEGRACAO.md)) |
-| `vehicles` | `/vehicles`, `/vehicles/:id`, `/:id/activate`, `/:id/history` | Veículos (pela placa ou manual), veículo ativo, odômetro |
+| `vehicles` | `/vehicles`, `/vehicles/:id`, `/:id/activate`, `/:id/history` | Veículos (pela placa ou manual), veículo ativo, odômetro (PATCH só da km), FIPE informada pelo usuário |
 | `plate-lookup` | `POST /plates/:plate/vehicle`, `POST /plates/:plate/lookup`, `/plates/history` | Consulta de placa com cache, limite diário e histórico |
-| `fipe` | `/vehicles/:id/fipe` | Valor FIPE (Parallelum) guardado por mês de referência |
+| `fipe` | `/vehicles/:id/fipe` | Valor FIPE (Parallelum) guardado por mês de referência; sem código FIPE, consulta a placa uma vez a cada 30 dias; o valor informado pelo usuário (`fipe_manual`) prevalece; IPVA estimado em 4% |
 | `expenses` | `/vehicles/:id/expenses`, `/months`, `/:expenseId` | Gastos: categoria, local, data e hora, odômetro, litros, peças e mão de obra, fotos |
 | `files` | `/files`, `/files/:id` | Upload validado pelo conteúdo (imagem ou PDF, até 10 MB) e download só pelo dono |
 | `reminders` | `/vehicles/:id/reminders`, `/:reminderId/done`, `/undo` | Lembretes manuais e automáticos |
@@ -73,7 +74,7 @@ Tabelas em `snake_case`; toda tabela de negócio tem `id`, `created_at`, `update
 | Tabela | Conteúdo |
 |---|---|
 | `users` | Conta, tema, login por placa + PIN e canal do PIN (`pin_channel`), e-mail confirmado, veículo ativo |
-| `vehicles` | Placa, marca, modelo, versão, cor, ano, data da compra, odômetro (`current_odometer` e `base_odometer`), FIPE |
+| `vehicles` | Placa, marca, modelo, versão, cor, ano, data e odômetro da compra, odômetro (`current_odometer` e `base_odometer`), FIPE (`fipe_code`, `fipe_value_cents`, `fipe_ref_month`, `fipe_manual`) |
 | `expenses` | Gastos; `occurred_at`, `establishment`, `parts_cents`, `labor_cents`, `source` (`MANUAL`, `API`…) e `external_id` (idempotência da integração) |
 | `expense_categories` | 7 categorias fixas (criadas pela migração) |
 | `expense_attachments` / `files` / `fuel_logs` | Fotos da nota, arquivos enviados e litros |
@@ -98,6 +99,8 @@ components/placar/           Design system iOS: shell (tab bar, sheets, banner),
 │   └── date-picker.tsx      Seletor de data estilo iOS (pílula + calendário + rodas de mês/ano)
 lib/
 ├── api/                     Cliente HTTP (cookies + cabeçalho anti-CSRF) e hooks TanStack Query por recurso
+├── privacy.ts use-privacy.ts Botão de olho: embaça valores (`.sensitive`), preferência guardada no aparelho
+├── viewport.ts              Altura real da tela no app da Tela de Início do iPhone
 └── format.ts theme.ts …     Formatação pt-BR, tema claro/escuro
 proxy.ts                     Redireciona para /login sem sessão (os endereços antigos em português redirecionam em next.config.ts)
 next.config.ts               Rewrite /api, cabeçalhos de segurança (CSP, HSTS, X-Frame-Options…)

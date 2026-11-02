@@ -50,6 +50,7 @@ curl -X POST https://<domínio>/api/v1/integrations/fuel-expenses \
 | `401` | Chave ausente, inválida ou revogada | |
 | `422` | Placa não encontrada na conta, ou conta sem veículo | |
 | `429` | Mais de 60 requisições por minuto na mesma chave | `{ "message": "…", "retryAfter": 42 }` |
+| `500` | Falha inesperada no servidor; tente de novo mais tarde | `{ "statusCode": 500, "message": "Erro interno no servidor." }` |
 
 `expense` traz `id`, `vehicleId`, `category`, `amountCents`, `date`, `occurredAt`, `establishment`, `odometer`, `fuel`
 e `source: "API"`.

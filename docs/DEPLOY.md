@@ -121,8 +121,17 @@ O banco inteiro nasce de uma única migração (`InitialSchema`): tabelas, índi
 docker run --rm --env-file api.env placar-api npm run migration:run:prod
 ```
 
-O usuário do banco precisa ser dono das tabelas. Depois que o app estiver em produção, mudanças de schema entram como
-novas migrações (editar a `InitialSchema` não altera um banco que já existe).
+O usuário do banco precisa ser dono das tabelas. Regra do projeto: o schema fica sempre numa única migração; mudanças
+entram editando a própria `InitialSchema`. Como um banco que já rodou a migração não a executa de novo, aplique a
+mudança à mão antes do deploy (ou recrie o banco vazio). Colunas adicionadas depois da primeira publicação:
+
+```bash
+docker exec postgres psql -U appcar -d appcar -c 'ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS purchase_odometer integer; ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fipe_manual boolean NOT NULL DEFAULT false;'
+```
+
+Para recriar o banco vazio (apaga todos os dados do App Car): pare `appcar-api`, rode
+`docker exec postgres psql -U admin -d appcar -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public AUTHORIZATION appcar;'`
+e o `deploy/deploy.sh`, que roda a migração.
 
 ## Variáveis da API
 
@@ -139,7 +148,7 @@ Modelo completo em [apps/api/.env.example](../apps/api/.env.example). Em produç
 | `STORAGE_PROVIDER=gdrive`, `GOOGLE_DRIVE_*` | Uploads no Google Drive da conta do app (ver abaixo). As fotos são servidas pela API, só para o dono |
 | `S3_*` | Só com `STORAGE_PROVIDER=s3` (bucket privado S3/R2) ou para ler arquivos enviados antes do Drive |
 | `PLATE_PROVIDER` | `none` em produção (a simulação `mock` é recusada): veículos são cadastrados com os dados digitados até contratar um provedor de placa (ver abaixo) |
-| `FIPE_PROVIDER=parallelum`, `FIPE_TOKEN` | Token opcional da Parallelum para mais consultas por dia |
+| `FIPE_PROVIDER=parallelum`, `FIPE_TOKEN` | Token gratuito de fipe.api.br/register: mais consultas por dia e 30 consultas por placa por mês (sem token, só 5) |
 
 ## Google Drive (uploads)
 
