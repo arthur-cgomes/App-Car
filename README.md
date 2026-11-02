@@ -56,8 +56,9 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 - **PIN e códigos:** vão por e-mail (no Mailpit, em desenvolvimento). Com `SMS_PROVIDER=console`, os enviados por SMS
   aparecem só no terminal da API (`[SMS] Para +55…`).
 - **E-mail:** com `SMTP_URL=smtp://localhost:1025` os e-mails chegam no Mailpit (http://localhost:8025).
-- **Consulta de placa:** `PLATE_PROVIDER=mock` é um provedor simulado; `RIO2A18` traz o Polo do carro padrão e placas
-  começando com `ZZZ` não existem. Enquanto não há provedor real, o veículo pode ser cadastrado manualmente.
+- **Consulta de placa:** só no ambiente local, `PLATE_PROVIDER=mock` simula a consulta (`RIO2A18` traz o Polo do carro
+  padrão; placas começando com `ZZZ` não existem). Em produção é `PLATE_PROVIDER=none`: o veículo é cadastrado com os
+  dados digitados e a tela Consulta mostra "em breve" até haver um provedor real.
 - **Uploads:** `STORAGE_PROVIDER=gdrive` envia ao Google Drive (configuração em [docs/DEPLOY.md](docs/DEPLOY.md));
   `s3` usa o SeaweedFS local do `docker-compose`.
 - **Design de referência:** `python3 -m http.server 4400 --directory docs/design` e abra http://localhost:4400/Placar.html.
@@ -65,7 +66,8 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 ## Funcionalidades
 
 - **Entrar:** e-mail ou CPF + senha (8+ caracteres com maiúscula, número e caractere especial) ou **placa + PIN**, enviado por e-mail ou SMS conforme a preferência do usuário (por enquanto, só e-mail).
-  O cadastro confirma o e-mail com um código; o celular é opcional.
+  O cadastro pede nome, e-mail, CPF, celular e senha e confirma o e-mail com um código; se o e-mail não puder ser
+  enviado, nada é gravado.
 - **Resumo:** veículo ativo, gasto do mês, custo por km, próximos lembretes e atalhos para Ficha e contatos de emergência.
 - **Gastos:** lançamento com categoria, valor, data (seletor estilo iOS), local, odômetro, litros e fotos da nota.
   Em **Manutenção**, peças e mão de obra são informadas separadamente e o total é a soma das duas.
@@ -75,8 +77,10 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
   app oferece um lembrete para daqui a 3, 6 ou 12 meses.
 - **Ficha do veículo:** FIPE, dados, intervalo de revisão, documentos, seguros, abastecimentos (consumo médio),
   contatos de emergência e relatórios (JSON, CSV e PDF) com o total de peças e mão de obra.
-- **Veículos:** cadastro pela placa ou manual (marca entre as 10 mais vendidas, modelo, versão, cor, km e data da compra).
-- **Consulta:** dados e débitos de qualquer placa, com "Lançar como gasto". O app só acompanha débitos; não há pagamento.
+- **Veículos:** cadastro com a placa e os dados do documento (marca entre as 10 mais vendidas, modelo, versão, cor, km com
+  separador de milhar e data da compra); com um provedor de placa, os dados podem vir da consulta.
+- **Consulta:** dados e débitos de qualquer placa, com "Lançar como gasto" (quando houver provedor de placa). O app só
+  acompanha débitos; não há pagamento.
 - **Perfil:** dados pessoais, foto, tema, canal do PIN (e-mail ou SMS), confirmação do e-mail, link para trocar a senha, **Integrações** (chaves de
   API) e Privacidade (exportar dados e excluir conta; a exclusão definitiva acontece em 30 dias).
 

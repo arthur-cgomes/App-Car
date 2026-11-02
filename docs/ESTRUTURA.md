@@ -87,19 +87,19 @@ Tabelas em `snake_case`; toda tabela de negócio tem `id`, `created_at`, `update
 
 ```
 app/
-├── (auth)/                  entrar, criar-conta, esqueci-senha, nova-senha
+├── (auth)/                  login, signup, forgot-password, reset-password
 ├── (app)/                   Telas autenticadas, dentro do AppShell
 │   ├── page.tsx             Resumo
-│   ├── gastos/ lembretes/ consulta/
-│   ├── veiculo/             Ficha: documentos, seguros, abastecimentos, contatos, relatórios
-│   └── perfil/              Perfil e integracoes (chaves de API)
+│   ├── expenses/ reminders/ lookup/
+│   ├── vehicle/             Ficha: documents, insurances, fuel, contacts, reports
+│   └── profile/             Perfil e integrations (chaves de API)
 ├── layout.tsx manifest.ts robots.ts globals.css
 components/placar/           Design system iOS: shell (tab bar, sheets, banner), telas, sheets e células
 │   └── date-picker.tsx      Seletor de data estilo iOS (pílula + calendário + rodas de mês/ano)
 lib/
 ├── api/                     Cliente HTTP (cookies + cabeçalho anti-CSRF) e hooks TanStack Query por recurso
 └── format.ts theme.ts …     Formatação pt-BR, tema claro/escuro
-proxy.ts                     Redireciona para /entrar sem sessão
+proxy.ts                     Redireciona para /login sem sessão (os endereços antigos em português redirecionam em next.config.ts)
 next.config.ts               Rewrite /api, cabeçalhos de segurança (CSP, HSTS, X-Frame-Options…)
 e2e/                         Playwright
 ```

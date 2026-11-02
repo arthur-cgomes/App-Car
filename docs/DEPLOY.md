@@ -138,7 +138,7 @@ Modelo completo em [apps/api/.env.example](../apps/api/.env.example). Em produç
 | `SMTP_URL`, `MAIL_FROM` | Resend (`smtps://resend:<API_KEY>@smtp.resend.com:465`) ou Brevo (`smtp://<login>:<chave>@smtp-relay.brevo.com:587`); `MAIL_FROM` com domínio verificado |
 | `STORAGE_PROVIDER=gdrive`, `GOOGLE_DRIVE_*` | Uploads no Google Drive da conta do app (ver abaixo). As fotos são servidas pela API, só para o dono |
 | `S3_*` | Só com `STORAGE_PROVIDER=s3` (bucket privado S3/R2) ou para ler arquivos enviados antes do Drive |
-| `PLATE_PROVIDER` | `mock` até contratar um provedor de consulta de placa (ver abaixo) |
+| `PLATE_PROVIDER` | `none` em produção (a simulação `mock` é recusada): veículos são cadastrados com os dados digitados até contratar um provedor de placa (ver abaixo) |
 | `FIPE_PROVIDER=parallelum`, `FIPE_TOKEN` | Token opcional da Parallelum para mais consultas por dia |
 
 ## Google Drive (uploads)
