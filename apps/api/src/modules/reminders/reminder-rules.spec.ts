@@ -1,4 +1,4 @@
-import { addMonths, debtReminders, debtTitle, ipvaEstimate, nextServiceKm, paidDebtKeys, serviceReminder } from './reminder-rules';
+import { addMonths, debtReminders, debtTitle, ipvaEstimate, nextServiceKm, oilChangeReminder, paidDebtKeys, serviceReminder } from './reminder-rules';
 
 const debt = (overrides: object) => ({
   type: 'FINE' as const,
@@ -31,6 +31,22 @@ describe('regras de lembretes automáticos', () => {
     const paid = debt({ type: 'IPVA', description: 'IPVA 2026', amountCents: 198540, status: 'PAID' });
     expect(ipvaEstimate([paid], '2026-10-31')).toMatchObject({ sourceKey: 'IPVA:2027', title: 'IPVA 2027', dueDate: '2027-01-31', amountCents: 198540 });
     expect(ipvaEstimate([{ ...paid, status: 'OPEN' }], '2026-10-31')).toBeNull();
+  });
+
+  it('com valor FIPE, estima o IPVA em 4% dele, como na Ficha', () => {
+    const paid = debt({ type: 'IPVA', description: 'IPVA 2026', amountCents: 198540, status: 'PAID' });
+    expect(ipvaEstimate([paid], '2026-10-31', 7932600)).toMatchObject({ sourceKey: 'IPVA:2027', amountCents: 317304 });
+    expect(ipvaEstimate([], '2026-10-31', 4375000)).toMatchObject({ title: 'IPVA 2027', dueDate: '2027-01-31', amountCents: 175000 });
+  });
+
+  it('troca de óleo: 6 meses ou 5 mil km, 1 ano ou 10 mil km', () => {
+    expect(oilChangeReminder({ date: '2026-03-10', odometer: 40000 }, 5000)).toMatchObject({
+      source: 'AUTO_OIL',
+      title: 'Troca de óleo',
+      dueDate: '2026-09-10',
+      dueOdometer: 45000,
+    });
+    expect(oilChangeReminder({ date: '2026-03-10', odometer: 40000 }, 10000)).toMatchObject({ dueDate: '2027-03-10', dueOdometer: 50000 });
   });
 
   it('soma meses respeitando o fim do mês', () => {

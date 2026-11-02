@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { OIL_CHANGE_INTERVALS } from '../../reminders/reminder-rules';
 
 export class UpdateVehicleDto {
   @ApiPropertyOptional({ example: 38420 })
@@ -15,6 +16,11 @@ export class UpdateVehicleDto {
   @Min(1000)
   @Max(100_000)
   serviceIntervalKm?: number;
+
+  @ApiPropertyOptional({ example: 10000, enum: OIL_CHANGE_INTERVALS, description: '5000 = 6 meses ou 5 mil km; 10000 = 1 ano ou 10 mil km' })
+  @IsOptional()
+  @IsIn(OIL_CHANGE_INTERVALS, { message: 'Escolha 6 meses ou 5 mil km, ou 1 ano ou 10 mil km.' })
+  oilChangeIntervalKm?: number;
 
   @ApiPropertyOptional({ example: 7932600, nullable: true, description: 'Valor FIPE informado pelo usuário, em centavos; null volta ao valor automático' })
   @IsOptional()

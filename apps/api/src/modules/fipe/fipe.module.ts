@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthUser } from '../../common/auth/auth-user';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Env } from '../../config/env';
+import { RemindersModule } from '../reminders/reminders.module';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { VehiclesModule } from '../vehicles/vehicles.module';
 import { FipeProvider } from './fipe-provider';
@@ -24,7 +25,7 @@ export class FipeController {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Vehicle]), VehiclesModule],
+  imports: [TypeOrmModule.forFeature([Vehicle]), VehiclesModule, RemindersModule],
   controllers: [FipeController],
   providers: [
     FipeService,

@@ -131,7 +131,7 @@ export class ReportsService {
 
   toPdf(report: Report): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: 'Relatório de gastos — App Car' } });
+      const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: 'Relatório de gastos do App Car' } });
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));

@@ -6,6 +6,7 @@ import { todayInBrazil } from '../../common/today';
 import { REDIS } from '../../infra/redis/redis.constants';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { VehiclesService } from '../vehicles/vehicles.service';
+import { ReminderSyncService } from '../reminders/reminder-sync.service';
 import { FipeProvider, ipvaEstimateCents } from './fipe-provider';
 
 const PLATE_RETRY_SECONDS = 30 * 86_400;
@@ -17,11 +18,15 @@ export class FipeService {
     private readonly vehiclesService: VehiclesService,
     private readonly provider: FipeProvider,
     @Inject(REDIS) private readonly redis: Redis,
+    private readonly reminderSync: ReminderSyncService,
   ) {}
 
   async forVehicle(userId: string, vehicleId: string) {
     const vehicle = await this.vehiclesService.findOwned(userId, vehicleId);
-    if (vehicle.fipeManual && vehicle.fipeValueCents) return this.result(vehicle, vehicle.fipeValueCents);
+    if (vehicle.fipeManual && vehicle.fipeValueCents) {
+      await this.reminderSync.sync(vehicle);
+      return this.result(vehicle, vehicle.fipeValueCents);
+    }
     if (!vehicle.fipeCode) await this.fromPlate(vehicle);
     if (!vehicle.fipeCode) return { available: false as const };
 
@@ -35,6 +40,7 @@ export class FipeService {
       }
     }
     if (!vehicle.fipeValueCents) return { available: false as const };
+    await this.reminderSync.sync(vehicle);
     return this.result(vehicle, vehicle.fipeValueCents);
   }
 

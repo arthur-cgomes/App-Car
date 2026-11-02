@@ -94,6 +94,10 @@ describe('Ficha do veículo (integração)', () => {
       ipvaEstimateCents: 260000,
     });
     expect(provider.plateCalls + provider.calls).toBe(calls);
+    const ipva = (await request(server()).get(`/v1/vehicles/${manual}/reminders`).set(asAlice).expect(200)).body.items.find(
+      (r: { source: string }) => r.source === 'AUTO_IPVA',
+    );
+    expect(ipva).toMatchObject({ title: `IPVA ${+today.slice(0, 4) + 1}`, amountCents: 260000 });
 
     await request(server()).patch(`/v1/vehicles/${manual}`).set(asAlice).send({ fipeValueCents: null }).expect(200);
     expect((await request(server()).get(fipe).set(asAlice).expect(200)).body).toEqual({ available: false });

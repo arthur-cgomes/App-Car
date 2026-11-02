@@ -79,6 +79,9 @@ export class Vehicle extends BaseEntity {
   @Column({ type: 'integer', default: 10000 })
   serviceIntervalKm: number;
 
+  @Column({ type: 'integer', default: 10000 })
+  oilChangeIntervalKm: number;
+
   @Column({ type: 'boolean', default: true })
   active: boolean;
 }

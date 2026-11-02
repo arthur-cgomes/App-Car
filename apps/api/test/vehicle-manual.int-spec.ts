@@ -60,7 +60,7 @@ describe('Cadastro manual do veículo e contatos de emergência (integração)',
       });
 
       const reminders = (await request(server()).get(`/v1/vehicles/${vehicleId}/reminders`).set(asAlice).expect(200)).body.items;
-      expect(reminders.map((r: { source: string }) => r.source)).toEqual(['AUTO_SERVICE']);
+      expect(reminders.map((r: { source: string }) => r.source).sort()).toEqual(['AUTO_OIL', 'AUTO_SERVICE']);
     });
 
     it('exige marca e modelo e valida a data da compra', async () => {

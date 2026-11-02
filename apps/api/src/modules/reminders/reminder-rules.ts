@@ -1,4 +1,5 @@
 import type { ExpenseCategoryCode } from '@monitoring-car/shared';
+import { ipvaEstimateCents } from '../fipe/fipe-provider';
 import type { PlateDebt } from '../plate-lookup/plate-provider';
 import type { ReminderSource } from './reminder.entity';
 
@@ -29,6 +30,22 @@ export function serviceReminder(odometer: number, intervalKm: number): AutoRemin
   };
 }
 
+export const OIL_CHANGE_INTERVALS = [5000, 10000];
+const OIL_CHANGE_MONTHS: Record<number, number> = { 5000: 6, 10000: 12 };
+export const OIL_CHANGE_PATTERN = /[óo]leo/i;
+
+export function oilChangeReminder(base: { odometer: number; date: string }, intervalKm: number): AutoReminder {
+  return {
+    source: 'AUTO_OIL',
+    sourceKey: `OIL:${base.date}:${base.odometer}`,
+    categoryCode: 'MAINTENANCE',
+    title: 'Troca de óleo',
+    dueDate: addMonths(base.date, OIL_CHANGE_MONTHS[intervalKm] ?? 12),
+    dueOdometer: base.odometer + intervalKm,
+    amountCents: null,
+  };
+}
+
 export function debtTitle(debt: Pick<PlateDebt, 'type' | 'description'>) {
   if (debt.type === 'FINE' || debt.type === 'OTHER') {
     const text = debt.description.replace(/\s*·\s*/, ' de ');
@@ -51,10 +68,11 @@ export function debtReminders(debts: PlateDebt[]): AutoReminder[] {
     }));
 }
 
-export function ipvaEstimate(debts: PlateDebt[], today: string): AutoReminder | null {
+export function ipvaEstimate(debts: PlateDebt[], today: string, fipeValueCents: number | null = null): AutoReminder | null {
   const year = Number(today.slice(0, 4));
   const paid = debts.find((debt) => debt.type === 'IPVA' && debt.status === 'PAID' && debt.description.includes(String(year)));
-  if (!paid) return null;
+  const amountCents = fipeValueCents ? ipvaEstimateCents(fipeValueCents) : paid?.amountCents;
+  if (!amountCents) return null;
   return {
     source: 'AUTO_IPVA',
     sourceKey: `IPVA:${year + 1}`,
@@ -62,7 +80,7 @@ export function ipvaEstimate(debts: PlateDebt[], today: string): AutoReminder | 
     title: `IPVA ${year + 1}`,
     dueDate: `${year + 1}-01-31`,
     dueOdometer: null,
-    amountCents: paid.amountCents,
+    amountCents,
   };
 }
 

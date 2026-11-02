@@ -3,15 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
 import { todayInBrazil } from '../../common/today';
 import type { PlateDebt } from '../plate-lookup/plate-provider';
+import { Expense } from '../expenses/expense.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { Reminder } from './reminder.entity';
-import { AutoReminder, debtReminders, ipvaEstimate, paidDebtKeys, serviceReminder } from './reminder-rules';
+import { AutoReminder, OIL_CHANGE_PATTERN, debtReminders, ipvaEstimate, oilChangeReminder, paidDebtKeys, serviceReminder } from './reminder-rules';
 
 @Injectable()
 export class ReminderSyncService {
   constructor(
     @InjectRepository(Reminder) private readonly reminders: Repository<Reminder>,
     @InjectRepository(Vehicle) private readonly vehicles: Repository<Vehicle>,
+    @InjectRepository(Expense) private readonly expenses: Repository<Expense>,
   ) {}
 
   async sync(vehicle: Vehicle, debts?: PlateDebt[], today = todayInBrazil()) {
@@ -28,10 +30,19 @@ export class ReminderSyncService {
     }
     if (pendingServices.length === beyond.length) desired.push(service);
 
+    const oil = oilChangeReminder(await this.lastOilChange(vehicle, today), vehicle.oilChangeIntervalKm);
+    const staleOil = existing.filter((r) => r.source === 'AUTO_OIL' && !r.doneAt && r.sourceKey !== oil.sourceKey);
+    if (staleOil.length) {
+      await this.reminders.softRemove(staleOil);
+      staleOil.forEach((r) => byKey.delete(r.sourceKey!));
+    }
+    desired.push(oil);
+
+    const ipva = ipvaEstimate(debts ?? [], today, vehicle.fipeValueCents);
+    if (ipva) desired.push(ipva);
+
     if (debts) {
       desired.push(...debtReminders(debts));
-      const ipva = ipvaEstimate(debts, today);
-      if (ipva) desired.push(ipva);
 
       for (const key of paidDebtKeys(debts)) {
         const reminder = byKey.get(key);
@@ -47,6 +58,18 @@ export class ReminderSyncService {
         await this.reminders.save(this.reminders.merge(current, item));
       }
     }
+  }
+
+  private async lastOilChange(vehicle: Vehicle, today: string) {
+    const maintenance = await this.expenses.find({
+      where: { vehicleId: vehicle.id, category: { code: 'MAINTENANCE' } },
+      order: { date: 'DESC', createdAt: 'DESC' },
+      take: 50,
+    });
+    const last = maintenance.find((expense) => expense.description && OIL_CHANGE_PATTERN.test(expense.description));
+    if (last) return { date: last.date, odometer: last.odometer ?? vehicle.baseOdometer };
+    const since = vehicle.createdAt ? todayInBrazil(vehicle.createdAt) : today;
+    return { date: since, odometer: vehicle.baseOdometer };
   }
 
   async upsertAuto(vehicleId: string, item: AutoReminder) {

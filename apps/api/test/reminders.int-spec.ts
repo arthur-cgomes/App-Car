@@ -3,6 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { addDays, todayInBrazil } from '../src/common/today';
+import { addMonths as addMonthsIso } from '../src/modules/reminders/reminder-rules';
 import { DailyRemindersJob } from '../src/modules/jobs/daily-reminders.job';
 import { addMonths } from '../src/modules/reminders/reminder-rules';
 import { User } from '../src/modules/users/user.entity';
@@ -50,7 +51,7 @@ describe('Lembretes e Resumo (integração)', () => {
 
   describe('automáticos', () => {
     it('o veículo novo já nasce com multa em aberto, revisão por km e estimativa do IPVA', async () => {
-      const { items } = await list();
+      const items = (await list()).items.filter((r) => r.title !== 'Troca de óleo');
       expect(items.map((r) => r.title)).toEqual(['Pagar multa de velocidade', 'Revisão dos 40.000 km', `IPVA ${year + 1}`]);
       expect(items[0]).toMatchObject({ category: 'FINES', automatic: true, amountCents: 13016, dueDate: addDays(today, 10) });
       expect(items[1]).toMatchObject({ category: 'MAINTENANCE', dueOdometer: 40000 });
@@ -60,9 +61,30 @@ describe('Lembretes e Resumo (integração)', () => {
     it('não duplica ao consultar a placa de novo e não deixa excluir automáticos', async () => {
       await request(server()).post('/v1/plates/RIO2A18/lookup').set(asAlice).expect(200);
       const { items } = await list();
-      expect(items).toHaveLength(3);
+      expect(items).toHaveLength(4);
       const res = await request(server()).delete(`${base}/${items[0].id}`).set(asAlice).expect(400);
       expect(res.body.message).toBe('Lembretes automáticos não podem ser excluídos; marque como concluído.');
+    });
+
+    it('troca de óleo: vence por data ou km, segue o intervalo da Ficha e recomeça na última troca lançada', async () => {
+      const oil = async () => (await list()).items.filter((r) => r.title === 'Troca de óleo' && !r.doneAt);
+      expect(await oil()).toEqual([expect.objectContaining({ category: 'MAINTENANCE', automatic: true, dueOdometer: 48420, dueDate: addMonthsIso(today, 12) })]);
+
+      const invalid = await request(server()).patch(`/v1/vehicles/${vehicleId}`).set(asAlice).send({ oilChangeIntervalKm: 7000 }).expect(400);
+      expect(invalid.body.message).toContain('Escolha 6 meses ou 5 mil km, ou 1 ano ou 10 mil km.');
+      await request(server()).patch(`/v1/vehicles/${vehicleId}`).set(asAlice).send({ oilChangeIntervalKm: 5000 }).expect(200);
+      expect(await oil()).toEqual([expect.objectContaining({ dueOdometer: 43420, dueDate: addMonthsIso(today, 6) })]);
+
+      const change = await request(server())
+        .post(`/v1/vehicles/${vehicleId}/expenses`)
+        .set(asAlice)
+        .send({ category: 'MAINTENANCE', description: 'Troca de óleo e filtro', amountCents: 35000, date: today, odometer: 39000 })
+        .expect(201);
+      expect(await oil()).toEqual([expect.objectContaining({ dueOdometer: 44000, dueDate: addMonthsIso(today, 6) })]);
+
+      await request(server()).delete(`/v1/vehicles/${vehicleId}/expenses/${change.body.id}`).set(asAlice).expect(204);
+      await request(server()).patch(`/v1/vehicles/${vehicleId}`).set(asAlice).send({ oilChangeIntervalKm: 10000 }).expect(200);
+      expect(await oil()).toEqual([expect.objectContaining({ dueOdometer: 48420, dueDate: addMonthsIso(today, 12) })]);
     });
 
     it('a revisão concluída dá lugar à próxima quando o odômetro passa dela', async () => {
