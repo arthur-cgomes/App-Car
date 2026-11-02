@@ -72,7 +72,9 @@ export function useSaveReminder() {
   return useMutation({
     mutationFn: ({ vehicleId, id, input }: { vehicleId: string; id?: string; input: ReminderInput }) =>
       id ? api<Reminder>(`${base(vehicleId)}/${id}`, { method: "PATCH", body: input }) : api<Reminder>(base(vehicleId), { body: input }),
-    onSuccess: (_, { vehicleId }) => invalidate(client, vehicleId),
+    onSuccess: (_, { vehicleId }) => {
+      void invalidate(client, vehicleId);
+    },
   });
 }
 
@@ -80,6 +82,8 @@ export function useDeleteReminder() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ vehicleId, id }: { vehicleId: string; id: string }) => api<void>(`${base(vehicleId)}/${id}`, { method: "DELETE" }),
-    onSuccess: (_, { vehicleId }) => invalidate(client, vehicleId),
+    onSuccess: (_, { vehicleId }) => {
+      void invalidate(client, vehicleId);
+    },
   });
 }

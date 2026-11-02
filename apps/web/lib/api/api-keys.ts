@@ -19,7 +19,9 @@ export function useCreateApiKey() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (name: string) => api<ApiKey & { key: string }>("/me/api-keys", { body: { name } }),
-    onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: KEY });
+    },
   });
 }
 
@@ -27,7 +29,9 @@ export function useRevokeApiKey() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api<void>(`/me/api-keys/${id}`, { method: "DELETE" }),
-    onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: KEY });
+    },
   });
 }
 

@@ -52,6 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [sheet, setSheet] = useState<SheetState | null>(null);
+  const sheetKey = useRef(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [action, setAction] = useState<ConfirmAction | null>(null);
@@ -106,7 +107,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const openSheet = useCallback((next: SheetRequest) => {
     setPickerOpen(false);
-    setSheet({ ...next, key: Date.now() });
+    sheetKey.current = Date.now();
+    setSheet({ ...next, key: sheetKey.current });
     setSheetOpen(true);
   }, []);
 
@@ -272,14 +274,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             expense={sheet.expense}
             prefill={sheet.prefill}
             onCancel={() => setSheetOpen(false)}
-            onSaved={(saved) => {
+            onSubmit={(saving) => {
+              const key = sheet.key;
               setSheetOpen(false);
-              if (!sheet.expense && saved.category === "MAINTENANCE") {
-                setTimeout(() => {
-                  setReminderOffer(saved);
-                  setLastReminderOffer(saved);
-                }, 450);
-              }
+              saving
+                .then((saved) => {
+                  if (!sheet.expense && saved.category === "MAINTENANCE") {
+                    setTimeout(() => {
+                      setReminderOffer(saved);
+                      setLastReminderOffer(saved);
+                    }, 450);
+                  }
+                })
+                .catch(() => {
+                  if (sheetKey.current === key) {
+                    toast("Não foi possível salvar o gasto. Confira e tente de novo.");
+                    setSheetOpen(true);
+                  } else {
+                    toast("Não foi possível salvar o gasto. Tente de novo.");
+                  }
+                });
             }}
           />
         )}

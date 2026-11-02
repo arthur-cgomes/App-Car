@@ -27,7 +27,9 @@ export function useSaveEmergencyContact(vehicleId: string, id?: string) {
   return useMutation({
     mutationFn: (input: EmergencyContactInput) =>
       id ? api<EmergencyContact>(`${base(vehicleId)}/${id}`, { method: "PATCH", body: input }) : api<EmergencyContact>(base(vehicleId), { body: input }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["emergency-contacts", vehicleId] }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["emergency-contacts", vehicleId] });
+    },
   });
 }
 
@@ -35,7 +37,9 @@ export function useDeleteEmergencyContact(vehicleId: string) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api<void>(`${base(vehicleId)}/${id}`, { method: "DELETE" }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["emergency-contacts", vehicleId] }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["emergency-contacts", vehicleId] });
+    },
   });
 }
 

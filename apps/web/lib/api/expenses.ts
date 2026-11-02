@@ -111,7 +111,9 @@ export function useSaveExpense() {
       id
         ? api<Expense>(`${base(vehicleId)}/${id}`, { method: "PATCH", body: input })
         : api<Expense>(base(vehicleId), { body: input }),
-    onSuccess: (_, { vehicleId }) => invalidate(client, vehicleId),
+    onSuccess: (_, { vehicleId }) => {
+      void invalidate(client, vehicleId);
+    },
   });
 }
 
@@ -119,6 +121,8 @@ export function useDeleteExpense() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ vehicleId, id }: { vehicleId: string; id: string }) => api<void>(`${base(vehicleId)}/${id}`, { method: "DELETE" }),
-    onSuccess: (_, { vehicleId }) => invalidate(client, vehicleId),
+    onSuccess: (_, { vehicleId }) => {
+      void invalidate(client, vehicleId);
+    },
   });
 }

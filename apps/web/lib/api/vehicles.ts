@@ -95,7 +95,9 @@ export function useAddVehicle() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (body: NewVehicle) => api<Vehicle>("/vehicles", { body }),
-    onSuccess: () => Promise.all([client.invalidateQueries({ queryKey: ["vehicles"] }), client.invalidateQueries({ queryKey: ["me"] })]),
+    onSuccess: () => {
+      void Promise.all([client.invalidateQueries({ queryKey: ["vehicles"] }), client.invalidateQueries({ queryKey: ["me"] })]);
+    },
   });
 }
 

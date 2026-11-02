@@ -99,10 +99,10 @@ interface ExpenseSheetProps {
   expense?: Expense;
   prefill?: Partial<ExpenseFormValues>;
   onCancel: () => void;
-  onSaved: (expense: Expense) => void;
+  onSubmit: (saving: Promise<Expense>) => void;
 }
 
-export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSaved }: ExpenseSheetProps) {
+export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSubmit }: ExpenseSheetProps) {
   const today = useToday() ?? "";
   const save = useSaveExpense();
   const [form, setForm] = useState<ExpenseFormValues>(() =>
@@ -139,12 +139,9 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
     const liters = form.liters.trim() ? Number(form.liters.replace(/\./g, "").replace(",", ".")) : null;
     if (isFuel && liters !== null && !(liters > 0)) return setError("Informe os litros.");
 
-    try {
-      setUploading(true);
-      const attachmentIds = [];
-      for (const photo of form.photos) attachmentIds.push(photo.fileId ?? (await uploadFile(photo.file!)));
-      setUploading(false);
-
+    setUploading(true);
+    const saving = (async () => {
+      const attachmentIds = await Promise.all(form.photos.map((photo) => photo.fileId ?? uploadFile(photo.file!)));
       const saved = await save.mutateAsync({
         vehicleId,
         id: expense?.id,
@@ -163,11 +160,10 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
         },
       });
       form.photos.forEach((photo) => photo.file && URL.revokeObjectURL(photo.preview));
-      onSaved(saved);
-    } catch (failure) {
-      setUploading(false);
-      setError(errorMessage(failure));
-    }
+      return saved;
+    })();
+    saving.catch((failure) => setError(errorMessage(failure))).finally(() => setUploading(false));
+    onSubmit(saving);
   };
 
   return (

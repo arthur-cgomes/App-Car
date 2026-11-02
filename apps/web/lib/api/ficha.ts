@@ -110,12 +110,13 @@ export function useFichaMutation<TInput>(resource: "documents" | "insurances", v
   const client = useQueryClient();
   return useMutation({
     mutationFn: request,
-    onSuccess: () =>
-      Promise.all([
+    onSuccess: () => {
+      void Promise.all([
         client.invalidateQueries({ queryKey: [resource, vehicleId] }),
         client.invalidateQueries({ queryKey: ["expenses", vehicleId] }),
         client.invalidateQueries({ queryKey: ["reminders", vehicleId] }),
-      ]),
+      ]);
+    },
   });
 }
 
