@@ -13,6 +13,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   deploy:
@@ -46,7 +47,17 @@ jobs:
 
       - name: Deploy na VPS
         if: steps.check.outputs.ready == 'true'
-        run: ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "bash /opt/repos-run/app-car/deploy/deploy.sh $SHA"
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TARGET="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          IMAGE_REGISTRY="ghcr.io/${GITHUB_REPOSITORY,,}"
+          SSH=(ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$TARGET")
+          printf '%s' "$REGISTRY_TOKEN" | "${SSH[@]}" "docker login ghcr.io -u ${{ github.actor }} --password-stdin >/dev/null" || true
+          status=0
+          "${SSH[@]}" "IMAGE_REGISTRY=$IMAGE_REGISTRY IMAGE_TAG=$SHA bash /opt/repos-run/app-car/deploy/deploy.sh $SHA" || status=$?
+          "${SSH[@]}" "docker logout ghcr.io >/dev/null" || true
+          exit $status
 
       - name: Verificação pública
         if: steps.check.outputs.ready == 'true'

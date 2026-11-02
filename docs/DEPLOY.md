@@ -21,11 +21,14 @@ O App Car segue o padrão dos demais apps da VPS: o código fica em `/opt/repos-
 do `/opt/infra/docker-compose.yml` (junto do Postgres, do Redis e do Nginx Proxy Manager) e usam o Postgres e o Redis
 compartilhados, com banco e usuário próprios (`appcar`) e o índice `2` do Redis.
 
-A cada push na `master`, o workflow **CI** roda lint, tipos, testes e build; se passar, o workflow **Deploy** entra na VPS
+A cada push na `master`, o workflow **CI** roda lint, tipos, testes e build e, em paralelo, monta as imagens da API e do
+web num runner ARM do GitHub (com cache das camadas) e as publica no GitHub Container Registry
+(`ghcr.io/arthur-cgomes/app-car-api` e `-web`, marcadas com o commit). Se tudo passar, o workflow **Deploy** entra na VPS
 por SSH e executa `deploy/deploy.sh <commit>`, que:
 
 1. atualiza `/opt/repos-run/app-car` para o commit testado;
-2. gera as imagens `appcar-api` e `appcar-web` pelo compose da infra;
+2. baixa as imagens prontas e as marca como `appcar-api` e `appcar-web` (a VPS não compila nada); se não conseguir baixar,
+   gera as imagens na própria VPS pelo compose da infra, como fallback;
 3. roda a migração e sobe só esses dois serviços (`--no-deps`: Postgres, Redis e NPM não são tocados);
 4. confere API e web por dentro da rede e, no fim, o workflow chama `https://appcar.arthurgomes.dev/api/health`.
 

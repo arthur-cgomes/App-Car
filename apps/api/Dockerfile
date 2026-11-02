@@ -1,8 +1,10 @@
 FROM node:22-alpine AS build
 RUN npm install -g pnpm@11.10.0
 WORKDIR /repo
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm fetch --frozen-lockfile
 COPY . .
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --offline
 RUN pnpm turbo run build --filter=@monitoring-car/api
 RUN pnpm --filter @monitoring-car/api deploy --legacy --prod /out
 

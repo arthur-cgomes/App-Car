@@ -19,8 +19,20 @@ git fetch --quiet origin master
 git reset --hard --quiet "$REF"
 git log -1 --format='    %h %s'
 
-echo "==> Build das imagens"
-"${COMPOSE[@]}" build --pull "${SERVICES[@]}"
+pull_images() {
+  [ -n "${IMAGE_REGISTRY:-}" ] && [ -n "${IMAGE_TAG:-}" ] || return 1
+  for service in api web; do
+    docker pull --quiet "$IMAGE_REGISTRY-$service:$IMAGE_TAG" >/dev/null || return 1
+    docker tag "$IMAGE_REGISTRY-$service:$IMAGE_TAG" "appcar-$service:latest"
+  done
+}
+
+if pull_images; then
+  echo "==> Imagens prontas do GitHub: $IMAGE_TAG"
+else
+  echo "==> Build das imagens na VPS"
+  "${COMPOSE[@]}" build --pull "${SERVICES[@]}"
+fi
 
 echo "==> Migração"
 "${COMPOSE[@]}" run --rm --no-deps appcar-api npm run migration:run:prod

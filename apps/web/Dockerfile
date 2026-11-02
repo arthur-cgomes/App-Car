@@ -1,8 +1,10 @@
 FROM node:22-alpine AS build
 RUN npm install -g pnpm@11.10.0
 WORKDIR /repo
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm fetch --frozen-lockfile
 COPY . .
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --offline
 ARG API_URL=http://api:3000
 ENV API_URL=$API_URL NEXT_TELEMETRY_DISABLED=1
 RUN pnpm turbo run build --filter=@monitoring-car/web
