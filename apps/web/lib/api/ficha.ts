@@ -127,7 +127,7 @@ export const fichaApi = {
   saveInsurance: (vehicleId: string, input: InsuranceInput, id?: string) =>
     id ? api(`${v(vehicleId)}/insurances/${id}`, { method: "PATCH", body: input }) : api(`${v(vehicleId)}/insurances`, { body: input }),
   deleteInsurance: (vehicleId: string, id: string) => api(`${v(vehicleId)}/insurances/${id}`, { method: "DELETE" }),
-  updateVehicle: (vehicleId: string, body: { serviceIntervalKm?: number; currentOdometer?: number; fipeValueCents?: number | null }) =>
+  updateVehicle: (vehicleId: string, body: { serviceIntervalKm?: number; oilChangeIntervalKm?: number; currentOdometer?: number; fipeValueCents?: number | null }) =>
     api<Vehicle>(v(vehicleId), { method: "PATCH", body }),
   deleteVehicle: (vehicleId: string) => api(v(vehicleId), { method: "DELETE" }),
 };

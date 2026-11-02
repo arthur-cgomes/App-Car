@@ -1,8 +1,9 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useMe } from "@/lib/api/auth";
+import { accountApi, useMe, type Me } from "@/lib/api/auth";
 import { errorMessage } from "@/lib/api/client";
 import { useActivateVehicle, useActiveVehicle, vehicleName } from "@/lib/api/vehicles";
 import { useDeleteExpense, type Expense } from "@/lib/api/expenses";
@@ -44,6 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const deleteReminder = useDeleteReminder();
   const saveReminder = useSaveReminder();
   const me = useMe();
+  const queryClient = useQueryClient();
   const { vehicle, vehicles } = useActiveVehicle();
   const activate = useActivateVehicle();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (accountTheme && accountTheme !== readTheme()) applyTheme(accountTheme);
   }, [accountTheme]);
+
+  const toggleTheme = () => {
+    const next = accountTheme === "light" ? "DARK" : "LIGHT";
+    applyTheme(next === "LIGHT" ? "light" : "dark");
+    queryClient.setQueryData<Me>(["me"], (current) => current && { ...current, theme: next });
+    accountApi.update({ theme: next }).catch((failure) => toast(errorMessage(failure)));
+  };
 
   const hidden = usePrivacy();
   const today = useToday();
@@ -194,6 +203,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <Icon name="gauge" size={20} stroke={2} />
                       </button>
                     )}
+                    <button
+                      type="button"
+                      aria-label={accountTheme === "light" ? "Usar tema escuro" : "Usar tema claro"}
+                      onClick={toggleTheme}
+                      className="grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
+                    >
+                      <Icon name={accountTheme === "light" ? "moon" : "sun"} size={20} stroke={2} />
+                    </button>
                     <button
                       type="button"
                       aria-label={overdue.length ? `Notificações: ${overdue.length} ${overdue.length === 1 ? "lembrete vencido" : "lembretes vencidos"}` : "Notificações"}

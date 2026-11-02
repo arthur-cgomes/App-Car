@@ -36,7 +36,7 @@ export function FuelScreen() {
             <div className="mx-4 flex flex-col gap-3.5 rounded-2xl bg-ios-cell p-4">
               <div className="text-[13px] font-semibold tracking-[.02em] text-ios-label2 uppercase">Consumo médio</div>
               <div className="font-rounded text-[44px] leading-none font-bold tracking-[-.02em] tabular-nums">
-                {data.averageKmPerLiter ? kml(data.averageKmPerLiter) : "—"}
+                {data.averageKmPerLiter ? kml(data.averageKmPerLiter) : <span className="text-[22px] text-ios-label2">Sem dados ainda</span>}
               </div>
               <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[13px] text-ios-label2">
                 {data.averagePricePerLiterCents && <span><Masked text={brl(data.averagePricePerLiterCents)} /> por litro</span>}

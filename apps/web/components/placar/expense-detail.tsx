@@ -77,7 +77,7 @@ export function ExpenseDetail({ vehicleId, expenseId, open, onBack, onEdit, onDe
             {expense.establishment && <ValueRow label="Local" value={expense.establishment} />}
             {expense.partsCents !== null && <ValueRow label="Peças" value={<Masked text={brl(expense.partsCents)} />} />}
             {expense.laborCents !== null && <ValueRow label="Mão de obra" value={<Masked text={brl(expense.laborCents)} />} />}
-            <ValueRow label="Odômetro" value={expense.odometer ? km(expense.odometer) : "—"} />
+            <ValueRow label="Odômetro" value={expense.odometer ? km(expense.odometer) : "Não informado"} />
             {expense.source === "API" && <ValueRow label="Origem" value="Integração" />}
             {expense.fuel && (
               <>

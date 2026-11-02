@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { ConsultaScreen } from "@/components/placar/screens/consulta-screen";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Consulta" };
 
 export default function ConsultaPage() {
-  return (
-    <Suspense>
-      <ConsultaScreen />
-    </Suspense>
-  );
+  redirect("/");
 }

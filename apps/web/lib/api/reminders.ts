@@ -6,7 +6,7 @@ export interface Reminder {
   id: string;
   category: ExpenseCategoryCode;
   title: string;
-  source: "MANUAL" | "AUTO_DEBT" | "AUTO_IPVA" | "AUTO_SERVICE" | "AUTO_INSURANCE";
+  source: "MANUAL" | "AUTO_DEBT" | "AUTO_IPVA" | "AUTO_SERVICE" | "AUTO_OIL" | "AUTO_INSURANCE";
   automatic: boolean;
   dueDate: string | null;
   dueOdometer: number | null;

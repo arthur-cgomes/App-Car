@@ -107,14 +107,6 @@ function VehicleSummary({ vehicle, today }: { vehicle: Vehicle; today: string })
         </button>
         <button
           type="button"
-          onClick={() => router.push(`/lookup?plate=${vehicle.plate}`)}
-          className="flex h-11 w-full cursor-pointer items-center gap-2 border-0 border-t-[0.5px] border-ios-sep bg-transparent px-4 text-[15px] text-ios-tint active:bg-ios-fill"
-        >
-          <Icon name="search" />
-          Consultar débitos desta placa
-        </button>
-        <button
-          type="button"
           onClick={() => router.push("/vehicle")}
           className="flex h-11 w-full cursor-pointer items-center gap-2 border-0 border-t-[0.5px] border-ios-sep bg-transparent px-4 text-[15px] text-ios-tint active:bg-ios-fill"
         >

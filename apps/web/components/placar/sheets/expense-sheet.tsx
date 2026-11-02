@@ -195,7 +195,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSa
       {showParts && (
         <Section
           header={<SectionHeader>Classificação da peça</SectionHeader>}
-          footer={<Footnote>{partsRequired ? "Obrigatório para peças." : "Opcional — ajuda a ver quanto cada sistema do carro custa."}</Footnote>}
+          footer={<Footnote>{partsRequired ? "Obrigatório para peças." : "Opcional. Ajuda a ver quanto cada sistema do carro custa."}</Footnote>}
         >
           <div className="mx-4 flex flex-wrap gap-2">
             {PART_SYSTEMS.map((system) => (

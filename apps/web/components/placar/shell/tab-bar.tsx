@@ -8,7 +8,6 @@ export const TABS = [
   { href: "/", title: "Resumo", icon: "house" },
   { href: "/expenses", title: "Gastos", icon: "receipt" },
   { href: "/reminders", title: "Lembretes", icon: "bell" },
-  { href: "/lookup", title: "Consulta", icon: "search" },
 ] as const satisfies readonly { href: string; title: string; icon: IconName }[];
 
 export type TabHref = (typeof TABS)[number]["href"];

@@ -22,6 +22,10 @@ import { NavRow } from "./nav-row";
 import { Masked } from "../masked";
 
 const INTERVALS = [5000, 10000, 15000, 20000];
+const OIL_INTERVALS = [
+  { km: 5000, label: "6 meses ou 5 mil km" },
+  { km: 10000, label: "1 ano ou 10 mil km" },
+];
 
 export function FichaScreen() {
   const router = useRouter();
@@ -30,6 +34,7 @@ export function FichaScreen() {
   const { vehicle, isLoading } = useActiveVehicle();
   const fipe = useFipe(vehicle?.id);
   const [interval, setInterval] = useState<number | null>(null);
+  const [oilInterval, setOilInterval] = useState<number | null>(null);
   const [fipeOpen, setFipeOpen] = useState(false);
   const [fipeKey, setFipeKey] = useState(0);
 
@@ -52,6 +57,18 @@ export function FichaScreen() {
       await Promise.all([client.invalidateQueries({ queryKey: ["vehicles"] }), client.invalidateQueries({ queryKey: ["reminders", vehicle.id] })]);
     } catch (error) {
       setInterval(null);
+      shell.toast(errorMessage(error));
+    }
+  };
+
+  const currentOilInterval = oilInterval ?? vehicle.oilChangeIntervalKm;
+  const changeOilInterval = async (value: number) => {
+    setOilInterval(value);
+    try {
+      await fichaApi.updateVehicle(vehicle.id, { oilChangeIntervalKm: value });
+      await Promise.all([client.invalidateQueries({ queryKey: ["vehicles"] }), client.invalidateQueries({ queryKey: ["reminders", vehicle.id] })]);
+    } catch (error) {
+      setOilInterval(null);
       shell.toast(errorMessage(error));
     }
   };
@@ -106,7 +123,7 @@ export function FichaScreen() {
             className={`flex w-full cursor-pointer items-center justify-between gap-2 border-0 bg-transparent px-4 py-3 text-left text-ios-label active:bg-ios-fill ${fipe.data?.available ? "border-b-[0.5px] border-ios-sep" : ""}`}
           >
             <span className="flex-1 text-[17px]">FIPE</span>
-            <span className="font-rounded text-[26px] font-bold tabular-nums">{fipe.data?.available ? <Masked text={brl(fipe.data.valueCents)} /> : "—"}</span>
+            <span className="font-rounded text-[26px] font-bold tabular-nums">{fipe.data?.available ? <Masked text={brl(fipe.data.valueCents)} /> : <span className="text-[17px] font-normal text-ios-tint">Informar</span>}</span>
             <span className="text-ios-label3">
               <Icon name="right" size={18} />
             </span>
@@ -132,6 +149,19 @@ export function FichaScreen() {
           {INTERVALS.map((value) => (
             <Chip key={value} size="sm" active={currentInterval === value} onClick={() => changeInterval(value)}>
               {km(value)}
+            </Chip>
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        header={<SectionHeader>Troca de óleo a cada</SectionHeader>}
+        footer={<Footnote>O lembrete vence no que chegar primeiro: a data ou a km. Conta a partir da última troca de óleo lançada em Gastos.</Footnote>}
+      >
+        <div className="mx-4 flex flex-wrap gap-2">
+          {OIL_INTERVALS.map((option) => (
+            <Chip key={option.km} size="sm" active={currentOilInterval === option.km} onClick={() => changeOilInterval(option.km)}>
+              {option.label}
             </Chip>
           ))}
         </div>

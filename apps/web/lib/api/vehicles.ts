@@ -17,6 +17,7 @@ export interface Vehicle {
   restrictions: string | null;
   currentOdometer: number;
   serviceIntervalKm: number;
+  oilChangeIntervalKm: number;
   purchaseDate: string | null;
   purchaseOdometer: number | null;
 }
