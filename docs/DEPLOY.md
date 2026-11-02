@@ -17,37 +17,53 @@ API ([API_INTEGRACAO.md](API_INTEGRACAO.md)).
 
 ## Deploy automático na VPS
 
+O App Car segue o padrão dos demais apps da VPS: o código fica em `/opt/repos-run/app-car`, a API e o web são serviços
+do `/opt/infra/docker-compose.yml` (junto do Postgres, do Redis e do Nginx Proxy Manager) e usam o Postgres e o Redis
+compartilhados, com banco e usuário próprios (`appcar`) e o índice `2` do Redis.
+
 A cada push na `master`, o workflow **CI** roda lint, tipos, testes e build; se passar, o workflow **Deploy** entra na VPS
 por SSH e executa `deploy/deploy.sh <commit>`, que:
 
 1. atualiza `/opt/repos-run/app-car` para o commit testado;
-2. gera as imagens (`deploy/docker-compose.yml`, projeto `appcar`);
-3. sobe Postgres e Redis, roda a migração e sobe API e web;
+2. gera as imagens `appcar-api` e `appcar-web` pelo compose da infra;
+3. roda a migração e sobe só esses dois serviços (`--no-deps`: Postgres, Redis e NPM não são tocados);
 4. confere API e web por dentro da rede e, no fim, o workflow chama `https://appcar.arthurgomes.dev/api/health`.
 
-Na VPS ficam os containers `appcar-postgres`, `appcar-redis`, `appcar-api` e `appcar-web`. Só o web é publicado, na
-porta `APP_PORT` da VPS (padrão `3004`), como os demais apps; o Nginx Proxy Manager encaminha o domínio para
-`http://178.104.211.246:3004`. Banco, Redis e API não têm porta exposta (a API só é acessível pelo web). Para rodar à mão: `bash /opt/repos-run/app-car/deploy/deploy.sh` (ou **Actions → Deploy → Run
-workflow** no GitHub).
+O web é publicado na porta `3004` da VPS; o Nginx Proxy Manager encaminha o domínio para `http://178.104.211.246:3004`.
+A API não tem porta exposta (só o web a acessa). Para rodar à mão: `bash /opt/repos-run/app-car/deploy/deploy.sh` (ou
+**Actions → Deploy → Run workflow** no GitHub).
 
 ### Configuração inicial (uma vez)
 
-**DNS:** registro `A` de `appcar.arthurgomes.dev` para `178.104.211.246`.
+**DNS:** registro `A` de `appcar.arthurgomes.dev` (ou o curinga `*`) para `178.104.211.246`.
 
-**VPS:**
+**Código e variáveis:**
 
 ```bash
-git clone -b master https://github.com/arthur-cgomes/App-Car.git /opt/repos-run/app-car
-cp /opt/repos-run/app-car/deploy/.env.example /opt/repos-run/app-car/deploy/.env
-chmod 600 /opt/repos-run/app-car/deploy/.env
-ss -tlnp | grep ':3004 ' || echo "porta 3004 livre"
+mkdir -p /opt/repos-run/app-car && cd /opt/repos-run/app-car && git clone -b master https://github.com/arthur-cgomes/App-Car.git .
+cp deploy/.env.example deploy/.env && chmod 600 deploy/.env
 ```
 
-Preencha o `deploy/.env` (veja [Variáveis da API](#variáveis-da-api)): `POSTGRES_PASSWORD` e `JWT_SECRET` com
-`openssl rand -hex 32`, `APP_PORT` com uma porta livre (o último comando confere a 3004), `SMTP_URL` e as
-variáveis `GOOGLE_DRIVE_*`. `SMS_PROVIDER=disabled` mantém o PIN só por e-mail; para ligar o SMS, use `smsdev` e
-`SMSDEV_KEY`. Em produção a API não sobe sem e-mail, Drive e um `JWT_SECRET` de 32+
-caracteres.
+**Banco e usuário no Postgres compartilhado** (troque a senha; use só letras e números):
+
+```bash
+docker exec -it poc-postgres psql -U admin -d poc_database -c "CREATE USER appcar WITH PASSWORD 'SENHA_DO_BANCO';" -c "CREATE DATABASE appcar OWNER appcar;"
+```
+
+Preencha o `deploy/.env` (veja [Variáveis da API](#variáveis-da-api)): `DATABASE_URL` com a mesma senha, `JWT_SECRET`
+com `openssl rand -hex 32`, `SMTP_URL` e as variáveis `GOOGLE_DRIVE_*`. `SMS_PROVIDER=disabled` mantém o PIN só por
+e-mail. Em produção a API não sobe sem e-mail, Drive e um `JWT_SECRET` de 32+ caracteres.
+
+**Serviços no compose da infra:** cole o conteúdo de [`deploy/infra-services.yml`](../deploy/infra-services.yml) dentro
+de `services:` no `/opt/infra/docker-compose.yml` (depois do `portfolio`, por exemplo) e confira:
+
+```bash
+cd /opt/infra && cp docker-compose.yml docker-compose.yml.bak-$(date +%F) && nano docker-compose.yml
+docker compose config --services | grep appcar
+```
+
+O bloco usa a rede `infra-network` e os serviços `postgres` e `redis`, como os demais apps; se algum nome for diferente
+no seu compose, ajuste no bloco colado.
 
 **Chave de deploy** (no seu computador):
 
@@ -79,7 +95,8 @@ ssh-keyscan -t ed25519 178.104.211.246
 | SSL | Force SSL, HTTP/2 Support | ligados |
 
 `TRUST_PROXY=2` corresponde aos dois proxies na frente da API (NPM e o web); assim os limites por IP e a auditoria
-registram o IP real do usuário.
+registram o IP real do usuário. Feche as portas dos apps (3000–3004), do Postgres (5432) e do Redis (6379) para a
+internet com o Firewall da Hetzner liberando só 22, 80 e 443: o NPM e os apps continuam se falando por dentro da VPS.
 
 ## Imagens
 
