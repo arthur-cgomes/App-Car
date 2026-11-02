@@ -1,0 +1,29 @@
+  appcar-api:
+    build:
+      context: /opt/repos-run/app-car
+      dockerfile: apps/api/Dockerfile
+    image: appcar-api:latest
+    container_name: appcar-api
+    restart: unless-stopped
+    env_file: /opt/repos-run/app-car/deploy/.env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - infra-network
+
+  appcar-web:
+    build:
+      context: /opt/repos-run/app-car
+      dockerfile: apps/web/Dockerfile
+      args:
+        API_URL: http://appcar-api:3000
+    image: appcar-web:latest
+    container_name: appcar-web
+    restart: unless-stopped
+    depends_on:
+      - appcar-api
+    ports:
+      - '3004:3001'
+    networks:
+      - infra-network

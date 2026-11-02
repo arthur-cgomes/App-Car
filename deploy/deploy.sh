@@ -2,28 +2,31 @@
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+INFRA_DIR="${INFRA_DIR:-/opt/infra}"
 REF="${1:-origin/master}"
-COMPOSE=(docker compose -p appcar -f "$APP_DIR/deploy/docker-compose.yml" --env-file "$APP_DIR/deploy/.env")
+SERVICES=(appcar-api appcar-web)
+COMPOSE=(docker compose --project-directory "$INFRA_DIR" -f "$INFRA_DIR/docker-compose.yml")
 
-cd "$APP_DIR"
-[ -f deploy/.env ] || { echo "deploy/.env não encontrado: copie deploy/.env.example e preencha" >&2; exit 1; }
+[ -f "$APP_DIR/deploy/.env" ] || { echo "deploy/.env não encontrado: copie deploy/.env.example e preencha" >&2; exit 1; }
+"${COMPOSE[@]}" config --services | grep -qx appcar-api || {
+  echo "Os serviços do App Car não estão em $INFRA_DIR/docker-compose.yml: cole o bloco de deploy/infra-services.yml" >&2
+  exit 1
+}
 
 echo "==> Código: $REF"
+cd "$APP_DIR"
 git fetch --quiet origin master
 git reset --hard --quiet "$REF"
 git log -1 --format='    %h %s'
 
 echo "==> Build das imagens"
-"${COMPOSE[@]}" build --pull
-
-echo "==> Banco e Redis"
-"${COMPOSE[@]}" up -d --wait appcar-postgres appcar-redis
+"${COMPOSE[@]}" build --pull "${SERVICES[@]}"
 
 echo "==> Migração"
 "${COMPOSE[@]}" run --rm --no-deps appcar-api npm run migration:run:prod
 
 echo "==> Subindo API e web"
-"${COMPOSE[@]}" up -d --remove-orphans
+"${COMPOSE[@]}" up -d --no-deps "${SERVICES[@]}"
 
 echo "==> Verificando"
 for attempt in $(seq 1 30); do
@@ -37,5 +40,5 @@ for attempt in $(seq 1 30); do
 done
 
 echo "Falha: API ou web não responderam. Últimos logs:" >&2
-"${COMPOSE[@]}" logs --tail 60 appcar-api appcar-web >&2
+"${COMPOSE[@]}" logs --tail 60 "${SERVICES[@]}" >&2
 exit 1
