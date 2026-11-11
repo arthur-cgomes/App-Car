@@ -6,11 +6,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { fichaApi, useFipe } from "@/lib/api/ficha";
-import { useActiveVehicle, vehicleName, vehiclePlace, vehicleYears } from "@/lib/api/vehicles";
-import { MONTHS_LONG, brl, km } from "@/lib/format";
+import { useTires } from "@/lib/api/tires";
+import { useActiveVehicle, vehicleFullName, vehicleName, vehiclePlace, vehicleYears } from "@/lib/api/vehicles";
+import { MONTHS_SHORT, brl, km } from "@/lib/format";
 import { Chip } from "../chip";
 import { InlineEmpty } from "../empty-state";
-import { Icon } from "../icon";
 import { brDate } from "../form-cells";
 import { Footnote, Group, Section, SectionHeader, ValueRow } from "../grouped-list";
 import { Backdrop } from "../overlays";
@@ -33,6 +33,7 @@ export function FichaScreen() {
   const client = useQueryClient();
   const { vehicle, isLoading } = useActiveVehicle();
   const fipe = useFipe(vehicle?.id);
+  const tires = useTires(vehicle?.id);
   const [interval, setInterval] = useState<number | null>(null);
   const [oilInterval, setOilInterval] = useState<number | null>(null);
   const [fipeOpen, setFipeOpen] = useState(false);
@@ -73,6 +74,10 @@ export function FichaScreen() {
     }
   };
 
+  const shortSize = (position: string) => tires.data?.tires.find((tire) => tire.position === position)?.size.split(" ").slice(0, 2).join(" ");
+  const tireSize = shortSize("DE");
+  const spareSize = shortSize("EST");
+
   const remove = () =>
     shell.confirm({
       message: `Remover ${vehicleName(vehicle)} (${formatPlate(vehicle.plate)})? Os gastos e lembretes deixam de aparecer na sua conta.`,
@@ -93,50 +98,50 @@ export function FichaScreen() {
   return (
     <PushPage title="Ficha do veículo" backHref="/">
       <div className="flex flex-col items-center gap-2.5 px-6 pt-2 text-center">
-        <PlateBadge plate={vehicle.plate} />
-        <div className="text-[22px] font-bold">{vehicleName(vehicle)}</div>
+        <PlateBadge plate={vehicle.plate} size="lg" />
+        <div className="text-[22px] font-bold">{vehicleFullName(vehicle)}</div>
         <div className="-mt-1.5 text-[15px] text-ios-label2">{[vehicleYears(vehicle), vehicle.color].filter(Boolean).join(" · ")}</div>
       </div>
 
       <Section
-        header={<SectionHeader>Valor de mercado</SectionHeader>}
         footer={
-          <Footnote>
-            {fipe.data?.available && fipe.data.manual
-              ? "Valor FIPE informado por você. IPVA estimado em 4% do valor FIPE; a alíquota real varia conforme o estado."
-              : reference
-              ? `Tabela FIPE de ${MONTHS_LONG[+reference.slice(5) - 1]} de ${reference.slice(0, 4)}. IPVA estimado em 4% do valor FIPE; a alíquota real varia conforme o estado.`
-              : fipe.isLoading
-                ? "Consultando a tabela FIPE…"
-                : "Valor FIPE indisponível para este veículo. Toque para informar."}
-          </Footnote>
+          !fipe.data?.available ? (
+            <Footnote>{fipe.isLoading ? "Consultando a tabela FIPE…" : "Valor FIPE indisponível para este veículo. Toque para informar."}</Footnote>
+          ) : undefined
         }
       >
-        <Group className="mx-4">
+        <div className="mx-4 grid grid-cols-2 gap-2.5">
           <button
             type="button"
             onClick={() => {
               setFipeKey(Date.now());
               setFipeOpen(true);
             }}
-            className={`flex w-full cursor-pointer items-center justify-between gap-2 border-0 bg-transparent px-4 py-3 text-left text-ios-label active:bg-ios-fill ${fipe.data?.available ? "border-b-[0.5px] border-ios-sep" : ""}`}
+            className="flex min-w-0 cursor-pointer flex-col gap-0.5 rounded-[22px] border-0 bg-ios-cell p-3.5 text-left text-ios-label active:opacity-70"
           >
-            <span className="flex-1 text-[17px]">FIPE</span>
-            <span className="font-rounded text-[26px] font-bold tabular-nums">{fipe.data?.available ? <Masked text={brl(fipe.data.valueCents)} /> : <span className="text-[17px] font-normal text-ios-tint">Informar</span>}</span>
-            <span className="text-ios-label3">
-              <Icon name="right" size={18} />
+            <span className="text-sm text-ios-label2">Valor FIPE</span>
+            <span className="font-rounded text-[22px] font-bold tabular-nums">{fipe.data?.available ? <Masked text={brl(fipe.data.valueCents)} /> : <span className="text-[17px] font-normal text-ios-tint">Informar</span>}</span>
+            <span className="text-[13px] text-ios-label2">
+              {fipe.data?.available ? (fipe.data.manual ? "Informado por você" : reference ? `${MONTHS_SHORT[+reference.slice(5) - 1]}/${reference.slice(0, 4)}, automático` : "Automático") : ""}
             </span>
           </button>
-          {fipe.data?.available && <ValueRow label="IPVA estimado" value={<Masked text={brl(fipe.data.ipvaEstimateCents)} />} />}
-        </Group>
+          <div className="flex min-w-0 flex-col gap-0.5 rounded-[22px] bg-ios-cell p-3.5">
+            <span className="text-sm text-ios-label2">IPVA est.</span>
+            <span className="font-rounded text-[22px] font-bold tabular-nums">{fipe.data?.available ? <Masked text={brl(fipe.data.ipvaEstimateCents)} /> : "–"}</span>
+            <span className="text-[13px] text-ios-label2">4% do valor FIPE</span>
+          </div>
+        </div>
       </Section>
 
       <Section header={<SectionHeader>Dados do veículo</SectionHeader>}>
         <Group className="mx-4">
           {vehicle.modelVersion && <ValueRow label="Versão" value={vehicle.modelVersion} />}
           <ValueRow label="Odômetro" value={km(vehicle.currentOdometer)} />
-          {vehicle.purchaseDate && <ValueRow label="Data da compra" value={brDate(vehicle.purchaseDate)} />}
-          {vehicle.purchaseOdometer !== null && <ValueRow label="Odômetro na compra" value={km(vehicle.purchaseOdometer)} />}
+          {tireSize && <ValueRow label="Pneus" value={tireSize} />}
+          {spareSize && <ValueRow label="Estepe" value={`${spareSize} temporário`} />}
+          {(vehicle.purchaseDate || vehicle.purchaseOdometer !== null) && (
+            <ValueRow label="Compra" value={[vehicle.purchaseDate && brDate(vehicle.purchaseDate), vehicle.purchaseOdometer !== null && km(vehicle.purchaseOdometer)].filter(Boolean).join(" · ")} />
+          )}
           {vehicle.fuelType && <ValueRow label="Combustível" value={vehicle.fuelType} />}
           {vehiclePlace(vehicle) && <ValueRow label="Município" value={vehiclePlace(vehicle)} />}
           {vehicle.restrictions && <ValueRow label="Situação" value={vehicle.restrictions} />}
@@ -168,14 +173,14 @@ export function FichaScreen() {
 
       <Group className="mx-4">
         <NavRow href="/vehicle/documents" icon="file-text" title="Documentos" />
-        <NavRow href="/vehicle/insurances" icon="shield" title="Seguros" />
+        <NavRow href="/vehicle/insurances" icon="shield" title="Seguro" />
         <NavRow href="/vehicle/contacts" icon="phone" title="Contatos de emergência" />
         <NavRow href="/vehicle/fuel" icon="fuel" title="Abastecimentos" />
         <NavRow href="/vehicle/reports" icon="chart" title="Relatórios" />
       </Group>
 
       <Group className="mx-4">
-        <button type="button" onClick={remove} className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-base text-danger active:bg-ios-fill">
+        <button type="button" onClick={remove} className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-[17px] text-danger active:bg-ios-fill">
           Remover veículo
         </button>
       </Group>

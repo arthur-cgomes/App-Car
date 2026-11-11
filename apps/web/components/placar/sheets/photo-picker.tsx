@@ -7,7 +7,7 @@ const MAX_PER_PICK = 6;
 export function AddPhotoButton({ onAdd }: { onAdd: (files: File[]) => void }) {
   return (
     <label className="flex size-20 flex-none cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-ios-label3 bg-ios-cell text-[11px] font-semibold text-ios-tint active:opacity-60">
-      <Icon name="camera" size={26} stroke={1.5} />
+      <Icon name="camera" size={26} />
       Adicionar
       <input
         type="file"

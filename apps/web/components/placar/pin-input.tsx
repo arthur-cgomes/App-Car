@@ -7,8 +7,8 @@ export function PinInput({ value, onChange }: { value: string; onChange: (pin: s
       {Array.from({ length: 6 }, (_, index) => (
         <div
           key={index}
-          className="grid h-[58px] place-items-center rounded-xl bg-ios-cell text-[28px] font-semibold transition-shadow duration-150"
-          style={{ boxShadow: `inset 0 0 0 2px ${index === active ? "var(--color-accent)" : "transparent"}` }}
+          className="grid h-14 place-items-center rounded-[14px] bg-ios-cell font-rounded text-[26px] font-bold transition-shadow duration-150"
+          style={{ boxShadow: `inset 0 0 0 2px ${index === active ? "var(--ios-tint)" : "transparent"}` }}
         >
           {value[index] ?? ""}
         </div>

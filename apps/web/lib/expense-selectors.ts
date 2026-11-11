@@ -1,11 +1,9 @@
 import {
   EXPENSE_CATEGORY_BY_CODE,
   PART_SYSTEMS,
-  PART_SYSTEM_BY_CODE,
   type ExpenseCategoryCode,
   type PartSystemCode,
 } from "@monitoring-car/shared";
-import { km } from "@/lib/format";
 import type { Expense } from "@/lib/api/expenses";
 
 const sum = (expenses: Expense[]) => expenses.reduce((total, e) => total + e.amountCents, 0);
@@ -13,12 +11,9 @@ const inMonth = (expenses: Expense[], month: string) => expenses.filter((e) => e
 
 export function expenseMeta(expense: Expense) {
   return [
-    EXPENSE_CATEGORY_BY_CODE[expense.category].name,
-    expense.partSystem && PART_SYSTEM_BY_CODE[expense.partSystem].name,
-    expense.odometer && km(expense.odometer),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    `${expense.date.slice(8, 10)}/${expense.date.slice(5, 7)}`,
+    expense.establishment ?? EXPENSE_CATEGORY_BY_CODE[expense.category].name,
+  ].join(" · ");
 }
 
 export function monthsForNavigation(months: string[], currentMonth: string) {

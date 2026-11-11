@@ -27,11 +27,11 @@ export function ActionPanel({ open, onCancel, cancelLabel = "Cancelar", children
       className="fixed inset-x-2.5 z-[31] mx-auto flex max-w-[480px] flex-col gap-2 transition-transform duration-400 ease-ios"
       style={{ bottom: "max(10px, env(safe-area-inset-bottom))", transform: open ? "translateY(0)" : "translateY(130%)" }}
     >
-      <div className="glass overflow-hidden rounded-[26px] bg-ios-glass">{children}</div>
+      <div className="glass overflow-hidden rounded-[26px] bg-ios-act">{children}</div>
       <button
         type="button"
         onClick={onCancel}
-        className="h-[57px] w-full cursor-pointer rounded-full border-0 bg-ios-cell text-xl font-semibold text-ios-tint active:bg-ios-fill"
+        className="h-[50px] w-full cursor-pointer rounded-[26px] border-0 bg-ios-actc text-[19px] font-semibold text-ios-tint active:bg-ios-fill"
       >
         {cancelLabel}
       </button>
@@ -40,7 +40,7 @@ export function ActionPanel({ open, onCancel, cancelLabel = "Cancelar", children
 }
 
 export function ActionPanelMessage({ children }: { children: ReactNode }) {
-  return <div className="border-b-[0.5px] border-ios-sep px-4 py-3.5 text-center text-[13px] text-ios-label2">{children}</div>;
+  return <div className="border-b-[0.5px] border-ios-sep px-4 py-3.5 text-center text-sm text-ios-label2">{children}</div>;
 }
 
 export function ActionPanelButton({ children, onClick, destructive }: { children: ReactNode; onClick: () => void; destructive?: boolean }) {
@@ -49,7 +49,7 @@ export function ActionPanelButton({ children, onClick, destructive }: { children
       type="button"
       onClick={onClick}
       className={cx(
-        "h-[57px] w-full cursor-pointer border-0 bg-transparent text-xl active:bg-ios-fill",
+        "h-[50px] w-full cursor-pointer border-0 bg-transparent text-[19px] active:bg-ios-fill",
         destructive ? "text-danger-strong" : "text-ios-tint",
       )}
     >

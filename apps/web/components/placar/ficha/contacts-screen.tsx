@@ -8,7 +8,7 @@ import { useActiveVehicle } from "@/lib/api/vehicles";
 import { Chip } from "../chip";
 import { InlineEmpty } from "../empty-state";
 import { InputCell } from "../form-cells";
-import { Footnote, Group, Section, SectionHeader } from "../grouped-list";
+import { Group, Section, SectionHeader } from "../grouped-list";
 import { Icon } from "../icon";
 import { Backdrop } from "../overlays";
 import { HeaderAddButton, PushPage } from "../push-page";
@@ -28,11 +28,11 @@ export function ContactsScreen() {
   const groups = EMERGENCY_CONTACT_KINDS.map((kind) => ({ kind, contacts: data?.filter((c) => c.kind === kind.code) ?? [] })).filter((g) => g.contacts.length);
 
   return (
-    <PushPage title="Contatos de emergência" backHref="/vehicle" trailing={vehicle && <HeaderAddButton label="Novo contato" onClick={() => openSheet()} />}>
+    <PushPage title="Contatos de emergência" large backHref="/vehicle" trailing={vehicle && <HeaderAddButton label="Novo contato" onClick={() => openSheet()} />}>
       {isLoading && <div className="mx-4 h-[140px] animate-pulse rounded-xl bg-ios-cell" />}
       {data?.length === 0 && (
         <div className="mx-4">
-          <InlineEmpty>Nenhum contato. Toque em + para salvar a seguradora, o guincho ou a concessionária da rodovia.</InlineEmpty>
+          <InlineEmpty>Nenhum contato. Toque em Novo para salvar a seguradora, o guincho ou a concessionária da rodovia.</InlineEmpty>
         </div>
       )}
 
@@ -43,21 +43,20 @@ export function ContactsScreen() {
               <div key={contact.id} className="flex items-center gap-3 border-b-[0.5px] border-ios-sep pr-3 last:border-b-0">
                 <button type="button" onClick={() => openSheet(contact)} className="min-w-0 flex-1 cursor-pointer border-0 bg-transparent py-2.5 pl-4 text-left text-ios-label active:opacity-60">
                   <div className="truncate text-[17px]">{contact.name}</div>
-                  <div className="truncate text-[13px] text-ios-label2">{[contact.phone, contact.notes].filter(Boolean).join(" · ")}</div>
+                  <div className="truncate text-sm text-ios-label2">{[contact.phone, contact.notes].filter(Boolean).join(" · ")}</div>
                 </button>
                 <a
                   href={telHref(contact.phone)}
                   aria-label={`Ligar para ${contact.name}`}
-                  className="grid size-9 flex-none place-items-center rounded-full bg-accent text-white no-underline active:opacity-60"
+                  className="grid size-[38px] flex-none place-items-center rounded-full bg-green text-white no-underline active:opacity-60"
                 >
-                  <Icon name="phone" size={18} stroke={2.25} />
+                  <Icon name="phone" size={18} />
                 </a>
               </div>
             ))}
           </Group>
         </Section>
       ))}
-      {!!data?.length && <Footnote>Toque no telefone para ligar. Os contatos ficam salvos neste veículo.</Footnote>}
 
       {vehicle && editing && (
         <>
@@ -129,7 +128,7 @@ function ContactSheet({ open, vehicleId, contact, onClose }: { open: boolean; ve
                   ),
               })
             }
-            className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-base text-danger active:bg-ios-fill"
+            className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-[17px] text-danger active:bg-ios-fill"
           >
             Excluir contato
           </button>

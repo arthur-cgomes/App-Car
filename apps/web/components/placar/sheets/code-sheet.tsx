@@ -61,7 +61,7 @@ export function CodeSheet({ open, title, intro, confirmLabel, resendIn, onConfir
               setError(errorMessage(failure));
             }
           }}
-          className="self-end px-1 py-2 tabular-nums"
+          className="self-center px-1 py-2 tabular-nums"
           style={{ color: countdown.seconds > 0 ? "var(--ios-label3)" : "var(--ios-tint)" }}
         >
           {resendLabel(countdown.seconds)}

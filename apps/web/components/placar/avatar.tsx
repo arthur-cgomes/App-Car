@@ -26,7 +26,7 @@ export function Avatar({ name, fileId, size }: { name: string; fileId: string | 
   }
   return (
     <span
-      className="grid place-items-center rounded-full bg-ios-tintbg font-semibold text-ios-tintfg"
+      className="grid place-items-center rounded-full bg-accent font-semibold text-white"
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
       {initials(name)}

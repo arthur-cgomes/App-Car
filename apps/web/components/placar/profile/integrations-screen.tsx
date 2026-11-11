@@ -4,11 +4,11 @@ import { useState, useSyncExternalStore } from "react";
 import { FUEL_ENDPOINT, useApiKeys, useCreateApiKey, useRevokeApiKey, type ApiKey } from "@/lib/api/api-keys";
 import { errorMessage } from "@/lib/api/client";
 import { brTime } from "@/lib/format";
-import { InlineEmpty } from "../empty-state";
-import { brDate, InputCell } from "../form-cells";
+import { brDate } from "../form-cells";
 import { Footnote, Group, Section, SectionHeader } from "../grouped-list";
+import { Icon } from "../icon";
 import { Backdrop } from "../overlays";
-import { HeaderAddButton, PushPage } from "../push-page";
+import { PushPage } from "../push-page";
 import { useShell } from "../shell/shell-context";
 import { Sheet } from "../sheets/sheet";
 
@@ -32,7 +32,7 @@ export function IntegrationsScreen() {
   };
 
   return (
-    <PushPage title="Integrações" backHref="/profile" trailing={<HeaderAddButton label="Nova chave" onClick={openSheet} />}>
+    <PushPage title="Integrações" large subtitle="Chaves de API para lançar abastecimentos por automação, como os Atalhos do iPhone." backHref="/profile">
       {created && (
         <Section header={<SectionHeader>Chave criada</SectionHeader>} footer={<Footnote>Copie agora: por segurança ela não aparece de novo.</Footnote>}>
           <Group className="mx-4">
@@ -50,43 +50,43 @@ export function IntegrationsScreen() {
         </Section>
       )}
 
-      <Section
-        header={<SectionHeader>Chaves de API</SectionHeader>}
-        footer={<Footnote>Cada chave permite que outro app lance abastecimentos na sua conta. Toque numa chave para revogá-la.</Footnote>}
-      >
-        {isLoading && <div className="mx-4 h-[92px] animate-pulse rounded-xl bg-ios-cell" />}
-        {data?.length === 0 && (
-          <div className="mx-4">
-            <InlineEmpty>Nenhuma chave. Toque em + para criar a primeira.</InlineEmpty>
-          </div>
-        )}
-        {!!data?.length && (
-          <Group className="mx-4">
-            {data.map((key) => (
+      {isLoading && <div className="mx-4 h-[92px] animate-pulse rounded-xl bg-ios-cell" />}
+      {data && (
+        <Group className="mx-4">
+          {data.map((key) => (
+            <div key={key.id} className="flex items-center gap-3 border-b-[0.5px] border-ios-sep px-4 py-2.5">
+              <span className="text-ios-label2">
+                <Icon name="key" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[17px]">{key.name}</div>
+                <div className="truncate text-sm text-ios-label2">
+                  {key.prefix}… · {lastUse(key)}
+                </div>
+              </div>
               <button
-                key={key.id}
                 type="button"
                 onClick={() =>
                   shell.confirm({
                     message: `Revogar "${key.name}"? Os apps que usam esta chave param de enviar gastos.`,
                     label: "Revogar chave",
-                    onConfirm: () =>
-                      revoke.mutateAsync(key.id).catch((failure) => shell.alert(errorMessage(failure))),
+                    onConfirm: () => revoke.mutateAsync(key.id).catch((failure) => shell.alert(errorMessage(failure))),
                   })
                 }
-                className="block w-full cursor-pointer border-0 border-b-[0.5px] border-ios-sep bg-transparent px-4 py-2.5 text-left text-ios-label last:border-b-0 active:bg-ios-fill"
+                className="cursor-pointer border-0 bg-transparent p-1 text-[15px] text-danger active:opacity-50"
               >
-                <div className="text-[17px]">{key.name}</div>
-                <div className="text-[13px] text-ios-label2">
-                  {key.prefix}… · {lastUse(key)}
-                </div>
+                Revogar
               </button>
-            ))}
-          </Group>
-        )}
-      </Section>
+            </div>
+          ))}
+          <button type="button" onClick={openSheet} className="flex min-h-[46px] w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-4 text-[17px] text-ios-tint active:bg-ios-fill">
+            <Icon name="circle-plus" />
+            Criar chave
+          </button>
+        </Group>
+      )}
 
-      <Section header={<SectionHeader>Como enviar um abastecimento</SectionHeader>}>
+      <Section header={<SectionHeader>Exemplo · abastecimento</SectionHeader>}>
         <Group className="mx-4">
           <pre className="m-0 overflow-x-auto px-4 py-3 font-mono text-[12px] leading-relaxed whitespace-pre text-ios-label2">{`POST ${endpoint}
 X-Api-Key: <sua chave>
@@ -143,18 +143,21 @@ function NewKeySheet({ open, onClose, onCreated }: { open: boolean; onClose: () 
           {error}
         </div>
       )}
-      <Section footer={<Footnote>Use um nome que lembre o app que vai usar a chave.</Footnote>}>
+      <Section footer={<Footnote>A chave aparece uma única vez, logo depois de criada. Guarde em lugar seguro.</Footnote>}>
         <Group className="mx-4 text-[17px]">
-          <InputCell
-            label="Nome"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError("");
-            }}
-            maxLength={60}
-            placeholder="Ex.: App de abastecimento"
-          />
+          <div className="flex min-h-[45px] items-center px-4">
+            <input
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError("");
+              }}
+              maxLength={60}
+              aria-label="Nome"
+              placeholder="Ex.: Atalhos do iPhone"
+              className="w-full border-0 bg-transparent text-[17px] text-ios-label outline-0"
+            />
+          </div>
         </Group>
       </Section>
     </Sheet>

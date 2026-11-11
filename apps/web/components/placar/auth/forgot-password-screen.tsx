@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authApi } from "@/lib/api/auth";
 import { errorMessage } from "@/lib/api/client";
-import { PrimaryButton } from "../buttons";
+import { LinkButton, PrimaryButton } from "../buttons";
+import { Icon } from "../icon";
 import { Group } from "../grouped-list";
 import { AuthScreen, StepIntro } from "./auth-layout";
 import { FieldRow } from "./field-row";
@@ -32,13 +33,17 @@ export function ForgotPasswordScreen() {
   };
 
   return (
-    <AuthScreen header={{ title: "Esqueci minha senha", onBack: () => router.push("/login") }}>
+    <AuthScreen header={{ title: "Redefinir senha", onBack: () => router.push("/login") }}>
       {sent ? (
-        <div className="flex flex-col gap-4">
-          <StepIntro title="Confira seu e-mail">
-            Se houver uma conta com esses dados, enviamos um link para o e-mail cadastrado. O link vale por 30 minutos.
-          </StepIntro>
-          <PrimaryButton onClick={() => router.push("/login")}>Voltar para o login</PrimaryButton>
+        <div className="flex flex-col items-center gap-4 pt-6 text-center">
+          <span className="grid size-[68px] place-items-center rounded-full bg-ios-tintbg text-ios-tint">
+            <Icon name="mail-check" size={30} />
+          </span>
+          <h1 className="text-[24px] font-bold tracking-[-.02em]">Confira seu e-mail</h1>
+          <p className="text-[15px] text-pretty text-ios-label2">Se houver uma conta com esses dados, enviamos um link para o e-mail cadastrado. Ele vale por 30 minutos.</p>
+          <LinkButton onClick={() => router.push("/login")} className="p-2">
+            Voltar para Entrar
+          </LinkButton>
         </div>
       ) : (
         <form
@@ -48,17 +53,16 @@ export function ForgotPasswordScreen() {
             submit();
           }}
         >
-          <StepIntro title="Redefinir senha">Informe seu e-mail ou CPF. Enviaremos um link para criar uma nova senha.</StepIntro>
+          <StepIntro title="Esqueceu a senha?">Digite o e-mail ou CPF da conta. Enviaremos um link para você criar uma nova senha.</StepIntro>
           <Group>
             <FieldRow
               label="E-mail"
-              labelWidth={62}
               value={login}
               onChange={(event) => {
                 setLogin(event.target.value);
                 setError("");
               }}
-              placeholder="voce@email.com ou CPF"
+              placeholder="seu@email.com"
               maxLength={254}
               autoComplete="username"
               autoCapitalize="none"

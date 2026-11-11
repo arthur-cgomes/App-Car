@@ -7,11 +7,10 @@ import { useActiveVehicle } from "@/lib/api/vehicles";
 import { brl, formatMoneyInput, parseMoneyInput } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { TintedButton } from "../buttons";
-import { CategoryIcon } from "../category-icon";
 import { Chip } from "../chip";
 import { InlineEmpty } from "../empty-state";
 import { AttachmentCell, DateCell, InputCell, brDate, centsToInput } from "../form-cells";
-import { Group, ROW_BODY, Section, SectionHeader } from "../grouped-list";
+import { Footnote, Group, ROW_BODY, Section, SectionHeader } from "../grouped-list";
 import { Icon } from "../icon";
 import { Backdrop } from "../overlays";
 import { HeaderAddButton, PushPage } from "../push-page";
@@ -43,11 +42,11 @@ export function DocumentsScreen() {
   };
 
   return (
-    <PushPage title="Documentos" backHref="/vehicle" trailing={vehicle && <HeaderAddButton label="Novo documento" onClick={() => openSheet()} />}>
+    <PushPage title="Documentos" large backHref="/vehicle" trailing={vehicle && <HeaderAddButton label="Novo documento" onClick={() => openSheet()} />}>
       {isLoading && <div className="mx-4 h-[140px] animate-pulse rounded-xl bg-ios-cell" />}
       {data?.length === 0 && (
         <div className="mx-4">
-          <InlineEmpty>Nenhum documento. Toque em + para adicionar IPVA, licenciamento ou CRLV.</InlineEmpty>
+          <InlineEmpty>Nenhum documento. Toque em Novo para adicionar IPVA, licenciamento ou CRLV.</InlineEmpty>
         </div>
       )}
       {!!data?.length && (
@@ -61,18 +60,20 @@ export function DocumentsScreen() {
                 onClick={() => openSheet(document)}
                 className="group/row flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent py-0 pr-0 pl-4 text-left active:bg-ios-fill"
               >
-                <CategoryIcon code="DOCUMENTS" />
+                <span className="grid size-[34px] flex-none place-items-center rounded-[10px] bg-ios-fill text-ios-label">
+                  <Icon name="file-text" />
+                </span>
                 <div className={`flex min-w-0 flex-1 items-center gap-2 py-2.5 pr-4 ${ROW_BODY}`}>
                   <div className="min-w-0 flex-1">
-                    <div className="text-base text-ios-label">{[documentTypeName(document.type), document.year].filter(Boolean).join(" ")}</div>
-                    <div className="text-[13px] text-ios-label2"><Masked text={detail(document)} /></div>
+                    <div className="text-[17px] text-ios-label">{[documentTypeName(document.type), document.year].filter(Boolean).join(" ")}</div>
+                    <div className="text-sm text-ios-label2"><Masked text={detail(document)} /></div>
                   </div>
                   {document.fileId && (
                     <span className="text-ios-label2">
                       <Icon name="clip" size={15} />
                     </span>
                   )}
-                  <span className="rounded-md px-2 py-[3px] text-xs font-semibold" style={{ background: badge.bg, color: badge.color }}>
+                  <span className="rounded-lg px-2 py-[3px] text-xs font-semibold" style={{ background: badge.bg, color: badge.color }}>
                     {badge.label}
                   </span>
                 </div>
@@ -81,6 +82,8 @@ export function DocumentsScreen() {
           })}
         </Group>
       )}
+
+      {!!data?.length && <Footnote>Toque em um documento para marcar como pago. O valor entra em Gastos, categoria Documentos.</Footnote>}
 
       {vehicle && editing && (
         <>
@@ -150,12 +153,8 @@ function DocumentSheet({ open, vehicleId, document, onClose }: { open: boolean; 
         <InputCell label="Valor" value={form.amount} onChange={(e) => set("amount", formatMoneyInput(e.target.value))} inputMode="numeric" placeholder="R$ 0,00" />
         <DateCell label="Vencimento" value={form.dueDate} onChange={(value) => set("dueDate", value)} />
         <InputCell label="Notas" value={form.notes} onChange={(e) => set("notes", e.target.value)} maxLength={300} placeholder="Opcional" />
+        <AttachmentCell fileId={form.fileId} onChange={(id) => set("fileId", id)} onError={setError} />
       </Group>
-      <Section header={<SectionHeader>Arquivo</SectionHeader>}>
-        <Group className="mx-4 text-[17px]">
-          <AttachmentCell fileId={form.fileId} onChange={(id) => set("fileId", id)} onError={setError} />
-        </Group>
-      </Section>
       {document && !document.paidAt && document.amountCents && (
         <div className="mx-4">
           <TintedButton
@@ -183,7 +182,7 @@ function DocumentSheet({ open, vehicleId, document, onClose }: { open: boolean; 
                 onConfirm: () => remove.mutateAsync(undefined).then(onClose, (failure) => shell.alert(errorMessage(failure))),
               })
             }
-            className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-base text-danger active:bg-ios-fill"
+            className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-[17px] text-danger active:bg-ios-fill"
           >
             Excluir documento
           </button>

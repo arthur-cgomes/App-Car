@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useSummary, type Summary } from "@/lib/api/summary";
 import { useActiveVehicle, vehicleFullName, type Vehicle } from "@/lib/api/vehicles";
 import { MONTHS_SHORT, brl, capitalize, km, monthName, previousMonth } from "@/lib/format";
-import { reminderDetail, reminderUrgent, reminderWhen } from "@/lib/reminder-format";
+import { useTires } from "@/lib/api/tires";
+import { reminderDetail, reminderIcon, reminderOverdue, reminderUrgent, reminderWhen } from "@/lib/reminder-format";
+import { attentionTitle, rotationStatus, tireStatus } from "@/lib/tire-status";
 import { useToday } from "@/lib/use-today";
 import { LinkButton, PrimaryButton } from "../buttons";
-import { CategoryIcon } from "../category-icon";
 import { InlineEmpty } from "../empty-state";
 import { ExpenseRow } from "../expense-row";
 import { Group, ROW_BODY } from "../grouped-list";
@@ -18,8 +19,6 @@ import { PlateBadge } from "../plate";
 import { useShell } from "../shell/shell-context";
 import { TodayLabel } from "./today-label";
 import { Masked } from "../masked";
-
-const CARD_KICKER = "text-[13px] font-semibold tracking-[.02em] text-ios-label2 uppercase";
 
 function SectionTitle({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
   return (
@@ -92,12 +91,12 @@ function VehicleSummary({ vehicle, today }: { vehicle: Vehicle; today: string })
           type="button"
           aria-label="Trocar veículo"
           onClick={shell.openVehiclePicker}
-          className="flex w-full cursor-pointer items-center gap-3.5 border-0 bg-transparent px-4 py-3.5 text-left active:bg-ios-fill"
+          className="flex w-full cursor-pointer items-center gap-4 border-0 bg-transparent p-[18px] text-left active:bg-ios-fill"
         >
-          <PlateBadge plate={vehicle.plate} />
-          <div className="min-w-0 flex-1">
-            <div className="text-[17px] font-semibold text-ios-label">{vehicleFullName(vehicle)}</div>
-            <div className="text-[13px] text-ios-label2">
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+            <PlateBadge plate={vehicle.plate} />
+            <div className="text-[20px] font-bold text-ios-label">{vehicleFullName(vehicle)}</div>
+            <div className="text-[15px] text-ios-label2">
               {[vehicle.yearModel, vehicle.color, km(odometer)].filter(Boolean).join(" · ")}
             </div>
           </div>
@@ -105,30 +104,62 @@ function VehicleSummary({ vehicle, today }: { vehicle: Vehicle; today: string })
             <Icon name="updown" />
           </span>
         </button>
-        <button
-          type="button"
-          onClick={() => router.push("/vehicle")}
-          className="flex h-11 w-full cursor-pointer items-center gap-2 border-0 border-t-[0.5px] border-ios-sep bg-transparent px-4 text-[15px] text-ios-tint active:bg-ios-fill"
-        >
-          <Icon name="card" />
-          Ficha do veículo
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/vehicle/contacts")}
-          className="flex h-11 w-full cursor-pointer items-center gap-2 border-0 border-t-[0.5px] border-ios-sep bg-transparent px-4 text-[15px] text-ios-tint active:bg-ios-fill"
-        >
-          <Icon name="phone" />
-          Contatos de emergência
-        </button>
+        <div className="flex border-t-[0.5px] border-ios-sep">
+          <button
+            type="button"
+            onClick={() => router.push("/vehicle")}
+            className="flex h-12 flex-1 cursor-pointer items-center justify-center gap-2 border-0 bg-transparent text-[15px] font-medium text-ios-tint active:bg-ios-fill"
+          >
+            <Icon name="car" />
+            Ficha do veículo
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/vehicle/contacts")}
+            className="flex h-12 flex-1 cursor-pointer items-center justify-center gap-2 border-0 bg-transparent text-[15px] font-medium text-ios-tint active:bg-ios-fill"
+          >
+            <Icon name="asterisk" />
+            Contatos
+          </button>
+        </div>
       </Group>
 
-      {!summary ? <ResumoSkeleton withVehicle={false} /> : <SummaryCards summary={summary} today={today} />}
+      {!summary ? <ResumoSkeleton withVehicle={false} /> : <SummaryCards summary={summary} today={today} vehicleId={vehicle.id} />}
     </>
   );
 }
 
-function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
+function TiresCard({ vehicleId }: { vehicleId: string }) {
+  const router = useRouter();
+  const today = useToday();
+  const { data } = useTires(vehicleId);
+  if (!data || !today || !data.tires.length) return null;
+  const year = +today.slice(0, 4);
+  const statuses = data.tires.map((tire) => tireStatus(tire, data, false, year));
+  const rotation = rotationStatus(data);
+  const color = (position: string) => statuses.find((status) => status.slot === position)?.color ?? "var(--ios-fill)";
+
+  return (
+    <button type="button" onClick={() => router.push("/tires")} className="flex w-full cursor-pointer items-center gap-[18px] rounded-2xl border-0 bg-ios-cell p-[18px] text-left text-ios-label active:opacity-70">
+      <span aria-hidden className="relative grid flex-none grid-cols-[14px_14px] gap-x-[42px] gap-y-2 px-2.5 py-1">
+        <span className="absolute top-[-2px] left-5 h-[76px] w-9 rounded-[14px] bg-ios-cell2" />
+        {["DE", "DD", "TE", "TD"].map((position) => (
+          <span key={position} className="relative h-[30px] w-3.5 rounded-[5px]" style={{ background: color(position) }} />
+        ))}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-[15px] font-semibold text-ios-label2">Pneus</span>
+        <span className="text-[17px] font-semibold">{attentionTitle(statuses)}</span>
+        <span className="text-[15px] text-ios-label2">Rodízio: {rotation.leftText}</span>
+        <span className="mt-1 h-1.5 overflow-hidden rounded-[3px] bg-ios-fill">
+          <span className="block h-full rounded-[3px]" style={{ width: `${rotation.percent}%`, background: rotation.color }} />
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function SummaryCards({ summary, today, vehicleId }: { summary: Summary; today: string; vehicleId: string }) {
   const router = useRouter();
   const shell = useShell();
   const { totalCents, categories, upcoming } = summary;
@@ -136,15 +167,18 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
 
   return (
     <>
-      <div className="flex flex-col gap-3.5 rounded-2xl bg-ios-cell p-4">
-        <div className={CARD_KICKER}>Gasto em {monthName(summary.month)}</div>
-        <div className="font-rounded text-[44px] leading-none font-bold tracking-[-.02em] tabular-nums"><Masked text={brl(totalCents)} /></div>
-        <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[13px] text-ios-label2">
+      <div className="flex flex-col gap-3 rounded-2xl bg-ios-cell p-[18px]">
+        <div className="flex items-baseline justify-between gap-3 text-[15px] text-ios-label2">
+          <span className="font-semibold">Gasto de {monthName(summary.month)}</span>
           {summary.deltaPct !== null && (
-            <span className="font-semibold text-ios-tint">
-              {summary.deltaPct >= 0 ? "↑" : "↓"} {Math.abs(summary.deltaPct)}% vs {monthName(previousMonth(summary.month))}
+            <span>
+              {summary.deltaPct >= 0 ? "+" : "-"}
+              {Math.abs(summary.deltaPct)}% vs. {monthName(previousMonth(summary.month))}
             </span>
           )}
+        </div>
+        <div className="font-rounded text-[44px] leading-none font-bold tracking-[-.02em] tabular-nums"><Masked text={brl(totalCents)} /></div>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[15px] text-ios-label2">
           <span><Masked text={brl(summary.costPerKmCents ?? 0)} /> por km</span>
           <span>{km(summary.kmDriven)} rodados</span>
         </div>
@@ -164,21 +198,20 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
                 />
               ))}
             </div>
-            <div className="-mx-4 -mb-1.5 flex flex-col">
+            <div className="flex flex-col gap-2.5">
               {categories.map((segment) => (
-                <div key={segment.code} className="flex min-h-11 items-center gap-3 px-4">
-                  <CategoryIcon code={segment.code} />
-                  <span className="flex-1 text-base">{EXPENSE_CATEGORY_BY_CODE[segment.code].name}</span>
-                  <span className="text-base tabular-nums"><Masked text={brl(segment.cents)} /></span>
-                  <span className="w-9 text-right text-[13px] text-ios-label2 tabular-nums">
-                    {Math.round((segment.cents / totalCents) * 100)}%
-                  </span>
+                <div key={segment.code} className="flex items-center gap-2.5 text-[15px]">
+                  <span className="size-2 flex-none rounded-full" style={{ background: `var(${EXPENSE_CATEGORY_BY_CODE[segment.code].colorToken})` }} />
+                  <span className="flex-1">{EXPENSE_CATEGORY_BY_CODE[segment.code].name}</span>
+                  <span className="text-ios-label2 tabular-nums"><Masked text={brl(segment.cents)} /></span>
                 </div>
               ))}
             </div>
           </>
         )}
       </div>
+
+      <TiresCard vehicleId={vehicleId} />
 
       <div className="flex flex-col gap-2">
         <SectionTitle title="Próximos" onSeeAll={() => router.push("/reminders")} />
@@ -193,15 +226,17 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
                 onClick={() => router.push("/reminders")}
                 className="group/row flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent py-0 pr-0 pl-4 text-left active:bg-ios-fill"
               >
-                <CategoryIcon code={reminder.category} />
+                <span className="grid size-[34px] flex-none place-items-center rounded-[10px] bg-ios-fill text-ios-label">
+                  <Icon name={reminderIcon(reminder)} />
+                </span>
                 <div className={`flex min-w-0 flex-1 items-center gap-2 py-2.5 pr-4 ${ROW_BODY}`}>
                   <div className="min-w-0 flex-1">
-                    <div className="text-base text-ios-label">{reminder.title}</div>
-                    <div className="text-[13px] text-ios-label2"><Masked text={reminderDetail(reminder, upcoming.odometer)} /></div>
+                    <div className="text-[17px] text-ios-label">{reminder.title}</div>
+                    <div className="text-sm text-ios-label2"><Masked text={reminderDetail(reminder, upcoming.odometer)} /></div>
                   </div>
                   <span
                     className="text-sm whitespace-nowrap"
-                    style={{ color: reminderUrgent(reminder, today, upcoming.odometer) ? "var(--ios-tint)" : "var(--ios-label2)" }}
+                    style={{ color: reminderOverdue(reminder, today, upcoming.odometer) ? "var(--danger)" : reminderUrgent(reminder, today, upcoming.odometer) ? "var(--ios-tint)" : "var(--ios-label2)" }}
                   >
                     {reminderWhen(reminder, today, upcoming.odometer, upcoming.kmPerDay)}
                   </span>
@@ -212,25 +247,22 @@ function SummaryCards({ summary, today }: { summary: Summary; today: string }) {
         )}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl bg-ios-cell p-4">
-        <div className={CARD_KICKER}>Últimos 6 meses</div>
-        <div className="grid h-[120px] grid-cols-6 items-end gap-3">
+      <div className="flex flex-col gap-2">
+        <div className="px-1 text-xl font-bold">Últimos 6 meses</div>
+        <div className="flex h-[170px] items-end gap-3 rounded-2xl bg-ios-cell p-[18px] pb-3.5">
           {summary.months.map((bar) => (
-            <div
-              key={bar.month}
-              className="rounded-[6px_6px_3px_3px] transition-[height] duration-400"
-              style={{
-                height: `${Math.max(4, (bar.cents / max) * 100)}%`,
-                background: bar.month === summary.month ? "var(--color-accent)" : "var(--ios-bar)",
-              }}
-            />
-          ))}
-        </div>
-        <div className="grid grid-cols-6 gap-3">
-          {summary.months.map((bar) => (
-            <span key={bar.month} className="text-center text-xs text-ios-label2">
-              {capitalize(MONTHS_SHORT[+bar.month.slice(5) - 1])}
-            </span>
+            <div key={bar.month} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+              <div className="flex w-full flex-1 items-end">
+                <div
+                  className="w-full rounded-[6px_6px_3px_3px] transition-[height] duration-400"
+                  style={{
+                    height: `${Math.max(4, (bar.cents / max) * 100)}%`,
+                    background: bar.month === summary.month ? "var(--ios-tint)" : "var(--ios-bar)",
+                  }}
+                />
+              </div>
+              <span className="text-[13px] text-ios-label2">{capitalize(MONTHS_SHORT[+bar.month.slice(5) - 1])}</span>
+            </div>
           ))}
         </div>
       </div>

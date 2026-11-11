@@ -6,7 +6,7 @@ import { MONTHS_LONG } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { Icon } from "./icon";
 
-const WEEKDAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const MONTHS_ABBR = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
 const WHEEL_ITEM = 34;
 const WHEEL_VISIBLE = 5;
@@ -33,15 +33,15 @@ export function DatePickerCell({ label, value, onChange, optional, min, max }: D
   return (
     <div className="border-b-[0.5px] border-ios-sep last:border-b-0">
       <div className="flex min-h-[46px] items-center gap-3 px-4">
-        <span className="flex-1">{label}</span>
+        <span className="flex-1 text-[17px]">{label}</span>
         <button
           type="button"
           aria-expanded={open}
           aria-label={`${label}: ${value ? pillDate(value) : "sem data"}`}
           onClick={() => setOpen((current) => !current)}
           className={cx(
-            "cursor-pointer rounded-[7px] border-0 bg-ios-fill px-[11px] py-[6px] text-[17px] tabular-nums transition-colors",
-            open ? "text-ios-tint" : value ? "text-ios-label" : "text-ios-label3",
+            "cursor-pointer rounded-[9px] border-0 bg-ios-fill px-[11px] py-[6px] text-[16px] tabular-nums transition-colors",
+            open ? "bg-ios-tintbg text-ios-tint" : value ? "text-ios-label" : "text-ios-label3",
           )}
         >
           {value ? pillDate(value) : optional ? "Opcional" : "Escolher"}
@@ -105,15 +105,15 @@ export function Calendar({ value, onChange, min, max }: { value: string; onChang
           className="flex cursor-pointer items-center gap-1 border-0 bg-transparent p-1 text-[17px] font-semibold text-ios-label active:opacity-50"
         >
           {MONTHS_LONG[view.month]} de {view.year}
-          <Icon name="right" size={18} stroke={2.75} className={cx("block flex-none text-ios-tint transition-transform duration-300", wheels && "rotate-90")} />
+          <Icon name="right" size={18} className={cx("block flex-none text-ios-tint transition-transform duration-300", wheels && "rotate-90")} />
         </button>
         {!wheels && (
           <div className="flex items-center gap-1">
             <button type="button" aria-label="Mês anterior" onClick={() => shift(-1)} className="grid size-9 cursor-pointer place-items-center border-0 bg-transparent text-ios-tint active:opacity-40">
-              <Icon name="left" size={22} stroke={2.5} />
+              <Icon name="left" size={22} />
             </button>
             <button type="button" aria-label="Próximo mês" onClick={() => shift(1)} className="grid size-9 cursor-pointer place-items-center border-0 bg-transparent text-ios-tint active:opacity-40">
-              <Icon name="right" size={22} stroke={2.5} />
+              <Icon name="right" size={22} />
             </button>
           </div>
         )}
@@ -124,21 +124,21 @@ export function Calendar({ value, onChange, min, max }: { value: string; onChang
       ) : (
         <>
           <div className="grid grid-cols-7 pt-1 pb-1">
-            {WEEKDAYS.map((day) => (
-              <div key={day} className="text-center text-[13px] font-semibold text-ios-label3">
+            {WEEKDAYS.map((day, index) => (
+              <div key={index} className="text-center text-[13px] font-semibold text-ios-label3">
                 {day}
               </div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-y-0.5">
             {cells.map((day, index) => {
-              if (!day) return <div key={`blank-${index}`} className="h-11" />;
+              if (!day) return <div key={`blank-${index}`} className="h-9" />;
               const date = iso(view.year, view.month, day);
               const selected = date === value;
               const isToday = date === today;
               const disabled = (!!min && date < min) || (!!max && date > max);
               return (
-                <div key={date} className="grid h-11 place-items-center">
+                <div key={date} className="grid h-9 place-items-center">
                   <button
                     type="button"
                     disabled={disabled}
@@ -146,9 +146,9 @@ export function Calendar({ value, onChange, min, max }: { value: string; onChang
                     aria-label={pillDate(date)}
                     onClick={() => pick(day)}
                     className={cx(
-                      "grid size-[42px] cursor-pointer place-items-center rounded-full border-0 text-[20px] tabular-nums transition-colors disabled:cursor-default disabled:opacity-30",
+                      "grid size-[34px] cursor-pointer place-items-center rounded-full border-0 text-[17px] tabular-nums transition-colors disabled:cursor-default disabled:opacity-30",
                       selected && isToday && "bg-ios-tint font-semibold text-white",
-                      selected && !isToday && "bg-[color-mix(in_srgb,var(--color-ios-tint)_18%,transparent)] font-semibold text-ios-tint",
+                      selected && !isToday && "bg-ios-tint font-semibold text-white",
                       !selected && isToday && "bg-transparent text-ios-tint",
                       !selected && !isToday && "bg-transparent text-ios-label",
                     )}

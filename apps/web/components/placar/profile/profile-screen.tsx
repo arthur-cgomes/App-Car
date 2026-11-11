@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatBrPhone, formatBrPhoneInput, formatCpf, isValidCpf, normalizeBrMobile, normalizeCpf } from "@monitoring-car/shared";
+import { PASSWORD_RULES_MESSAGE, formatBrPhone, formatBrPhoneInput, formatCpf, isStrongPassword, isValidCpf, normalizeBrMobile, normalizeCpf } from "@monitoring-car/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { EXPORT_URL, accountApi, authApi, sentVia, useMe, type CodeSent, type Me } from "@/lib/api/auth";
@@ -9,6 +9,8 @@ import { errorMessage } from "@/lib/api/client";
 import { uploadFile } from "@/lib/api/expenses";
 import { useActivateVehicle, useActiveVehicle, vehicleName } from "@/lib/api/vehicles";
 import { applyTheme } from "@/lib/theme";
+import { FieldRow } from "../auth/field-row";
+import { PasswordRules } from "../auth/password-rules";
 import { Avatar } from "../avatar";
 import { GlassTextButton } from "../buttons";
 import { Footnote, Group, Section, SectionHeader } from "../grouped-list";
@@ -61,6 +63,7 @@ function ProfileForm({ me }: { me: Me }) {
   const [codeFlow, setCodeFlow] = useState<CodeFlow>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [changePassword, setChangePassword] = useState<{ key: number; open: boolean } | null>(null);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
 
   const set = (key: keyof Draft, value: string | null) => {
@@ -158,8 +161,8 @@ function ProfileForm({ me }: { me: Me }) {
     >
       <div className="flex flex-col items-center gap-2">
         <label className="relative cursor-pointer active:opacity-70">
-          <Avatar name={draft.name} fileId={draft.avatarFileId} size={96} />
-          <span className="absolute -right-0.5 -bottom-0.5 grid size-8 place-items-center rounded-full border-[3px] border-ios-bg bg-accent text-white">
+          <Avatar name={draft.name} fileId={draft.avatarFileId} size={84} />
+          <span className="absolute -right-1 -bottom-0.5 grid size-8 place-items-center rounded-full border-[3px] border-ios-bg bg-ios-cell2 text-ios-label">
             <Icon name="camera" size={16} />
           </span>
           <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(event) => pickAvatar(event.currentTarget.files?.[0])} />
@@ -183,35 +186,40 @@ function ProfileForm({ me }: { me: Me }) {
                 {error}
               </div>
             )}
-            {me.smsAvailable && <Footnote>Ao trocar o celular, enviaremos um código por SMS para confirmar o novo número.</Footnote>}
+            <Footnote>O CPF não pode ser alterado. E-mail e celular novos são confirmados por código.</Footnote>
           </>
         }
       >
         <Group className="mx-4 text-[17px]">
           {(
             [
-              ["Nome", "name", { autoComplete: "name", maxLength: 120 }],
-              ["E-mail", "email", { type: "email", autoComplete: "email", autoCapitalize: "none", maxLength: 254 }],
-              ["Celular", "phone", { inputMode: "tel", autoComplete: "tel-national" }],
-              ["CPF", "cpf", { inputMode: "numeric", placeholder: "Opcional" }],
+              ["Nome", "name", { autoComplete: "name", maxLength: 120 }, null],
+              ["CPF", "cpf", { inputMode: "numeric", placeholder: "Opcional", readOnly: !!me.cpf }, null],
+              ["E-mail", "email", { type: "email", autoComplete: "email", autoCapitalize: "none", maxLength: 254 }, me.emailVerifiedAt ? "ok" : "todo"],
+              ["Celular", "phone", { inputMode: "tel", autoComplete: "tel-national" }, me.phoneVerifiedAt ? "ok" : "todo"],
             ] as const
-          ).map(([label, key, props]) => (
+          ).map(([label, key, props, badge]) => (
             <label key={key} className={ROW}>
-              <span className="w-[76px] flex-none">{label}</span>
+              <span className="w-[66px] flex-none">{label}</span>
               <input
                 {...props}
                 value={draft[key] ?? ""}
                 onChange={(event) =>
                   set(key, key === "phone" ? formatBrPhoneInput(event.target.value) : key === "cpf" ? formatCpf(event.target.value) : event.target.value)
                 }
-                className="min-w-0 flex-1 border-0 bg-transparent text-right text-[17px] text-ios-label outline-0"
+                className="min-w-0 flex-1 border-0 bg-transparent text-right text-[17px] text-ios-label2 outline-0"
               />
+              {badge && (
+                <span className="flex-none rounded-lg px-2 py-0.5 text-xs font-semibold" style={badge === "ok" ? { color: "var(--green)", background: "color-mix(in srgb, var(--green) 16%, transparent)" } : { color: "var(--ios-tint)", background: "var(--ios-tintbg)" }}>
+                  {badge === "ok" ? "Confirmado" : "Confirmar"}
+                </span>
+              )}
             </label>
           ))}
         </Group>
       </Section>
 
-      <Section header={<SectionHeader>{`Meus veículos · ${vehicles.length} ${vehicles.length === 1 ? "veículo" : "veículos"}`}</SectionHeader>}>
+      <Section header={<SectionHeader>Meus veículos</SectionHeader>}>
         <Group className="mx-4">
           {vehicles.map((vehicle) => (
             <button
@@ -223,11 +231,11 @@ function ProfileForm({ me }: { me: Me }) {
               <PlateBadge plate={vehicle.plate} size="sm" />
               <div className="flex min-w-0 flex-1 items-center gap-2 border-b-[0.5px] border-ios-sep py-2.5 pr-4">
                 <div className="min-w-0 flex-1">
-                  <div className="text-base">{vehicleName(vehicle)}</div>
-                  <div className="text-[13px] text-ios-label2">{[vehicle.yearModel, vehicle.color].filter(Boolean).join(" · ")}</div>
+                  <div className="text-[17px]">{vehicleName(vehicle)}</div>
+                  <div className="text-sm text-ios-label2">{[vehicle.modelVersion, vehicle.yearModel].filter(Boolean).join(" · ")}</div>
                 </div>
                 <span className="text-ios-tint" style={{ opacity: vehicle.id === active?.id ? 1 : 0 }}>
-                  <Icon name="check" size={18} stroke={2.25} />
+                  <Icon name="check" size={18} />
                 </span>
               </div>
             </button>
@@ -237,7 +245,7 @@ function ProfileForm({ me }: { me: Me }) {
             onClick={shell.openVehicleSheet}
             className="flex min-h-[46px] w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-4 text-[17px] text-ios-tint active:bg-ios-fill"
           >
-            <Icon name="plus" />
+            <Icon name="circle-plus" />
             Adicionar veículo
           </button>
         </Group>
@@ -305,12 +313,7 @@ function ProfileForm({ me }: { me: Me }) {
           )}
           <button
             type="button"
-            onClick={() =>
-              accountApi
-                .sendPasswordLink()
-                .then(() => shell.alert("Enviamos para o seu e-mail um link para trocar a senha."))
-                .catch((failure) => shell.alert(errorMessage(failure)))
-            }
+            onClick={() => setChangePassword({ key: Date.now(), open: true })}
             className={`${ROW} w-full cursor-pointer border-x-0 border-t-0 bg-transparent text-left text-[17px] text-ios-label active:bg-ios-fill`}
           >
             <span className="flex-1">Alterar senha</span>
@@ -321,7 +324,7 @@ function ProfileForm({ me }: { me: Me }) {
         </Group>
       </Section>
 
-      <Section header={<SectionHeader>Integrações</SectionHeader>} footer={<Footnote>Chaves de API para outro app lançar abastecimentos aqui.</Footnote>}>
+      <Section header={<SectionHeader>Integrações</SectionHeader>} footer={<Footnote>Chaves de API para automatizar lançamentos.</Footnote>}>
         <Group className="mx-4 text-[17px]">
           <Link href="/profile/integrations" className={`${ROW} text-ios-label no-underline active:bg-ios-fill`}>
             <span className="flex-1">Chaves de API</span>
@@ -351,7 +354,8 @@ function ProfileForm({ me }: { me: Me }) {
           type="button"
           onClick={() =>
             shell.confirm({
-              message: `Sair da conta ${me.email}?`,
+              title: "Sair da conta?",
+              message: "Você vai precisar entrar de novo neste aparelho.",
               label: "Sair",
               onConfirm: () =>
                 authApi
@@ -405,6 +409,13 @@ function ProfileForm({ me }: { me: Me }) {
         </>
       )}
 
+      {changePassword && (
+        <>
+          <Backdrop open={changePassword.open} onClose={() => setChangePassword({ ...changePassword, open: false })} />
+          <ChangePasswordSheet key={changePassword.key} open={changePassword.open} onClose={() => setChangePassword({ ...changePassword, open: false })} />
+        </>
+      )}
+
       {passwordOpen && (
         <>
           <Backdrop open onClose={() => setPasswordOpen(false)} />
@@ -412,6 +423,47 @@ function ProfileForm({ me }: { me: Me }) {
         </>
       )}
     </PushPage>
+  );
+}
+
+function ChangePasswordSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const set = (key: keyof typeof form, value: string) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setError("");
+  };
+  const submit = async () => {
+    if (!form.current) return setError("Informe a senha atual.");
+    if (!isStrongPassword(form.next)) return setError(PASSWORD_RULES_MESSAGE);
+    if (form.next !== form.confirm) return setError("As senhas não conferem.");
+    setBusy(true);
+    try {
+      await accountApi.changePassword(form.current, form.next);
+      onClose();
+    } catch (failure) {
+      setError(errorMessage(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Sheet open={open} title="Alterar senha" saveLabel={busy ? "Salvando…" : "Salvar senha"} canSave={!busy} onSave={submit} onCancel={onClose}>
+      <Group className="mx-4">
+        <FieldRow label="Senha atual" type="password" value={form.current} onChange={(e) => set("current", e.target.value)} autoComplete="current-password" maxLength={128} />
+      </Group>
+      <Group className="mx-4">
+        <FieldRow label="Nova senha" type="password" value={form.next} onChange={(e) => set("next", e.target.value)} autoComplete="new-password" maxLength={128} />
+        <FieldRow label="Confirmar nova senha" type="password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} autoComplete="new-password" maxLength={128} />
+      </Group>
+      <PasswordRules password={form.next} />
+      {error && (
+        <div role="alert" className="text-center text-sm text-danger">
+          {error}
+        </div>
+      )}
+    </Sheet>
   );
 }
 

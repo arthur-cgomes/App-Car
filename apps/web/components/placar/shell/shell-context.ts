@@ -5,6 +5,7 @@ import type { Reminder } from "@/lib/api/reminders";
 import type { ExpenseFormValues } from "../sheets/expense-sheet";
 
 export interface ConfirmAction {
+  title?: string;
   message: string;
   label: string;
   cancelLabel?: string;
@@ -16,6 +17,7 @@ export interface ShellApi {
   openVehicleSheet: () => void;
   openReminderSheet: (reminder?: Reminder) => void;
   openVehiclePicker: () => void;
+  openCalibration: () => void;
   openExpenseDetail: (id: string) => void;
   confirm: (action: ConfirmAction) => void;
   alert: (message: string) => void;

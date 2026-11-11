@@ -4,7 +4,8 @@ import {
   CATEGORIES_REQUIRING_PART_SYSTEM,
   CATEGORIES_WITH_PART_SYSTEM,
   EXPENSE_CATEGORY_BY_CODE,
-  PART_SYSTEMS,
+  PART_SYSTEM_BY_CODE,
+  PART_SYSTEM_CHOICES,
   type ExpenseCategoryCode,
   type PartSystemCode,
 } from "@monitoring-car/shared";
@@ -55,7 +56,7 @@ const EMPTY_FORM: ExpenseFormValues = {
   labor: "",
   partSystem: null,
   liters: "",
-  fullTank: false,
+  fullTank: true,
   photos: [],
 };
 
@@ -77,22 +78,24 @@ function fromExpense(expense: Expense): ExpenseFormValues {
   };
 }
 
-const FUEL_SUGGESTIONS = ["Gasolina comum", "Gasolina aditivada"];
+const FUEL_SUGGESTIONS = ["Gasolina comum", "Gasolina aditivada", "Etanol"];
 const STATION_SUGGESTIONS = ["Posto Shell Rodoviária", "Posto Chiquito"];
 const snapshot = (form: ExpenseFormValues) => JSON.stringify({ ...form, photos: form.photos.map((photo) => photo.key) });
 
 const EXAMPLES: Record<ExpenseCategoryCode, { establishment: string; description: string }> = {
-  FUEL: { establishment: "Ex.: Posto Shell", description: "Ex.: Gasolina comum" },
+  FUEL: { establishment: "Local", description: "Ex.: Gasolina comum, 40 L" },
   MAINTENANCE: { establishment: "Ex.: Oficina do Zé", description: "Ex.: Troca de pastilhas" },
   PARTS: { establishment: "Ex.: Auto Peças Central", description: "Ex.: Jogo de pastilhas" },
+  TIRES: { establishment: "Ex.: Rodoviária Pneus", description: "Ex.: Alinhamento e balanceamento" },
   DOCUMENTS: { establishment: "Ex.: Detran", description: "Ex.: Licenciamento 2026" },
   FINES: { establishment: "Opcional", description: "Ex.: Excesso de velocidade" },
   INSURANCE: { establishment: "Ex.: Porto Seguro", description: "Ex.: Parcela do seguro" },
-  OTHER: { establishment: "Opcional", description: "Ex.: Lavagem" },
+  OTHER: { establishment: "Local", description: "Ex.: Lavagem" },
 };
 
 const CELL_LABEL = "flex min-h-[46px] items-center gap-3 border-b-[0.5px] border-ios-sep px-4 last:border-b-0";
 const CELL_INPUT = "min-w-0 flex-1 border-0 bg-transparent text-right text-[17px] text-ios-label outline-0";
+const CELL_TEXT = "min-w-0 flex-1 border-0 bg-transparent text-[17px] text-ios-label outline-0";
 
 interface ExpenseSheetProps {
   open: boolean;
@@ -125,11 +128,17 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
 
   const showParts = CATEGORIES_WITH_PART_SYSTEM.includes(form.category);
   const partsRequired = CATEGORIES_REQUIRING_PART_SYSTEM.includes(form.category);
+  const legacyPart = form.partSystem && !PART_SYSTEM_CHOICES.some((system) => system.code === form.partSystem) ? PART_SYSTEM_BY_CODE[form.partSystem] : null;
+  const partChoices = legacyPart ? [...PART_SYSTEM_CHOICES, legacyPart] : PART_SYSTEM_CHOICES;
   const isFuel = form.category === "FUEL";
   const isMaintenance = form.category === "MAINTENANCE";
   const split = isMaintenance && !!(form.parts.trim() || form.labor.trim());
   const splitCents = (value: string) => (value.trim() ? (parseMoneyInput(value) ?? Number.NaN) : 0);
   const amountShown = split ? centsToMoneyInput(splitCents(form.parts) + splitCents(form.labor)) : form.amount;
+
+  const litersValue = parseLitersInput(form.liters);
+  const amountValue = parseMoneyInput(form.amount);
+  const pricePerLiter = litersValue && amountValue ? `R$ ${(amountValue / 100 / litersValue).toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}` : null;
 
   const submit = async () => {
     if (busy) return;
@@ -181,9 +190,10 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
       onSave={submit}
       onCancel={onCancel}
     >
-      <div className="flex flex-col items-center gap-0.5 px-4 py-2">
-        <div className="flex items-baseline gap-1.5 font-rounded">
-          <span className="text-[28px] font-semibold text-ios-label2">R$</span>
+      <div className="flex flex-col items-center gap-0.5 px-4">
+        <div className="text-[15px] text-ios-label2">{split ? "Total, peças + mão de obra" : "Valor"}</div>
+        <div className="flex items-baseline justify-center gap-1.5 font-rounded">
+          <span className="text-[24px] font-semibold text-ios-label2">R$</span>
           <input
             value={amountShown}
             onChange={(event) => set("amount", formatMoneyInput(event.target.value))}
@@ -191,7 +201,8 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
             inputMode="numeric"
             placeholder="0,00"
             aria-label="Valor"
-            className="w-[200px] border-0 bg-transparent font-rounded text-[52px] font-bold tracking-[-.02em] text-ios-label tabular-nums outline-0"
+            className="min-w-0 border-0 bg-transparent font-rounded text-[48px] font-bold tracking-[-.02em] text-ios-label tabular-nums outline-0 placeholder:text-ios-label3"
+            style={{ width: `${Math.max(4, (amountShown || "0,00").length) * 0.6}em` }}
           />
         </div>
         {error && (
@@ -201,17 +212,80 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
         )}
       </div>
 
-      <Section header={<SectionHeader>Categoria</SectionHeader>}>
-        <CategoryGrid value={form.category} onChange={(code) => set("category", code)} />
-      </Section>
+      <CategoryGrid value={form.category} onChange={(code) => set("category", code)} />
+
+      <Group className="mx-4 text-[17px]">
+        <label className={CELL_LABEL}>
+          <input
+            value={form.description}
+            onChange={(event) => set("description", event.target.value)}
+            maxLength={200}
+            aria-label="Descrição"
+            placeholder={EXAMPLES[form.category].description}
+            className={CELL_TEXT}
+          />
+        </label>
+        <label className={CELL_LABEL}>
+          <input
+            value={form.establishment}
+            onChange={(event) => set("establishment", event.target.value)}
+            maxLength={120}
+            aria-label="Local"
+            placeholder={EXAMPLES[form.category].establishment}
+            className={CELL_TEXT}
+          />
+        </label>
+        <label className={CELL_LABEL}>
+          <span>Odômetro</span>
+          <input value={form.odometer} onChange={(event) => set("odometer", formatKmInput(event.target.value))} inputMode="numeric" placeholder="km" className={CELL_INPUT} />
+        </label>
+        <DatePickerCell label="Data" value={form.date} onChange={(value) => set("date", value)} />
+      </Group>
+
+      {isFuel && (
+        <>
+          <Group className="mx-4 text-[17px]">
+            <label className={CELL_LABEL}>
+              <span>Litros</span>
+              <input value={form.liters} onChange={(event) => set("liters", formatLitersInput(event.target.value))} inputMode="numeric" placeholder="Opcional" className={CELL_INPUT} />
+            </label>
+            <div className={CELL_LABEL}>
+              <span className="flex-1">Preço por litro</span>
+              <span className="text-ios-label2 tabular-nums">{pricePerLiter ?? "–"}</span>
+            </div>
+            <div className={CELL_LABEL}>
+              <span className="flex-1">Tanque cheio</span>
+              <Switch checked={form.fullTank} onChange={(checked) => set("fullTank", checked)} label="Tanque cheio" />
+            </div>
+          </Group>
+          <Section header={<SectionHeader>Posto</SectionHeader>}>
+            <div className="mx-4 flex flex-wrap gap-2">
+              {STATION_SUGGESTIONS.map((station) => (
+                <Chip key={station} size="sm" active={form.establishment === station} onClick={() => set("establishment", station)}>
+                  {station}
+                </Chip>
+              ))}
+            </div>
+          </Section>
+          <Section header={<SectionHeader>Combustível</SectionHeader>}>
+            <div className="mx-4 flex flex-wrap gap-2">
+              {FUEL_SUGGESTIONS.map((suggestion) => (
+                <Chip key={suggestion} size="sm" active={form.description === suggestion} onClick={() => set("description", suggestion)}>
+                  {suggestion}
+                </Chip>
+              ))}
+            </div>
+          </Section>
+        </>
+      )}
 
       {showParts && (
         <Section
-          header={<SectionHeader>Classificação da peça</SectionHeader>}
+          header={<SectionHeader>Sistema do carro</SectionHeader>}
           footer={<Footnote>{partsRequired ? "Obrigatório para peças." : "Opcional. Ajuda a ver quanto cada sistema do carro custa."}</Footnote>}
         >
           <div className="mx-4 flex flex-wrap gap-2">
-            {PART_SYSTEMS.map((system) => (
+            {partChoices.map((system) => (
               <Chip
                 key={system.code}
                 size="sm"
@@ -226,80 +300,16 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
       )}
 
       {isMaintenance && (
-        <Section
-          header={<SectionHeader>Custos da manutenção</SectionHeader>}
-          footer={<Footnote>{split ? "O valor total é a soma de peças e mão de obra." : "Opcional: separe o que foi peça e o que foi mão de obra."}</Footnote>}
-        >
-          <Group className="mx-4 text-[17px]">
-            <label className={CELL_LABEL}>
-              <span>Peças</span>
-              <input value={form.parts} onChange={(event) => set("parts", formatMoneyInput(event.target.value))} inputMode="numeric" placeholder="R$ 0,00" className={CELL_INPUT} />
-            </label>
-            <label className={CELL_LABEL}>
-              <span>Mão de obra</span>
-              <input value={form.labor} onChange={(event) => set("labor", formatMoneyInput(event.target.value))} inputMode="numeric" placeholder="R$ 0,00" className={CELL_INPUT} />
-            </label>
-          </Group>
-        </Section>
-      )}
-
-      <Group className="mx-4 text-[17px]">
-        <DatePickerCell label="Data" value={form.date} onChange={(value) => set("date", value)} />
-        <label className={CELL_LABEL}>
-          <span>Odômetro</span>
-          <input value={form.odometer} onChange={(event) => set("odometer", formatKmInput(event.target.value))} inputMode="numeric" placeholder="km" className={CELL_INPUT} />
-        </label>
-        {isFuel && (
-          <>
-            <label className={CELL_LABEL}>
-              <span>Litros</span>
-              <input value={form.liters} onChange={(event) => set("liters", formatLitersInput(event.target.value))} inputMode="numeric" placeholder="Opcional" className={CELL_INPUT} />
-            </label>
-            <div className={CELL_LABEL}>
-              <span className="flex-1">Tanque cheio</span>
-              <Switch checked={form.fullTank} onChange={(checked) => set("fullTank", checked)} label="Tanque cheio" />
-            </div>
-          </>
-        )}
-        <label className={CELL_LABEL}>
-          <span>Local</span>
-          <input
-            value={form.establishment}
-            onChange={(event) => set("establishment", event.target.value)}
-            maxLength={120}
-            placeholder={EXAMPLES[form.category].establishment}
-            className={CELL_INPUT}
-          />
-        </label>
-        {isFuel && (
-          <div className="flex flex-wrap gap-2 border-b-[0.5px] border-ios-sep px-4 py-2.5">
-            {STATION_SUGGESTIONS.map((station) => (
-              <Chip key={station} size="sm" active={form.establishment === station} onClick={() => set("establishment", station)}>
-                {station}
-              </Chip>
-            ))}
-          </div>
-        )}
-        <label className={CELL_LABEL}>
-          <span>Descrição</span>
-          <input
-            value={form.description}
-            onChange={(event) => set("description", event.target.value)}
-            maxLength={200}
-            placeholder={EXAMPLES[form.category].description}
-            className={CELL_INPUT}
-          />
-        </label>
-      </Group>
-
-      {isFuel && (
-        <div className="-mt-3 mx-4 flex flex-wrap gap-2">
-          {FUEL_SUGGESTIONS.map((suggestion) => (
-            <Chip key={suggestion} size="sm" active={form.description === suggestion} onClick={() => set("description", suggestion)}>
-              {suggestion}
-            </Chip>
-          ))}
-        </div>
+        <Group className="mx-4 text-[17px]">
+          <label className={CELL_LABEL}>
+            <span>Peças</span>
+            <input value={form.parts} onChange={(event) => set("parts", formatMoneyInput(event.target.value))} inputMode="numeric" placeholder="R$ 0,00" className={CELL_INPUT} />
+          </label>
+          <label className={CELL_LABEL}>
+            <span>Mão de obra</span>
+            <input value={form.labor} onChange={(event) => set("labor", formatMoneyInput(event.target.value))} inputMode="numeric" placeholder="R$ 0,00" className={CELL_INPUT} />
+          </label>
+        </Group>
       )}
 
       <Section
@@ -316,7 +326,7 @@ export function ExpenseSheet({ open, vehicleId, expense, prefill, onCancel, onSu
                 onClick={() => set("photos", form.photos.filter((p) => p.key !== photo.key))}
                 className="absolute -top-1.5 -right-1.5 grid size-6 cursor-pointer place-items-center rounded-full border-2 border-ios-bg bg-ios-label2 p-0 text-ios-bg"
               >
-                <Icon name="x" size={14} stroke={2.5} />
+                <Icon name="x" size={14} />
               </button>
             </div>
           ))}

@@ -115,13 +115,12 @@ export function LoginScreen() {
           <Group>
             <FieldRow
               label="E-mail"
-              labelWidth={62}
               value={login}
               onChange={(event) => {
                 setLogin(event.target.value);
                 setError("");
               }}
-              placeholder="voce@email.com ou CPF"
+              placeholder="E-mail ou CPF"
               maxLength={254}
               autoComplete="username"
               autoCapitalize="none"
@@ -129,14 +128,13 @@ export function LoginScreen() {
             />
             <FieldRow
               label="Senha"
-              labelWidth={62}
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
                 setError("");
               }}
-              placeholder="Obrigatória"
+              placeholder="Senha"
               maxLength={128}
               autoComplete="current-password"
               trailing={
@@ -147,7 +145,7 @@ export function LoginScreen() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="-mr-1.5 grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label2 active:opacity-50"
                 >
-                  <Icon name={showPassword ? "eye-off" : "eye"} size={20} stroke={1.75} />
+                  <Icon name={showPassword ? "eye-off" : "eye"} size={20} />
                 </button>
               }
             />
@@ -163,8 +161,7 @@ export function LoginScreen() {
 
       {mode === "pin" && !sent && (
         <div className="flex flex-col gap-3.5">
-          <div className="flex flex-col items-center gap-2.5 rounded-xl bg-ios-cell p-4">
-            <div className="text-[13px] text-ios-label2">Placa do veículo</div>
+          <div className="flex flex-col items-center">
             <PlateInput
               value={plate}
               onChange={(value) => {
@@ -172,11 +169,11 @@ export function LoginScreen() {
                 setError("");
               }}
               fontSize={44}
-              maxWidth={260}
+              maxWidth={280}
             />
           </div>
-          <div className="px-4 text-[13px] text-pretty text-ios-label2">
-            Enviaremos um PIN de 6 dígitos para o contato cadastrado pelo dono do veículo.
+          <div className="px-4 text-center text-[15px] text-pretty text-ios-label2">
+            Enviaremos um PIN de 6 dígitos para o e-mail da conta ligada a esta placa.
           </div>
           <PrimaryButton onClick={sendCode} disabled={busy}>
             {busy ? "Enviando…" : "Enviar PIN"}
@@ -223,8 +220,8 @@ export function LoginScreen() {
 
       <FormError message={error} />
 
-      <div className="mt-auto text-center text-[15px] text-ios-label2">
-        Novo por aqui?{" "}
+      <div className="text-center text-[15px] text-ios-label2">
+        Não tem conta?{" "}
         <Link href="/signup" className="p-1 font-semibold text-ios-tint no-underline active:opacity-50">
           Criar conta
         </Link>

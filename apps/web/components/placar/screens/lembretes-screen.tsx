@@ -70,6 +70,8 @@ export function LembretesScreen() {
           {items.map((reminder) => {
             const done = !!reminder.doneAt;
             const urgent = reminderUrgent(reminder, today, data.odometer);
+            const detail = reminderDetail(reminder, data.odometer);
+            const when = reminderWhen(reminder, today, data.odometer, data.kmPerDay);
             return (
               <div key={reminder.id} className="group/row flex items-center gap-1.5 pl-1.5">
                 <button
@@ -82,8 +84,8 @@ export function LembretesScreen() {
                   <span
                     className="grid size-6 place-items-center rounded-full text-white transition-[background-color,box-shadow] duration-200"
                     style={{
-                      boxShadow: `inset 0 0 0 1.5px ${done ? "var(--color-accent)" : "var(--ios-label3)"}`,
-                      background: done ? "var(--color-accent)" : "transparent",
+                      boxShadow: `inset 0 0 0 1.5px ${done ? "var(--ios-tint)" : "var(--ios-label3)"}`,
+                      background: done ? "var(--ios-tint)" : "transparent",
                     }}
                   >
                     <span className="transition-opacity duration-200" style={{ opacity: done ? 1 : 0 }}>
@@ -101,14 +103,17 @@ export function LembretesScreen() {
                   )}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-base transition-colors duration-200" style={{ color: done ? "var(--ios-label2)" : "var(--ios-label)" }}>
+                    <div className="text-[17px] transition-colors duration-200" style={{ color: done ? "var(--ios-label2)" : "var(--ios-label)" }}>
                       {reminder.title}
                     </div>
-                    <div className="text-[13px] text-ios-label2"><Masked text={reminderDetail(reminder, data.odometer)} /></div>
+                    {detail && <div className="text-sm text-ios-label2"><Masked text={detail} /></div>}
+                    {when && when !== detail && (
+                      <div className="text-sm font-semibold" style={{ color: done ? "var(--ios-label2)" : reminderOverdue(reminder, today, data.odometer) ? "var(--danger)" : urgent ? "var(--ios-tint)" : "var(--ios-tint)" }}>
+                        {when}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[13px] whitespace-nowrap" style={{ color: urgent ? "var(--ios-tint)" : "var(--ios-label2)" }}>
-                    {reminderWhen(reminder, today, data.odometer, data.kmPerDay)}
-                  </span>
+                  {reminder.automatic && <span className="rounded-lg bg-ios-fill px-2 py-0.5 text-xs font-semibold text-ios-label2">Auto</span>}
                 </button>
               </div>
             );
@@ -116,7 +121,7 @@ export function LembretesScreen() {
         </Group>
       )}
 
-      <Footnote>Os lembretes ficam em destaque 15 dias antes de cada vencimento e 500 km antes de cada revisão.</Footnote>
+      <Footnote>Destaque 15 dias antes do vencimento e 500 km antes da revisão. Rodízio e calibragem são calculados a partir dos seus pneus.</Footnote>
     </div>
   );
 }

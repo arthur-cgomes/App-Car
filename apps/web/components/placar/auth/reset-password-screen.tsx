@@ -1,6 +1,6 @@
 "use client";
 
-import { PASSWORD_HINT, PASSWORD_RULES_MESSAGE, isStrongPassword } from "@monitoring-car/shared";
+import { PASSWORD_RULES_MESSAGE, isStrongPassword } from "@monitoring-car/shared";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { authApi } from "@/lib/api/auth";
@@ -10,6 +10,7 @@ import { Group } from "../grouped-list";
 import { AuthScreen, StepIntro } from "./auth-layout";
 import { FieldRow } from "./field-row";
 import { FormError } from "./form-error";
+import { PasswordRules } from "./password-rules";
 
 export function ResetPasswordScreen() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export function ResetPasswordScreen() {
   };
 
   return (
-    <AuthScreen header={{ title: "Nova senha", onBack: () => router.push("/login") }}>
+    <AuthScreen header={{ title: "Redefinir senha", onBack: () => router.push("/login") }}>
       {done ? (
         <div className="flex flex-col gap-4">
           <StepIntro title="Senha alterada">Por segurança, encerramos as sessões abertas. Entre com a nova senha.</StepIntro>
@@ -51,11 +52,12 @@ export function ResetPasswordScreen() {
             submit();
           }}
         >
-          <StepIntro title="Crie uma nova senha">{PASSWORD_HINT}</StepIntro>
+          <StepIntro title="Crie uma nova senha" />
           <Group>
-            <FieldRow label="Senha" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" maxLength={128} placeholder="Obrigatória" />
-            <FieldRow label="Confirmar" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" maxLength={128} placeholder="Repita a senha" />
+            <FieldRow label="Senha" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" maxLength={128} placeholder="Nova senha" />
+            <FieldRow label="Confirmar" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" maxLength={128} placeholder="Confirmar nova senha" />
           </Group>
+          <PasswordRules password={password} />
           <PrimaryButton type="submit" disabled={busy || !token}>
             {busy ? "Salvando…" : "Salvar nova senha"}
           </PrimaryButton>

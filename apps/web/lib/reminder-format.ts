@@ -1,11 +1,25 @@
 import { EXPENSE_CATEGORY_BY_CODE, PART_SYSTEMS } from "@monitoring-car/shared";
 import type { Expense } from "@/lib/api/expenses";
 import type { Reminder, ReminderInput } from "@/lib/api/reminders";
+import type { IconName } from "@/components/placar/icon";
 import { MONTHS_SHORT, brl, km } from "@/lib/format";
 
 const DAY = 86_400_000;
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / DAY);
+
+const SOURCE_ICONS: Record<Reminder["source"], IconName> = {
+  MANUAL: "bell",
+  AUTO_DEBT: "file-text",
+  AUTO_IPVA: "file-text",
+  AUTO_SERVICE: "wrench",
+  AUTO_OIL: "oil",
+  AUTO_INSURANCE: "shield",
+  AUTO_ROTATION: "rotate",
+  AUTO_PRESSURE: "tire",
+};
+
+export const reminderIcon = (reminder: Reminder) => SOURCE_ICONS[reminder.source];
 
 export function reminderDetail(reminder: Reminder, odometer: number) {
   if (reminder.doneAt) {

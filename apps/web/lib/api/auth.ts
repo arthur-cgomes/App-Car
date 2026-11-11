@@ -54,7 +54,7 @@ export const accountApi = {
     api<Me>("/me", { method: "PATCH", body }),
   requestPhoneChange: (phone: string) => api<{ saved: true; user: Me } | ({ saved: false } & CodeSent)>("/me/phone", { body: { phone } }),
   confirmPhoneChange: (code: string) => api<Me>("/me/phone/confirm", { body: { code } }),
-  sendPasswordLink: () => api<{ sent: true }>("/me/password-link", { method: "POST" }),
+  changePassword: (currentPassword: string, password: string) => api<{ changed: true }>("/me/password", { body: { currentPassword, password } }),
   requestDeletion: () => api<{ method: "password" } | ({ method: "code" } & CodeSent)>("/me/delete/request", { method: "POST" }),
   delete: (proof: { code?: string; password?: string }) => api<void>("/me", { method: "DELETE", body: proof }),
 };

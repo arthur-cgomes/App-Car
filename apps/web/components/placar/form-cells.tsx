@@ -5,12 +5,12 @@ import { errorMessage } from "@/lib/api/client";
 import { fileUrl, uploadFile } from "@/lib/api/expenses";
 import { centsToMoneyInput } from "@/lib/format";
 
-const CELL = "flex min-h-[46px] items-center gap-3 border-b-[0.5px] border-ios-sep px-4 last:border-b-0";
+const CELL = "flex min-h-[45px] items-center gap-3 border-b-[0.5px] border-ios-sep px-4 last:border-b-0";
 
 export function InputCell({ label, ...input }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
     <label className={CELL}>
-      <span className="flex-none">{label}</span>
+      <span className="flex-none text-[17px]">{label}</span>
       <input {...input} className="min-w-0 flex-1 border-0 bg-transparent text-right text-[17px] text-ios-label outline-0" />
     </label>
   );
@@ -34,7 +34,7 @@ export function AttachmentCell({ fileId, onChange, onError }: { fileId: string |
   }
   return (
     <label className={`${CELL} cursor-pointer text-ios-tint active:opacity-60`}>
-      {uploading ? "Enviando…" : "Anexar foto ou PDF"}
+      {uploading ? "Enviando…" : "Anexar arquivo"}
       <input
         type="file"
         accept="image/*,application/pdf"

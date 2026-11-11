@@ -46,7 +46,7 @@ async function signUp(page: Page, email: string) {
   await page.getByRole("button", { name: "Enviar código" }).click();
   await expect(page.getByText("Confirme seu e-mail")).toBeVisible();
   await page.getByLabel("Código de 6 dígitos").fill(await codeSentTo(email));
-  await page.getByRole("button", { name: "Confirmar" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
 
   await expect(page.getByText("Seus dados")).toBeVisible();
   await page.getByLabel("Nome").fill("Pessoa E2E");

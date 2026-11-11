@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useExpenseMonths, useExpenses } from "@/lib/api/expenses";
 import { useActiveVehicle } from "@/lib/api/vehicles";
 import { expensesForList, monthsForNavigation } from "@/lib/expense-selectors";
-import { brl, dayHeader, monthLabel } from "@/lib/format";
+import { brl, monthLabel } from "@/lib/format";
 import { cx } from "@/lib/cx";
 import { useToday } from "@/lib/use-today";
 import { LinkButton } from "../buttons";
@@ -36,10 +36,10 @@ export function GastosScreen() {
   const today = useToday();
   const { vehicle, isLoading } = useActiveVehicle();
   if (!today || isLoading) return <LargeTitle title="Gastos" />;
-  return <GastosList key={vehicle?.id} vehicleId={vehicle?.id} currentMonth={today.slice(0, 7)} />;
+  return <GastosList key={vehicle?.id} vehicleId={vehicle?.id} vehicleLabel={vehicle ? `${vehicle.brand === "Volkswagen" ? "VW" : vehicle.brand} ${vehicle.model} · ${vehicle.plate}` : ""} currentMonth={today.slice(0, 7)} />;
 }
 
-function GastosList({ vehicleId, currentMonth }: { vehicleId: string | undefined; currentMonth: string }) {
+function GastosList({ vehicleId, vehicleLabel, currentMonth }: { vehicleId: string | undefined; vehicleLabel: string; currentMonth: string }) {
   const shell = useShell();
   const [month, setMonth] = useState(currentMonth);
   const { data: expenses = [], isLoading } = useExpenses(vehicleId, { month });
@@ -54,9 +54,9 @@ function GastosList({ vehicleId, currentMonth }: { vehicleId: string | undefined
 
   return (
     <div className="flex flex-col gap-4">
-      <LargeTitle title="Gastos" />
+      <LargeTitle title="Gastos" subtitle={vehicleLabel} />
 
-      <div className="mx-4 flex items-center rounded-xl bg-ios-cell p-1">
+      <div className="mx-4 flex items-center rounded-[22px] bg-ios-cell p-1">
         <MonthArrow direction="left" enabled={index > 0} onClick={() => setMonth(months[index - 1])} />
         <div className="flex-1 text-center">
           <div className="text-[17px] font-semibold">{monthLabel(month)}</div>
@@ -98,7 +98,7 @@ function GastosList({ vehicleId, currentMonth }: { vehicleId: string | undefined
                 >
                   <div className="flex w-full items-center gap-2">
                     <span className="-ml-1 text-ios-tint" style={{ opacity: on ? 1 : 0 }}>
-                      <Icon name="check" size={18} stroke={2.25} />
+                      <Icon name="check" size={18} />
                     </span>
                     <span className={cx("flex-1 text-base", on && "font-semibold")}>{part.name}</span>
                     <span className="text-base tabular-nums"><Masked text={brl(part.cents)} /></span>
@@ -133,16 +133,13 @@ function GastosList({ vehicleId, currentMonth }: { vehicleId: string | undefined
         />
       )}
 
-      {view.groups.map((group) => (
-        <div key={group.date} className="flex flex-col gap-1.5">
-          <SectionHeader>{dayHeader(group.date)}</SectionHeader>
-          <Group className="mx-4">
-            {group.items.map((expense) => (
-              <ExpenseRow key={expense.id} expense={expense} onClick={() => shell.openExpenseDetail(expense.id)} />
-            ))}
-          </Group>
-        </div>
-      ))}
+      {view.groups.length > 0 && (
+        <Group className="mx-4">
+          {view.groups.flatMap((group) => group.items).map((expense) => (
+            <ExpenseRow key={expense.id} expense={expense} onClick={() => shell.openExpenseDetail(expense.id)} />
+          ))}
+        </Group>
+      )}
     </div>
   );
 }

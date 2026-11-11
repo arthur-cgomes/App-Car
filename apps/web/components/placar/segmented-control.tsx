@@ -9,7 +9,7 @@ interface SegmentOption<T extends string> {
 }
 
 interface SegmentedControlProps<T extends string> {
-  options: readonly [SegmentOption<T>, SegmentOption<T>];
+  options: readonly SegmentOption<T>[];
   value: T;
   onChange: (value: T) => void;
   tone?: "translucent" | "fill";
@@ -27,8 +27,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange, t
     >
       <div
         aria-hidden
-        className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-ios-thumb shadow-[0_3px_8px_color-mix(in_srgb,#000_14%,transparent),0_0_0_.5px_color-mix(in_srgb,#000_4%,transparent)] transition-transform duration-300 ease-ios"
-        style={{ transform: index === 1 ? "translateX(100%)" : "none" }}
+        className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full bg-ios-thumb shadow-[0_2px_8px_rgb(0_0_0/18%)] transition-transform duration-300 ease-ios"
+        style={{ width: `calc((100% - 4px) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
       />
       {options.map((option) => (
         <button
@@ -39,8 +39,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, t
           disabled={option.disabled}
           onClick={() => onChange(option.value)}
           className={cx(
-            "relative h-9 flex-1 cursor-pointer border-0 bg-transparent text-[13px] text-ios-label disabled:cursor-default disabled:opacity-40",
-            option.value === value ? "font-semibold" : "font-medium",
+            "relative h-8 flex-1 cursor-pointer border-0 bg-transparent text-sm font-semibold text-ios-label disabled:cursor-default disabled:opacity-40",
           )}
         >
           {option.label}

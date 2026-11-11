@@ -5,10 +5,10 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/api/client";
 import { formatKmInput } from "@/lib/format";
 import { useSaveReminder, type Reminder } from "@/lib/api/reminders";
-import { CategoryGrid } from "../category-grid";
 import { Chip } from "../chip";
 import { DatePickerCell } from "../date-picker";
 import { Footnote, Group, Section, SectionHeader } from "../grouped-list";
+import { SegmentedControl } from "../segmented-control";
 import { Sheet } from "./sheet";
 
 type Repeat = "NONE" | "6M" | "12M" | "10000KM";
@@ -42,7 +42,8 @@ interface ReminderSheetProps {
 export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, onDelete }: ReminderSheetProps) {
   const save = useSaveReminder();
   const [title, setTitle] = useState(reminder?.title ?? "");
-  const [category, setCategory] = useState<ExpenseCategoryCode>(reminder?.category ?? "MAINTENANCE");
+  const category: ExpenseCategoryCode = reminder?.category ?? "OTHER";
+  const [notify, setNotify] = useState<"DATE" | "KM" | "BOTH">(reminder?.dueDate && reminder.dueOdometer ? "BOTH" : reminder?.dueOdometer ? "KM" : "DATE");
   const [dueDate, setDueDate] = useState(reminder?.dueDate ?? "");
   const [dueOdometer, setDueOdometer] = useState(reminder?.dueOdometer ? formatKmInput(String(reminder.dueOdometer)) : "");
   const [repeat, setRepeat] = useState<Repeat>(repeatOf(reminder));
@@ -50,11 +51,13 @@ export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, on
 
   const submit = async () => {
     if (save.isPending) return;
-    const odometer = Number.parseInt(dueOdometer.replace(/\D/g, ""), 10) || null;
+    const odometer = notify === "DATE" ? null : Number.parseInt(dueOdometer.replace(/\D/g, ""), 10) || null;
+    const date = notify === "KM" ? "" : dueDate;
     if (title.trim().length < 2) return setError("Informe o título do lembrete.");
-    if (!dueDate && !odometer) return setError("Informe uma data ou uma quilometragem.");
+    if (notify !== "KM" && !date) return setError("Informe a data.");
+    if (notify !== "DATE" && !odometer) return setError("Informe a quilometragem.");
     if (repeat === "10000KM" && !odometer) return setError("Para repetir por km, informe a quilometragem.");
-    if ((repeat === "6M" || repeat === "12M") && !dueDate) return setError("Para repetir por meses, informe a data.");
+    if ((repeat === "6M" || repeat === "12M") && !date) return setError("Para repetir por meses, informe a data.");
     try {
       await save.mutateAsync({
         vehicleId,
@@ -62,7 +65,7 @@ export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, on
         input: {
           title: title.trim(),
           category,
-          dueDate: dueDate || null,
+          dueDate: date || null,
           dueOdometer: odometer,
           repeatMonths: repeat === "6M" ? 6 : repeat === "12M" ? 12 : null,
           repeatKm: repeat === "10000KM" ? 10000 : null,
@@ -85,7 +88,6 @@ export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, on
     >
       <Group className="mx-4 text-[17px]">
         <label className={CELL_LABEL}>
-          <span>Título</span>
           <input
             value={title}
             onChange={(event) => {
@@ -93,45 +95,59 @@ export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, on
               setError("");
             }}
             maxLength={120}
-            placeholder="Ex.: renovar seguro"
-            className={CELL_INPUT}
+            aria-label="Título"
+            placeholder="Ex.: Trocar palhetas"
+            className="min-w-0 flex-1 border-0 bg-transparent text-[17px] text-ios-label outline-0"
           />
         </label>
       </Group>
       {error && (
-        <div role="alert" className="-mt-3 text-center text-sm text-danger">
+        <div role="alert" className="-mt-2 text-center text-sm text-danger">
           {error}
         </div>
       )}
 
-      <Section header={<SectionHeader>Categoria</SectionHeader>}>
-        <CategoryGrid value={category} onChange={setCategory} />
-      </Section>
-
-      <Section header={<SectionHeader>Quando</SectionHeader>} footer={<Footnote>O lembrete fica em destaque 15 dias antes da data e 500 km antes da quilometragem.</Footnote>}>
-        <Group className="mx-4 text-[17px]">
-          <DatePickerCell
-            label="Data"
-            value={dueDate}
-            optional
-            onChange={(value) => {
-              setDueDate(value);
+      <Section header={<SectionHeader>Avisar por</SectionHeader>} footer={<Footnote>O lembrete fica em destaque 15 dias antes da data e 500 km antes da quilometragem.</Footnote>}>
+        <div className="mx-4">
+          <SegmentedControl
+            options={[
+              { value: "DATE", label: "Data" },
+              { value: "KM", label: "Km" },
+              { value: "BOTH", label: "Ambos" },
+            ]}
+            value={notify}
+            onChange={(next) => {
+              setNotify(next);
               setError("");
             }}
           />
-          <label className={CELL_LABEL}>
-            <span>Quilometragem</span>
-            <input
-              value={dueOdometer}
-              onChange={(event) => {
-                setDueOdometer(formatKmInput(event.target.value));
+        </div>
+        <Group className="mx-4 text-[17px]">
+          {notify !== "KM" && (
+            <DatePickerCell
+              label="Data"
+              value={dueDate}
+              onChange={(value) => {
+                setDueDate(value);
                 setError("");
               }}
-              inputMode="numeric"
-              placeholder="Opcional"
-              className={CELL_INPUT}
             />
-          </label>
+          )}
+          {notify !== "DATE" && (
+            <label className={CELL_LABEL}>
+              <span>Quilometragem</span>
+              <input
+                value={dueOdometer}
+                onChange={(event) => {
+                  setDueOdometer(formatKmInput(event.target.value));
+                  setError("");
+                }}
+                inputMode="numeric"
+                placeholder="km"
+                className={CELL_INPUT}
+              />
+            </label>
+          )}
         </Group>
       </Section>
 
@@ -150,7 +166,7 @@ export function ReminderSheet({ open, vehicleId, reminder, onCancel, onSaved, on
           <button
             type="button"
             onClick={() => onDelete(reminder)}
-            className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-base text-danger active:bg-ios-fill"
+            className="h-[46px] w-full cursor-pointer border-0 bg-transparent text-[17px] text-danger active:bg-ios-fill"
           >
             Excluir lembrete
           </button>

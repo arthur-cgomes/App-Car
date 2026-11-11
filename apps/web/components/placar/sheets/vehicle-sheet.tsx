@@ -111,7 +111,7 @@ export function VehicleSheet({ open, lookupAvailable, vehicles, onCancel, onAdde
       onCancel={onCancel}
     >
       <div className="flex flex-col gap-5">
-        <div className="mx-4 flex flex-col items-center gap-3.5 rounded-2xl bg-ios-cell px-4 py-[18px]">
+        <div className="mx-4 flex flex-col items-center gap-3.5">
           <PlateInput
             label="Placa do novo veículo"
             value={plate}
@@ -128,7 +128,7 @@ export function VehicleSheet({ open, lookupAvailable, vehicles, onCancel, onAdde
                 setManual((current) => !current);
                 setError("");
               }}
-              className="text-[15px]"
+              className="p-1"
             >
               {manual ? "Buscar pela placa" : "Preencher manualmente"}
             </LinkButton>

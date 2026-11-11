@@ -15,13 +15,13 @@ import { applyTheme, readTheme } from "@/lib/theme";
 import { usePrivacy } from "@/lib/use-privacy";
 import { useToday } from "@/lib/use-today";
 import { Avatar } from "../avatar";
-import { GlassIconButton } from "../buttons";
 import { ExpenseDetail } from "../expense-detail";
 import { Icon } from "../icon";
 import { ActionPanel, ActionPanelButton, ActionPanelMessage, Backdrop, PhotoViewer } from "../overlays";
 import { ExpenseSheet, type ExpenseFormValues } from "../sheets/expense-sheet";
 import { OdometerSheet } from "../sheets/odometer-sheet";
 import { ReminderSheet } from "../sheets/reminder-sheet";
+import { CalibrationSheet } from "../sheets/calibration-sheet";
 import { VehicleSheet } from "../sheets/vehicle-sheet";
 import { VehiclePicker } from "../vehicle-picker";
 import { NavBar } from "./nav-bar";
@@ -32,7 +32,8 @@ type SheetRequest =
   | { mode: "expense"; prefill?: Partial<ExpenseFormValues>; expense?: Expense }
   | { mode: "reminder"; reminder?: Reminder }
   | { mode: "vehicle" }
-  | { mode: "odometer" };
+  | { mode: "odometer" }
+  | { mode: "calibration" };
 type SheetState = SheetRequest & { key: number };
 
 const COLLAPSE_AT = 44;
@@ -115,6 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       openVehicleSheet: () => openSheet({ mode: "vehicle" }),
       openReminderSheet: (reminder) => openSheet({ mode: "reminder", reminder }),
       openVehiclePicker: () => setPickerOpen(true),
+      openCalibration: () => openSheet({ mode: "calibration" }),
       openExpenseDetail: (id) => {
         setDetailId(id);
         setLastDetailId(id);
@@ -131,8 +133,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const closeSheet = () => {
     if (sheet?.mode === "expense" && expenseDirty) {
       api.confirm({
-        message: sheet.expense ? "Descartar as alterações deste gasto?" : "Descartar este gasto? O que você preencheu não será salvo.",
-        label: "Descartar",
+        title: sheet.expense ? "Descartar as alterações?" : "Descartar este gasto?",
+        message: "O que você preencheu não será salvo.",
+        label: sheet.expense ? "Descartar alterações" : "Descartar gasto",
         cancelLabel: "Continuar editando",
         onConfirm: () => setSheetOpen(false),
       });
@@ -155,10 +158,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div
           className={cx(
             "absolute inset-0 overflow-clip bg-ios-bg transition-[scale,translate,border-radius] duration-450 ease-ios",
-            sheetOpen && "max-md:translate-y-3.5 max-md:scale-[.92] max-md:rounded-[38px]",
+            (sheetOpen || !!detailId) && "max-md:translate-y-3.5 max-md:scale-[.94] max-md:rounded-[38px]",
           )}
         >
-          <div className="absolute inset-0 transition-transform duration-450 ease-ios" style={{ transform: detailId ? "translateX(-30%)" : "none" }}>
+          <div className="absolute inset-0">
             <div
               ref={scrollRef}
               onScroll={(event) => {
@@ -177,95 +180,97 @@ export function AppShell({ children }: { children: ReactNode }) {
               title={title}
               collapsed={collapsed}
               leading={
-                activeTab === "/" && (
-                  <button
-                    type="button"
-                    aria-label="Perfil"
-                    onClick={() => router.push("/profile")}
-                    className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
-                  >
-                    {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={40} />}
-                  </button>
-                )
+                <button
+                  type="button"
+                  aria-label="Perfil"
+                  onClick={() => router.push("/profile")}
+                  className="cursor-pointer rounded-full border-0 bg-transparent p-0 active:opacity-60"
+                >
+                  {me.data && <Avatar name={me.data.name} fileId={me.data.avatarFileId} size={40} />}
+                </button>
               }
               actions={
-                activeTab === "/" ? (
-                  <div className="glass-control flex h-10 items-center rounded-full px-1">
+                <div className="glass-control flex h-11 items-center rounded-full px-1">
                     <button
                       type="button"
                       aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
                       aria-pressed={hidden}
                       onClick={togglePrivacy}
-                      className="grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
+                      className="grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
                     >
-                      <Icon name={hidden ? "eye-off" : "eye"} size={20} stroke={2} />
+                      <Icon name={hidden ? "eye-off" : "eye"} size={22} />
                     </button>
                     {vehicle && (
                       <button
                         type="button"
                         aria-label="Atualizar km do carro"
                         onClick={() => openSheet({ mode: "odometer" })}
-                        className="grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
+                        className="grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
                       >
-                        <Icon name="gauge" size={20} stroke={2} />
+                        <Icon name="gauge" size={22} />
                       </button>
                     )}
                     <button
                       type="button"
                       aria-label={accountTheme === "light" ? "Usar tema escuro" : "Usar tema claro"}
                       onClick={toggleTheme}
-                      className="grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
+                      className="grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
                     >
-                      <Icon name={accountTheme === "light" ? "moon" : "sun"} size={20} stroke={2} />
+                      <Icon name={accountTheme === "light" ? "moon" : "sun"} size={22} />
                     </button>
                     <button
                       type="button"
                       aria-label={overdue.length ? `Notificações: ${overdue.length} ${overdue.length === 1 ? "lembrete vencido" : "lembretes vencidos"}` : "Notificações"}
                       onClick={() => router.push("/reminders?filter=overdue")}
-                      className="relative grid size-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
+                      className="relative grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-ios-label active:opacity-50"
                     >
-                      <Icon name="bell" size={20} stroke={2} />
-                      {overdue.length > 0 && <span aria-hidden className="absolute top-[7px] right-[8px] size-2 rounded-full bg-danger ring-2 ring-[var(--ios-glass)]" />}
+                      <Icon name="bell" size={22} />
+                      {overdue.length > 0 && <span aria-hidden className="absolute top-2 right-[9px] size-[9px] rounded-full bg-danger" />}
                     </button>
                   </div>
-                ) : activeTab === "/expenses" || activeTab === "/reminders" ? (
-                  <GlassIconButton
-                    aria-label={activeTab === "/expenses" ? "Novo gasto" : "Novo lembrete"}
-                    onClick={() => (activeTab === "/expenses" ? api.openExpenseSheet() : vehicle && api.openReminderSheet())}
-                  >
-                    <Icon name="plus" />
-                  </GlassIconButton>
-                ) : null
               }
             />}
           </div>
 
-          <ExpenseDetail
-            open={!!detailId}
-            vehicleId={vehicle?.id}
-            expenseId={detailId ?? lastDetailId}
-            onBack={() => setDetailId(null)}
-            onViewPhoto={setViewer}
-            onError={alert}
-            onEdit={(expense) => openSheet({ mode: "expense", expense })}
-            onDelete={(expense) =>
-              api.confirm({
-                message: "Este gasto será excluído permanentemente.",
-                label: "Excluir gasto",
-                onConfirm: () =>
-                  deleteExpense.mutate(
-                    { vehicleId: expense.vehicleId, id: expense.id },
-                    {
-                      onSuccess: () => setDetailId(null),
-                      onError: (error) => alert(errorMessage(error)),
-                    },
-                  ),
-              })
-            }
+          <TabBar
+            active={activeTab}
+            addLabel={activeTab === "/tires" ? "Calibrar" : activeTab === "/reminders" ? "Novo lembrete" : "Novo gasto"}
+            addIcon={activeTab === "/tires" ? "compress" : "plus"}
+            onAdd={() => {
+              if (activeTab === "/tires" && vehicle) return api.openCalibration();
+              if (activeTab === "/reminders" && vehicle) return api.openReminderSheet();
+              api.openExpenseSheet();
+            }}
           />
-
-          <TabBar active={activeTab} onAdd={() => api.openExpenseSheet()} />
         </div>
+
+        <Backdrop open={!!detailId} onClose={() => setDetailId(null)} />
+        <ExpenseDetail
+          open={!!detailId}
+          vehicleId={vehicle?.id}
+          expenseId={detailId ?? lastDetailId}
+          onBack={() => setDetailId(null)}
+          onViewPhoto={setViewer}
+          onError={alert}
+          onEdit={(expense) => {
+            setDetailId(null);
+            openSheet({ mode: "expense", expense });
+          }}
+          onDelete={(expense) =>
+            api.confirm({
+              message: "Este gasto será excluído permanentemente.",
+              label: "Excluir gasto",
+              onConfirm: () =>
+                deleteExpense.mutate(
+                  { vehicleId: expense.vehicleId, id: expense.id },
+                  {
+                    onSuccess: () => setDetailId(null),
+                    onError: (error) => alert(errorMessage(error)),
+                  },
+                ),
+            })
+          }
+        />
 
         <Backdrop open={sheetOpen} onClose={closeSheet} />
         {sheet?.mode === "expense" && vehicle && (
@@ -335,6 +340,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             onSaved={() => setSheetOpen(false)}
           />
         )}
+        {sheet?.mode === "calibration" && vehicle && <CalibrationSheet key={sheet.key} open={sheetOpen} vehicleId={vehicle.id} onClose={() => setSheetOpen(false)} />}
         {sheet?.mode === "vehicle" && (
           <VehicleSheet
             key={sheet.key}
@@ -366,7 +372,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <Backdrop open={!!action} onClose={() => setAction(null)} z={30} />
         <ActionPanel open={!!action} onCancel={() => setAction(null)} cancelLabel={shownAction?.cancelLabel}>
-          <ActionPanelMessage>{shownAction?.message}</ActionPanelMessage>
+          <ActionPanelMessage>
+            {shownAction?.title && <strong className="block text-sm font-semibold">{shownAction.title}</strong>}
+            {shownAction?.message}
+          </ActionPanelMessage>
           <ActionPanelButton
             destructive
             onClick={() => {

@@ -2,9 +2,9 @@ import { EXPENSE_CATEGORY_BY_CODE, type ExpenseCategoryCode } from "@monitoring-
 import { Icon, type IconName } from "./icon";
 
 const SIZES = {
-  sm: { box: 29, radius: 7, icon: 17 },
-  md: { box: 36, radius: 9, icon: 22 },
-  lg: { box: 60, radius: 14, icon: 28 },
+  sm: { box: 34, radius: 10, icon: 21 },
+  md: { box: 32, radius: 16, icon: 18 },
+  lg: { box: 44, radius: 12, icon: 26 },
 } as const;
 
 export function CategoryIcon({ code, size = "sm" }: { code: ExpenseCategoryCode; size?: keyof typeof SIZES }) {
@@ -15,7 +15,7 @@ export function CategoryIcon({ code, size = "sm" }: { code: ExpenseCategoryCode;
       className="grid flex-none place-items-center text-white"
       style={{ width: s.box, height: s.box, borderRadius: s.radius, background: `var(${category.colorToken})` }}
     >
-      <Icon name={category.icon as IconName} size={s.icon} stroke={1.75} />
+      <Icon name={category.icon as IconName} size={s.icon} />
     </span>
   );
 }

@@ -6,8 +6,7 @@ import { errorMessage } from "@/lib/api/client";
 import { fichaApi, type Fipe } from "@/lib/api/ficha";
 import { formatMoneyInput, parseMoneyInput } from "@/lib/format";
 import { LinkButton } from "../buttons";
-import { InputCell, centsToInput } from "../form-cells";
-import { Footnote, Group, Section } from "../grouped-list";
+import { centsToInput } from "../form-cells";
 import { Sheet } from "./sheet";
 
 export function FipeSheet({ open, vehicleId, fipe, onClose }: { open: boolean; vehicleId: string; fipe?: Fipe; onClose: () => void }) {
@@ -43,22 +42,24 @@ export function FipeSheet({ open, vehicleId, fipe, onClose }: { open: boolean; v
           {error}
         </div>
       )}
-      <Section footer={<Footnote>Use o valor da tabela FIPE do seu carro. O IPVA estimado é calculado em 4% desse valor.</Footnote>}>
-        <Group className="mx-4">
-          <InputCell
-            label="Valor FIPE"
-            value={value}
-            onChange={(event) => {
-              setValue(formatMoneyInput(event.target.value));
-              setError("");
-            }}
-            inputMode="numeric"
-            placeholder="R$ 0,00"
-            maxLength={14}
-            autoFocus
-          />
-        </Group>
-      </Section>
+      <div className="flex items-baseline justify-center gap-1.5 px-4 font-rounded">
+        <span className="text-[24px] font-semibold text-ios-label2">R$</span>
+        <input
+          value={value}
+          onChange={(event) => {
+            setValue(formatMoneyInput(event.target.value));
+            setError("");
+          }}
+          inputMode="numeric"
+          placeholder="0,00"
+          aria-label="Valor FIPE"
+          maxLength={14}
+          autoFocus
+          className="min-w-0 border-0 bg-transparent font-rounded text-[48px] font-bold tracking-[-.02em] text-ios-label tabular-nums outline-0 placeholder:text-ios-label3"
+          style={{ width: `${Math.max(4, (value || "0,00").length) * 0.6}em` }}
+        />
+      </div>
+      <p className="m-0 px-8 text-center text-[13px] text-pretty text-ios-label2">Deixe o valor da tabela FIPE do seu carro. O IPVA é estimado em 4%.</p>
       {manual && (
         <LinkButton onClick={() => !busy && save(null)} className="self-center p-2">
           Usar o valor automático da tabela FIPE
