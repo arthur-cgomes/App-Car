@@ -5,12 +5,12 @@ export function AppLogo({ subtitle = "O resumo do seu carro na palma da mão." }
         <div className="flex w-14 flex-col overflow-hidden rounded-[5px] bg-white">
           <div className="h-[5px] bg-[#3b7be8]" />
           <div className="pb-px text-center" style={{ font: "600 17px/1.15 var(--font-barlow-condensed)", letterSpacing: ".06em", color: "#111" }}>
-            CAR
+            POLO
           </div>
         </div>
       </div>
       <div>
-        <div className="text-[28px] font-bold tracking-[-.02em]">App Car</div>
+        <div className="text-[28px] font-bold tracking-[-.02em]">VW Polo</div>
         <div className="text-[15px] text-ios-label2">{subtitle}</div>
       </div>
     </div>

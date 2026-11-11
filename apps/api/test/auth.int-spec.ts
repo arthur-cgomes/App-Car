@@ -58,7 +58,7 @@ describe('Autenticação (integração)', () => {
     it('envia o código para o e-mail antes de pedir qualquer outro dado', async () => {
       const res = await post('/v1/auth/signup/start', { email: ' MARINA@email.com ' }).expect(200);
       expect(res.body).toEqual({ channel: 'EMAIL', sentTo: 'ma••••@email.com', resendIn: 30 });
-      expect(mail.at(-1)).toMatchObject({ to: MARINA_EMAIL, subject: 'App Car: confirme seu e-mail' });
+      expect(mail.at(-1)).toMatchObject({ to: MARINA_EMAIL, subject: 'VW Polo: confirme seu e-mail' });
       expect(await dataSource.getRepository(User).exists({ where: { email: MARINA_EMAIL } })).toBe(false);
       expect((await post('/v1/auth/signup/start', { email: 'invalido' }).expect(400)).body.message).toEqual(['E-mail inválido.']);
     });
@@ -132,7 +132,7 @@ describe('Autenticação (integração)', () => {
 
     it('confirma o celular por SMS quando o SMS está disponível', async () => {
       await marina.post('/v1/auth/phone/send').set(CSRF).expect(200, { channel: 'SMS', sentTo: '(21) •••••-4821', resendIn: 30 });
-      expect(sms.lastTo(MARINA_PHONE)?.text).toMatch(/^App Car: seu código de confirmação é \d{6}\. Não compartilhe\.\n\n@localhost:3001 #\d{6}$/);
+      expect(sms.lastTo(MARINA_PHONE)?.text).toMatch(/^VW Polo: seu código de confirmação é \d{6}\. Não compartilhe\.\n\n@localhost:3001 #\d{6}$/);
       await marina.post('/v1/auth/phone/verify').set(CSRF).send({ code: lastCode(sms, MARINA_PHONE) }).expect(200);
       expect((await marina.get('/v1/me').expect(200)).body.phoneVerifiedAt).not.toBeNull();
     });
@@ -169,7 +169,7 @@ describe('Autenticação (integração)', () => {
   });
 
   describe('login por placa + PIN', () => {
-    const pinMail = () => mail.filter((item) => item.to === MARINA_EMAIL && item.subject === 'App Car: seu PIN de acesso');
+    const pinMail = () => mail.filter((item) => item.to === MARINA_EMAIL && item.subject === 'VW Polo: seu PIN de acesso');
 
     beforeAll(async () => {
       await marina.post('/v1/vehicles').set(CSRF).send({ plate: PLATE }).expect(201);
@@ -186,7 +186,7 @@ describe('Autenticação (integração)', () => {
       const res = await post('/v1/auth/pin/request', { plate: 'rio-2a18' }).expect(200);
       expect(res.body).toEqual({ channel: 'EMAIL', sentTo: 'ma••••@email.com', resendIn: 30 });
       expect(pinMail()).toHaveLength(1);
-      expect(pinMail()[0].text).toMatch(/^Seu PIN de acesso\n\nUse este PIN para entrar no App Car com a placa do seu veículo\.\n\n\d{6}\n/);
+      expect(pinMail()[0].text).toMatch(/^Seu PIN de acesso\n\nUse este PIN para entrar no VW Polo com a placa do seu veículo\.\n\n\d{6}\n/);
       expect(pinMail()[0].html).toContain('Seu PIN de acesso');
       await post('/v1/auth/pin/request', { plate: PLATE }).expect(429);
     });
@@ -231,7 +231,7 @@ describe('Autenticação (integração)', () => {
       await redis.del(`cd:pin-resend:${PLATE}`);
       const res = await post('/v1/auth/pin/request', { plate: PLATE }).expect(200);
       expect(res.body).toEqual({ channel: 'SMS', sentTo: '(21) •••••-4821', resendIn: 30 });
-      expect(sms.lastTo(MARINA_PHONE)?.text).toMatch(/^App Car: seu PIN de acesso é \d{6}\. Não compartilhe\./);
+      expect(sms.lastTo(MARINA_PHONE)?.text).toMatch(/^VW Polo: seu PIN de acesso é \d{6}\. Não compartilhe\./);
       await post('/v1/auth/pin/verify', { plate: PLATE, code: lastCode(sms, MARINA_PHONE) }).expect(200);
       await marina.patch('/v1/me').set(CSRF).send({ pinChannel: 'EMAIL' }).expect(200);
       await redis.del(`cd:pin-resend:${PLATE}`, `rl:pin-plate:${PLATE}`);
@@ -280,7 +280,7 @@ describe('Autenticação (integração)', () => {
 
   describe('esqueci minha senha', () => {
     it('responde igual para contas inexistentes e envia o link para as existentes', async () => {
-      const resets = () => mail.filter((item) => item.subject === 'App Car: redefinir sua senha');
+      const resets = () => mail.filter((item) => item.subject === 'VW Polo: redefinir sua senha');
       await post('/v1/auth/password/forgot', { login: 'ninguem@email.com' }).expect(202, { sent: true });
       expect(resets()).toHaveLength(0);
       await post('/v1/auth/password/forgot', { login: MARINA.cpf }).expect(202, { sent: true });
@@ -292,7 +292,7 @@ describe('Autenticação (integração)', () => {
       const agent = request.agent(server());
       await agent.post('/v1/auth/login').set(CSRF).send({ login: MARINA.email, password: MARINA.password }).expect(200);
 
-      const token = /reset-password\?token=([\w-]+)/.exec(mail.find((item) => item.subject === 'App Car: redefinir sua senha')!.text)![1];
+      const token = /reset-password\?token=([\w-]+)/.exec(mail.find((item) => item.subject === 'VW Polo: redefinir sua senha')!.text)![1];
       const weak = await post('/v1/auth/password/reset', { token, password: 'nova-senha-123' }).expect(400);
       expect(weak.body.message).toEqual(['A senha precisa ter ao menos 8 caracteres, com 1 letra maiúscula, 1 número e 1 caractere especial.']);
       await post('/v1/auth/password/reset', { token, password: 'Nova-senha-123' }).expect(200);

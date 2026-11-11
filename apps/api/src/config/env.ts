@@ -28,7 +28,7 @@ const envSchema = z
     FIPE_PROVIDER: z.enum(['parallelum', 'mock']).default('parallelum'),
     FIPE_TOKEN: z.string().optional(),
     SMTP_URL: z.string().default('smtp://localhost:1025'),
-    MAIL_FROM: z.string().default('App Car <nao-responda@appcar.local>'),
+    MAIL_FROM: z.string().default('VW Polo <nao-responda@appcar.local>'),
   })
   .refine((env) => env.SMS_PROVIDER !== 'smsdev' || env.SMSDEV_KEY, {
     message: 'SMSDEV_KEY é obrigatória com SMS_PROVIDER=smsdev',

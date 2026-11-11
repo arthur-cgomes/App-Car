@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 84">
-  <rect width="84" height="84" rx="20" fill="#001e50"/>
+  <rect width="84" height="84" rx="20" fill="#0b3a8a"/>
   <rect x="14" y="28" width="56" height="28" rx="5" fill="#fff"/>
-  <rect x="14" y="28" width="56" height="5" rx="2" fill="#5d8fde"/>
-  <text x="42" y="51" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="600" font-size="17" letter-spacing="1" fill="#001e50">CAR</text>
+  <rect x="14" y="28" width="56" height="5" rx="2" fill="#3b7be8"/>
+  <text x="42" y="51" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="600" font-size="17" letter-spacing="1" fill="#111">POLO</text>
 </svg>

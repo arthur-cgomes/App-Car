@@ -55,7 +55,7 @@ export class IntegrationsService {
     const vehicle =
       (user.activeVehicleId && (await this.vehicles.findOne({ where: { id: user.activeVehicleId, ownerId: userId } }))) ||
       (await this.vehicles.findOne({ where: { ownerId: userId }, order: { createdAt: 'ASC' } }));
-    if (!vehicle) throw new UnprocessableEntityException('Cadastre um veículo no App Car antes de enviar gastos.');
+    if (!vehicle) throw new UnprocessableEntityException('Cadastre um veículo no VW Polo antes de enviar gastos.');
     return vehicle;
   }
 }

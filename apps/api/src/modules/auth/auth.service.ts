@@ -234,10 +234,10 @@ export class AuthService {
     await this.mail.send({
       to: user.email,
       ...linkEmail({
-        subject: 'App Car: redefinir sua senha',
+        subject: 'VW Polo: redefinir sua senha',
         title: 'Redefinir sua senha',
         name: user.name,
-        intro: 'Recebemos um pedido para criar uma nova senha para a sua conta no App Car.',
+        intro: 'Recebemos um pedido para criar uma nova senha para a sua conta no VW Polo.',
         buttonLabel: 'Criar nova senha',
         url: link,
         footnote: 'O link vale por 30 minutos e só pode ser usado uma vez. Se não foi você, ignore este e-mail: sua senha continua a mesma.',

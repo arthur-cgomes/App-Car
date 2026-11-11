@@ -117,7 +117,7 @@ describe('Perfil e LGPD (integração)', () => {
       await dataSource.getRepository(User).update({ id: alice.id }, { emailVerifiedAt: new Date() });
       const req = await request(server()).post('/v1/me/delete/request').set(asAlice).expect(200);
       expect(req.body).toEqual({ method: 'code', channel: 'EMAIL', sentTo: 'al••••••@test.dev', resendIn: 30 });
-      expect(mail.at(-1)).toMatchObject({ to: 'alice.souza@test.dev', subject: 'App Car: código para excluir sua conta' });
+      expect(mail.at(-1)).toMatchObject({ to: 'alice.souza@test.dev', subject: 'VW Polo: código para excluir sua conta' });
 
       await request(server()).delete('/v1/me').set(asAlice).send({ code: '000000' }).expect(401);
       const removed = await request(server()).delete('/v1/me').set(asAlice).send({ code: lastMailCode(mail, 'alice.souza@test.dev') }).expect(204);

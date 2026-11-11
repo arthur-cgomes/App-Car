@@ -54,11 +54,11 @@ export class SignupService {
     await this.mail.send({
       to: email,
       ...codeEmail({
-        subject: 'App Car: confirme seu e-mail',
+        subject: 'VW Polo: confirme seu e-mail',
         title: 'Confirme seu e-mail',
-        intro: 'Falta pouco! Digite este código no App Car para continuar o seu cadastro.',
+        intro: 'Falta pouco! Digite este código no VW Polo para continuar o seu cadastro.',
         code,
-        footnote: 'O código vale por 10 minutos. Se você não está criando uma conta no App Car, ignore este e-mail.',
+        footnote: 'O código vale por 10 minutos. Se você não está criando uma conta no VW Polo, ignore este e-mail.',
         webUrl: this.webUrl,
       }),
     });

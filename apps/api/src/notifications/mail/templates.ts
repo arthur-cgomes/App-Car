@@ -48,7 +48,7 @@ function layout({ preheader, title, greeting, intro, highlight, footnote, webUrl
 <div style="height:5px;background:${NAVY_LIGHT};line-height:5px;font-size:0;">&nbsp;</div>
 <div style="padding:2px 10px 4px;font-family:'Arial Narrow','Barlow Condensed',Arial,sans-serif;font-weight:700;font-size:16px;letter-spacing:2px;color:${NAVY};">CAR</div>
 </td>
-<td style="padding-left:12px;font-family:${FONT};font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.2px;" valign="middle">App Car</td>
+<td style="padding-left:12px;font-family:${FONT};font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.2px;" valign="middle">VW Polo</td>
 </tr></table>
 </td></tr>
 <tr><td style="background:#ffffff;border-radius:0 0 20px 20px;padding:32px;font-family:${FONT};color:${INK};">
@@ -59,7 +59,7 @@ ${highlight}
 <p style="margin:24px 0 0;font-size:14px;line-height:21px;color:${MUTED};">${footnote}</p>
 </td></tr>
 <tr><td style="padding:20px 32px 0;font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};" align="center">
-App Car · o resumo do seu carro na palma da mão<br>
+VW Polo · o resumo do seu carro na palma da mão<br>
 <a href="${escapeHtml(webUrl)}" style="color:${MUTED};text-decoration:underline;">${host}</a> · Este e-mail é automático, não responda.
 </td></tr>
 </table>
@@ -84,7 +84,7 @@ export function codeEmail({ subject, title, intro, code, footnote, webUrl }: Cod
 </tr></table>`;
   return {
     subject,
-    text: `${title}\n\n${intro}\n\n${code}\n\n${footnote}\n\nApp Car · ${webUrl}`,
+    text: `${title}\n\n${intro}\n\n${code}\n\n${footnote}\n\nVW Polo · ${webUrl}`,
     html: layout({ preheader: `${code} · ${title}`, title, intro: escapeHtml(intro), highlight, footnote: escapeHtml(footnote), webUrl }),
   };
 }
@@ -108,7 +108,7 @@ export function linkEmail({ subject, title, name, intro, buttonLabel, url, footn
 <p style="margin:16px 0 0;font-size:13px;line-height:19px;color:${MUTED};word-break:break-all;">Se o botão não funcionar, copie este endereço no navegador:<br><a href="${escapeHtml(url)}" style="color:${NAVY};">${escapeHtml(url)}</a></p>`;
   return {
     subject,
-    text: `Olá, ${name}.\n\n${intro}\n\n${url}\n\n${footnote}\n\nApp Car · ${webUrl}`,
+    text: `Olá, ${name}.\n\n${intro}\n\n${url}\n\n${footnote}\n\nVW Polo · ${webUrl}`,
     html: layout({
       preheader: intro,
       title,

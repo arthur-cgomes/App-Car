@@ -20,40 +20,40 @@ export const OTP_RESEND_SECONDS = 30;
 const OTP_PER_TARGET_PER_HOUR = 5;
 
 const SMS_TEXT: Record<OtpPurpose, (code: string) => string> = {
-  LOGIN: (code) => `App Car: seu PIN de acesso é ${code}. Não compartilhe.`,
-  EMAIL_VERIFY: (code) => `App Car: seu código de confirmação é ${code}. Não compartilhe.`,
-  PHONE_VERIFY: (code) => `App Car: seu código de confirmação é ${code}. Não compartilhe.`,
-  PHONE_CHANGE: (code) => `App Car: seu código para confirmar este celular é ${code}. Não compartilhe.`,
-  ACCOUNT_DELETE: (code) => `App Car: seu código para EXCLUIR sua conta é ${code}. Se não foi você, ignore.`,
+  LOGIN: (code) => `VW Polo: seu PIN de acesso é ${code}. Não compartilhe.`,
+  EMAIL_VERIFY: (code) => `VW Polo: seu código de confirmação é ${code}. Não compartilhe.`,
+  PHONE_VERIFY: (code) => `VW Polo: seu código de confirmação é ${code}. Não compartilhe.`,
+  PHONE_CHANGE: (code) => `VW Polo: seu código para confirmar este celular é ${code}. Não compartilhe.`,
+  ACCOUNT_DELETE: (code) => `VW Polo: seu código para EXCLUIR sua conta é ${code}. Se não foi você, ignore.`,
 };
 
 const EMAIL_CONTENT: Record<OtpPurpose, { subject: string; title: string; intro: string; footnote: string }> = {
   LOGIN: {
-    subject: 'App Car: seu PIN de acesso',
+    subject: 'VW Polo: seu PIN de acesso',
     title: 'Seu PIN de acesso',
-    intro: 'Use este PIN para entrar no App Car com a placa do seu veículo.',
+    intro: 'Use este PIN para entrar no VW Polo com a placa do seu veículo.',
     footnote: 'O PIN vale por 5 minutos. Se você não pediu, ignore este e-mail: ninguém entra na sua conta sem ele.',
   },
   EMAIL_VERIFY: {
-    subject: 'App Car: confirme seu e-mail',
+    subject: 'VW Polo: confirme seu e-mail',
     title: 'Confirme seu e-mail',
-    intro: 'Falta pouco! Digite este código no App Car para confirmar seu e-mail.',
-    footnote: 'O código vale por 5 minutos. Se você não criou uma conta no App Car, ignore este e-mail.',
+    intro: 'Falta pouco! Digite este código no VW Polo para confirmar seu e-mail.',
+    footnote: 'O código vale por 5 minutos. Se você não criou uma conta no VW Polo, ignore este e-mail.',
   },
   PHONE_VERIFY: {
-    subject: 'App Car: confirme seu celular',
+    subject: 'VW Polo: confirme seu celular',
     title: 'Confirme seu celular',
-    intro: 'Digite este código no App Car para confirmar seu celular.',
+    intro: 'Digite este código no VW Polo para confirmar seu celular.',
     footnote: 'O código vale por 5 minutos. Não compartilhe com ninguém.',
   },
   PHONE_CHANGE: {
-    subject: 'App Car: confirme seu novo celular',
+    subject: 'VW Polo: confirme seu novo celular',
     title: 'Confirme seu novo celular',
-    intro: 'Digite este código no App Car para confirmar a troca do seu celular.',
+    intro: 'Digite este código no VW Polo para confirmar a troca do seu celular.',
     footnote: 'O código vale por 5 minutos. Se não foi você, troque sua senha.',
   },
   ACCOUNT_DELETE: {
-    subject: 'App Car: código para excluir sua conta',
+    subject: 'VW Polo: código para excluir sua conta',
     title: 'Excluir sua conta',
     intro: 'Use este código para confirmar a exclusão da sua conta. Seus dados deixam de aparecer na hora e são apagados de vez em 30 dias.',
     footnote: 'Se não foi você, ignore este e-mail e troque sua senha.',

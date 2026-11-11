@@ -20,10 +20,10 @@ const materialSymbols = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: "App Car", template: "%s · App Car" },
+  title: { default: "VW Polo", template: "%s · VW Polo" },
   description: "O resumo do seu carro na palma da mão.",
-  applicationName: "App Car",
-  appleWebApp: { capable: true, title: "App Car", statusBarStyle: "black-translucent" },
+  applicationName: "VW Polo",
+  appleWebApp: { capable: true, title: "VW Polo", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

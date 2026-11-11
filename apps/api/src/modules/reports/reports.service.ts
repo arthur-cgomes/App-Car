@@ -131,7 +131,7 @@ export class ReportsService {
 
   toPdf(report: Report): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: 'Relatório de gastos do App Car' } });
+      const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: 'Relatório de gastos do VW Polo' } });
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -171,7 +171,7 @@ export class ReportsService {
         row(`${brDate(e.date)} · ${EXPENSE_CATEGORY_BY_CODE[e.category].name} · ${e.description}`, brl(e.amountCents));
       }
 
-      doc.moveDown(1).font('Helvetica').fontSize(8).fillColor(muted).text('Gerado pelo App Car.', 48);
+      doc.moveDown(1).font('Helvetica').fontSize(8).fillColor(muted).text('Gerado pelo VW Polo.', 48);
       doc.end();
     });
   }
