@@ -1,10 +1,10 @@
 # API de integração
 
-Permite que outro app lance abastecimentos na conta de um usuário do App Car, autenticado por uma chave de API.
+Permite que outro app lance abastecimentos na conta de um usuário do VW Polo, autenticado por uma chave de API.
 
 ## 1. Criar a chave
 
-No App Car: **Perfil → Integrações → Chaves de API → +**. Dê um nome (ex.: "App de abastecimento") e copie a chave
+No VW Polo: **Perfil → Integrações → Chaves de API → +**. Dê um nome (ex.: "App de abastecimento") e copie a chave
 `ac_live_…` na hora: ela aparece uma única vez. Na mesma tela dá para ver o último uso e revogar a chave.
 
 Também pela API (sessão do usuário): `GET/POST /api/v1/me/api-keys` e `DELETE /api/v1/me/api-keys/:id`.

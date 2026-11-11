@@ -3,7 +3,7 @@
 Monorepo pnpm + Turborepo com três pacotes e a infraestrutura local.
 
 ```
-monitoring-car/
+vw-polo/
 ├── apps/
 │   ├── api/                 NestJS 11 + TypeORM 0.3 (porta 3000)
 │   └── web/                 Next.js 16 App Router (porta 3001)
@@ -51,7 +51,7 @@ test/                                        Testes de integração (*.int-spec.
 | Módulo | Rotas (`/v1`) | Responsabilidade |
 |---|---|---|
 | `auth` | `/auth/signup/start`, `/signup/verify`, `/register`, `/login`, `/pin/request`, `/pin/verify`, `/email/*`, `/phone/*`, `/refresh`, `/logout`, `/password/*` | Cadastro em etapas (código no e-mail primeiro, dados depois, CPF validado pelos dígitos), login por senha ou placa + PIN (por e-mail ou SMS), sessão em cookies httpOnly, recuperação de senha |
-| `users` / `account` | `/me`, `/me/phone`, `/me/password-link`, `/me/export`, `/me/delete/request` | Perfil, tema, troca de celular, exportação (LGPD) e exclusão de conta |
+| `users` / `account` | `/me`, `/me/phone`, `/me/password`, `/me/password-link`, `/me/export`, `/me/delete/request` | Perfil, tema, troca de celular, troca de senha (encerra as outras sessões e limita tentativas), exportação (LGPD) e exclusão de conta |
 | `api-keys` | `/me/api-keys` | Chaves de API do usuário (só o hash é guardado) |
 | `integrations` | `/integrations/fuel-expenses` | API aberta: abastecimentos enviados por outro app ([API_INTEGRACAO.md](API_INTEGRACAO.md)) |
 | `vehicles` | `/vehicles`, `/vehicles/:id`, `/:id/activate`, `/:id/history` | Veículos (pela placa ou manual), veículo ativo, odômetro (PATCH só da km), FIPE informada pelo usuário |
@@ -77,7 +77,7 @@ Tabelas em `snake_case`; toda tabela de negócio tem `id`, `created_at`, `update
 | `users` | Conta, tema, login por placa + PIN e canal do PIN (`pin_channel`), e-mail confirmado, veículo ativo |
 | `vehicles` | Placa, marca, modelo, versão, cor, ano, data e odômetro da compra, odômetro (`current_odometer` e `base_odometer`), FIPE (`fipe_code`, `fipe_value_cents`, `fipe_ref_month`, `fipe_manual`), intervalos de revisão e troca de óleo |
 | `expenses` | Gastos; `occurred_at`, `establishment`, `parts_cents`, `labor_cents`, `source` (`MANUAL`, `API`…) e `external_id` (idempotência da integração) |
-| `expense_categories` | 7 categorias fixas (criadas pela migração) |
+| `expense_categories` | 8 categorias fixas, incluindo Pneus (criadas pela migração) |
 | `expense_attachments` / `files` / `fuel_logs` | Fotos da nota, arquivos enviados e litros |
 | `reminders` / `documents` / `insurances` / `emergency_contacts` / `tires` / `tire_events` / `tire_rotations` | Domínios do veículo |
 | `api_keys` | Chaves de API (prefixo visível e hash SHA-256) |
@@ -93,6 +93,7 @@ app/
 ├── (app)/                   Telas autenticadas, dentro do AppShell
 │   ├── page.tsx             Resumo
 │   ├── expenses/ reminders/ lookup/ (Consulta oculta: redireciona ao Resumo)
+│   ├── tires/               Pneus: visão geral, [slot] (detalhe do pneu) e rotation (rodízio)
 │   ├── vehicle/             Ficha: documents, insurances, fuel, contacts, reports
 │   └── profile/             Perfil e integrations (chaves de API)
 ├── layout.tsx manifest.ts robots.ts globals.css
@@ -114,8 +115,8 @@ Cores: `--color-accent` é o azul-marinho #001E50 e a rampa `accent-100…900` f
 
 | Arquivo | Conteúdo |
 |---|---|
-| `utils/plate.ts`, `cpf.ts`, `phone.ts`, `money.ts`, `password.ts` | Normalização e validação compartilhadas |
-| `catalogs/categories.ts`, `part-systems.ts`, `vehicle-brands.ts`, `emergency-contacts.ts` | Catálogos fixos |
+| `utils/plate.ts`, `cpf.ts`, `phone.ts`, `money.ts`, `password.ts`, `email.ts` | Normalização e validação compartilhadas |
+| `catalogs/categories.ts`, `part-systems.ts`, `vehicle-brands.ts`, `emergency-contacts.ts`, `tires.ts` | Catálogos fixos |
 
 ## Convenções
 

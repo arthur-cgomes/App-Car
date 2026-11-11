@@ -1,4 +1,4 @@
-# Deploy do App Car
+# Deploy do VW Polo
 
 Duas imagens Docker, geradas a partir da raiz do monorepo, mais serviços gerenciados.
 
@@ -17,7 +17,7 @@ API ([API_INTEGRACAO.md](API_INTEGRACAO.md)).
 
 ## Deploy automático na VPS
 
-O App Car segue o padrão dos demais apps da VPS: o código fica em `/opt/repos-run/app-car`, a API e o web são serviços
+O VW Polo segue o padrão dos demais apps da VPS: o código fica em `/opt/repos-run/app-car`, a API e o web são serviços
 do `/opt/infra/docker-compose.yml` (junto do Postgres, do Redis e do Nginx Proxy Manager) e usam o Postgres e o Redis
 compartilhados, com banco e usuário próprios (`appcar`) e o índice `2` do Redis.
 
@@ -43,7 +43,7 @@ A API não tem porta exposta (só o web a acessa). Para rodar à mão: `bash /op
 **Código e variáveis:**
 
 ```bash
-mkdir -p /opt/repos-run/app-car && cd /opt/repos-run/app-car && git clone -b master https://github.com/arthur-cgomes/App-Car.git .
+mkdir -p /opt/repos-run/app-car && cd /opt/repos-run/app-car && git clone -b master https://github.com/arthur-cgomes/VW-Polo.git .
 cp deploy/.env.example deploy/.env && chmod 600 deploy/.env
 ```
 
@@ -138,7 +138,7 @@ A aba Pneus precisa de tabelas, colunas e da categoria Pneus. Rode uma vez, a pa
 ssh root@178.104.211.246 'docker exec -i postgres psql -1 -v ON_ERROR_STOP=1 -U appcar -d appcar' < docs/upgrade-pneus.sql
 ```
 
-Para recriar o banco vazio (apaga todos os dados do App Car): pare `appcar-api`, rode
+Para recriar o banco vazio (apaga todos os dados do VW Polo): pare `appcar-api`, rode
 `docker exec postgres psql -U admin -d appcar -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public AUTHORIZATION appcar;'`
 e o `deploy/deploy.sh`, que roda a migração.
 

@@ -1,8 +1,31 @@
-# App Car
+# VW Polo
 
-O resumo do seu carro na palma da mão: gastos (combustível, manutenção com peças e mão de obra, documentos, multas,
-seguro), documentos, seguros, contatos de emergência e lembretes, com consulta pela placa. Web responsiva
-(mobile-first, visual iOS) + API, e uma API aberta para outro app lançar abastecimentos.
+O resumo do seu carro na palma da mão. É um app web (mobile-first, com visual de iOS, instalável na tela inicial) para
+acompanhar tudo o que envolve ter um carro: gastos, manutenção, pneus, documentos, seguro, lembretes e contatos de
+emergência.
+
+## Por que este projeto existe
+
+Fiz o VW Polo para resolver uma necessidade minha. Eu queria saber quanto meu Polo realmente custa por mês e por km, não
+esquecer IPVA, licenciamento, revisão, troca de óleo e rodízio de pneus, e ter a apólice e os telefones de guincho e
+seguradora à mão quando algo acontece na estrada. As planilhas e os apps que testei não juntavam tudo isso num lugar só,
+então construí o meu. Uso o app no dia a dia, e cada funcionalidade nasceu de uma situação real com o carro.
+
+O nome, o logo (a placa com "POLO") e os dados de exemplo são do meu carro, mas o app funciona com qualquer veículo. Se
+quiser uma versão com a cara do seu, veja [Adapte para o seu carro](#adapte-para-o-seu-carro).
+
+## O que ele faz
+
+- **Gastos** por categoria (combustível, manutenção com peças e mão de obra separadas, pneus, documentos, multas, seguro),
+  com fotos da nota, custo do mês e custo por km.
+- **Lembretes** automáticos (IPVA, licenciamento, revisão, troca de óleo, renovação do seguro, rodízio e calibragem) e
+  manuais.
+- **Pneus:** vida restante de cada um, calibragem, ocorrências, substituição e rodízio.
+- **Ficha do veículo:** valor FIPE, IPVA estimado, documentos, seguros com parcelas, consumo médio, contatos de
+  emergência e relatórios em PDF, CSV e JSON.
+- **API aberta** para outro app lançar abastecimentos com uma chave de API.
+
+Os detalhes de cada tela estão em [Funcionalidades](#funcionalidades).
 
 | Documento | Conteúdo |
 |---|---|
@@ -93,7 +116,7 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 - **Consulta:** oculta por enquanto (fora da barra inferior e do Resumo; `/lookup` leva ao Resumo). A tela continua no
   código (`consulta-screen.tsx`) para quando houver um provedor de placa.
 - **Erros:** falhas inesperadas aparecem como "Erro interno no servidor." e o detalhe fica só no log da API.
-- **Perfil:** dados pessoais, foto, tema, canal do PIN (e-mail ou SMS), confirmação do e-mail, link para trocar a senha, **Integrações** (chaves de
+- **Perfil:** dados pessoais, foto, tema, canal do PIN (e-mail ou SMS), confirmação do e-mail, troca de senha (pede a senha atual, encerra as outras sessões e invalida links de recuperação; 5 erros seguidos bloqueiam por 15 min), **Integrações** (chaves de
   API) e Privacidade (exportar dados e excluir conta; a exclusão definitiva acontece em 30 dias).
 
 ## Comandos
@@ -108,3 +131,92 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 | `pnpm -C apps/api seed` | Categorias e conta de demonstração (não cria a conta em produção) |
 | `pnpm -C apps/api drive:auth` | Autoriza o Google Drive e cria a pasta dos uploads |
 | `pnpm db:up` / `pnpm db:down` | Sobe / para Postgres, Redis, S3 e Mailpit |
+
+## Adapte para o seu carro
+
+O código serve para qualquer carro: você cadastra o seu veículo e tudo funciona. O que é do Polo é a identidade do app
+(nome, logo, cores, textos de e-mail e SMS) e os dados de exemplo. Para ter uma versão com o seu carro, copie o prompt
+abaixo, preencha os campos entre colchetes e cole numa IA de código com acesso ao terminal (Claude Code, Codex, Cursor
+ou outra). Ela clona o repositório, troca as referências e confere se tudo continua passando.
+
+```text
+Quero adaptar o app open source "VW Polo" (https://github.com/arthur-cgomes/VW-Polo) para o meu carro.
+Hoje o app usa o nome, o logo e os dados de exemplo de um Volkswagen Polo. Troque essas referências pelas do meu carro,
+sem mudar o funcionamento do app.
+
+## Meu carro
+- Fabricante: [ex.: Fiat]
+- Modelo: [ex.: Argo]
+- Versão e motor: [ex.: Trekking 1.3 Firefly]
+- Ano de fabricação / modelo: [ex.: 2022 / 2023]
+- Cor: [ex.: Vermelho]
+- Combustível: [ex.: Flex]
+- Tração: [dianteira | traseira | integral]
+- Medida dos pneus e do estepe: [ex.: 185/60 R15 e 175/65 R14; ou "pesquise"]
+- Calibragem em psi (vazio dianteiro/traseiro, carregado dianteiro/traseiro, estepe): [ex.: 32/32, 35/38, 60; ou "pesquise"]
+- Revisão e troca de óleo do manual (km): [ex.: 10000 e 10000; ou "pesquise"]
+- Nome do app: [ex.: Fiat Argo]
+- Texto curto para a placa do logo, até 6 letras: [ex.: ARGO]
+- Cor principal da marca (hex): [ex.: #B5121B; ou "sugira uma"]
+- Placa fictícia para os dados de exemplo (padrão Mercosul): [ex.: SAO3B21]
+
+## Passo a passo
+1. Clone o repositório numa pasta com o nome do app em kebab-case:
+   git clone https://github.com/arthur-cgomes/VW-Polo.git <nome-do-app>
+   Leia README.md e docs/ESTRUTURA.md antes de mudar qualquer coisa.
+2. Encontre as referências. Busque, sem diferenciar maiúsculas, por: "VW Polo", "Polo", "POLO", "Volkswagen", "VW",
+   "Highline", "200 TSI", "RIO2A18", "005476-3", "#001e50", "#0b3a8a" e "#3b7be8". Ignore node_modules, .next, .turbo,
+   pnpm-lock.yaml e docs/design/Placar.html (protótipo de referência, não precisa mudar).
+3. Troque a identidade do app pelo "Nome do app":
+   - apps/web/app/layout.tsx e apps/web/app/manifest.ts (título, nome e nome curto do PWA);
+   - logo: apps/web/components/placar/auth/app-logo.tsx, apps/web/app/icon.svg e apps/web/public/icon.svg. Troque o
+     texto "POLO" da placa pelo texto curto (diminua font-size ou letter-spacing se não couber na placa de 56 px) e
+     as cores #0b3a8a (fundo) e #3b7be8 (faixa da placa) por tons da cor principal;
+   - textos de e-mail e SMS: apps/api/src/modules/auth/otp.service.ts, signup.service.ts, auth.service.ts e
+     apps/api/src/notifications/mail/templates.ts. O SMS passa por conversão para GSM, então evite emoji;
+   - PDF de relatório (reports.service.ts), mensagem de erro da integração (integrations.service.ts) e o remetente
+     padrão MAIL_FROM em apps/api/src/config/env.ts, apps/api/.env.example e deploy/.env.example.
+4. Troque a cor principal: em apps/web/app/globals.css, gere de novo a rampa --color-accent-100 a --color-accent-900 no
+   matiz da cor da marca (o 900 é o tom mais escuro, usado como cor principal) e confira os tokens --ios-* nos temas
+   claro e escuro. Use a mesma cor em NAVY (templates.ts) e em accent (reports.service.ts). Garanta contraste de texto
+   branco sobre a cor principal de pelo menos 4,5:1.
+5. Troque os dados de exemplo pelo meu carro: conta de demonstração (apps/api/src/database/seeds/demo-account.seed.ts),
+   mock de placa (apps/api/src/modules/plate-lookup/providers/mock-plate.provider.ts), mock da FIPE
+   (apps/api/src/modules/fipe/mock-fipe.provider.ts; use o código e o valor FIPE reais do meu carro se conseguir
+   consultar, senão valores plausíveis), exemplos do Swagger (create-vehicle.dto.ts e tire.dto.ts) e placeholders dos
+   formulários (vehicle-sheet.tsx e tire-setup-sheet.tsx).
+6. Fabricante abreviado: o app mostra "Volkswagen" como "VW" (SHORT_BRANDS em apps/web/lib/api/vehicles.ts e uma
+   comparação direta em apps/web/components/placar/screens/gastos-screen.tsx). Ajuste para a abreviação do meu
+   fabricante, se ele tiver uma usual, e confira se o fabricante está em packages/shared/src/catalogs/vehicle-brands.ts
+   (se não estiver, adicione sem tirar os que existem).
+7. Padrões técnicos do veículo, com os valores do manual do meu carro:
+   - calibragem (tire_psi_*) e intervalos de revisão, troca de óleo e rodízio: em
+     apps/api/src/modules/vehicles/vehicle.entity.ts E na migração única
+     apps/api/src/database/migrations/*-InitialSchema.ts (os dois precisam bater);
+   - tração: o desgaste dos pneus considera tração dianteira (REAR_WEAR_FACTOR = 0.7 e o rodízio cruzado sugerido em
+     packages/shared/src/catalogs/tires.ts). Se a tração for traseira ou integral, explique o que mudaria e me pergunte
+     antes de alterar.
+   Quando um valor for "pesquise", use uma fonte confiável (manual do proprietário ou site do fabricante) e me diga de
+   onde tirou. Se não encontrar, mantenha o valor atual e avise.
+8. Atualize os testes que esperam os textos e dados antigos (apps/api/test/*.int-spec.ts,
+   apps/api/src/notifications/sms/smsdev-sms.provider.spec.ts, packages/shared/src/utils/email.spec.ts) e os
+   documentos (README.md, docs/*.md), incluindo a seção "Por que este projeto existe", que deve falar do meu carro.
+
+## Não mude
+- Nomes internos de infraestrutura: banco e usuário "appcar" e "monitoring_car", containers "appcar-api" e "appcar-web",
+  pasta /opt/repos-run/app-car e o prefixo das chaves de API "ac_live_". Trocá-los exige migrar o servidor; se eu
+  quiser, faço isso depois, à parte.
+- Regras de negócio, rotas da API, schema do banco (além dos valores padrão do passo 7) e a pasta components/placar
+  (nome interno do design system).
+- O código não tem comentários; mantenha assim.
+
+## Para concluir
+1. Rode pnpm install, pnpm lint, pnpm typecheck e pnpm test. Se o Docker estiver disponível, rode também pnpm db:up e
+   pnpm -C apps/api test:int. Tudo precisa passar.
+2. Busque de novo os termos do passo 2 e me mostre o que sobrou, com o motivo de cada um ter ficado.
+3. Me entregue um resumo com os arquivos alterados, os valores técnicos usados (e as fontes) e o que precisei decidir
+   sozinho. Não faça commit nem push sem eu pedir.
+```
+
+Depois da adaptação, siga [Rodando localmente](#rodando-localmente) para ver o resultado. Para publicar o app no seu
+servidor, veja [docs/DEPLOY.md](docs/DEPLOY.md).
