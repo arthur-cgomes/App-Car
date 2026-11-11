@@ -132,6 +132,12 @@ mudança à mão antes do deploy (ou recrie o banco vazio). Colunas adicionadas 
 docker exec postgres psql -U appcar -d appcar -c 'ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS purchase_odometer integer; ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fipe_manual boolean NOT NULL DEFAULT false; ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS oil_change_interval_km integer NOT NULL DEFAULT 10000; ALTER TABLE fuel_logs ALTER COLUMN liters TYPE numeric(7,3); ALTER TABLE insurances ADD COLUMN IF NOT EXISTS installment_cents integer; ALTER TABLE insurances ADD COLUMN IF NOT EXISTS first_installment_number smallint; ALTER TABLE insurances ADD COLUMN IF NOT EXISTS first_installment_date date;'
 ```
 
+A aba Pneus precisa de tabelas, colunas e da categoria Pneus. Rode uma vez, a partir do repositório, antes do deploy:
+
+```bash
+ssh root@178.104.211.246 'docker exec -i postgres psql -1 -v ON_ERROR_STOP=1 -U appcar -d appcar' < docs/upgrade-pneus.sql
+```
+
 Para recriar o banco vazio (apaga todos os dados do App Car): pare `appcar-api`, rode
 `docker exec postgres psql -U admin -d appcar -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public AUTHORIZATION appcar;'`
 e o `deploy/deploy.sh`, que roda a migração.

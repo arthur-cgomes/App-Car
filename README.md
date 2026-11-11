@@ -68,7 +68,7 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
 - **Entrar:** e-mail ou CPF + senha (8+ caracteres com maiúscula, número e caractere especial) ou **placa + PIN**, enviado por e-mail ou SMS conforme a preferência do usuário (por enquanto, só e-mail).
   O cadastro começa pelo e-mail: o usuário recebe um código e, com ele confirmado, informa nome, CPF (validado pelos
   dígitos verificadores), celular e senha. A conta só é criada no último passo.
-- **Resumo:** foto do perfil no canto superior esquerdo e, à direita, quatro botões: olho (mostra ou embaça todos os valores em
+- **Resumo:** foto do perfil no canto superior esquerdo e, à direita, em todas as abas, quatro botões: olho (mostra ou embaça todos os valores em
   R$ do app; começam embaçados e a escolha fica salva no aparelho), velocímetro (atualiza só a km atual do carro), sol/lua (tema claro ou escuro) e sino (com ponto vermelho quando há lembretes vencidos, abre
   Lembretes já em "Vencidos"). Mostra o veículo ativo como marca + modelo + versão, gasto do mês, custo por km, próximos
   lembretes e atalhos para Ficha e contatos de emergência.
@@ -76,7 +76,10 @@ Para parar: `Ctrl+C` no `pnpm dev` e `pnpm db:down` (os dados continuam salvos).
   Em **Manutenção**, peças e mão de obra são informadas separadamente e o total é a soma das duas.
 - **Odômetro:** o km do carro é o maior entre o informado no cadastro/Ficha e o maior km lançado; corrigir ou excluir um
   lançamento recalcula.
-- **Lembretes:** automáticos (débitos, IPVA estimado em 4% da FIPE, como na Ficha, revisão por km, troca de óleo, renovação do seguro) e manuais, com filtro Todos |
+- **Pneus:** aba própria com vida restante de cada pneu (a frente gasta cerca de 30% mais), pressão, estepe, calibragem com carro
+  vazio ou carregado, ocorrências (com custo vira gasto na categoria Pneus), substituição, fotos, histórico por pneu e rodízio
+  sugerido, paralelo ou manual.
+- **Lembretes:** automáticos (débitos, IPVA estimado em 4% da FIPE, como na Ficha, revisão por km, troca de óleo, renovação do seguro, rodízio e calibragem de pneus) e manuais, com filtro Todos |
   Vencidos; ao lançar uma manutenção o app oferece um lembrete para daqui a 3, 6 ou 12 meses.
 - **Ficha do veículo:** FIPE automática (pelo código ou, sem ele, pela placa) ou informada pelo usuário, com IPVA
   estimado em 4% do valor, dados, intervalo de revisão, troca de óleo (6 meses ou 5 mil km, 1 ano ou 10 mil km; o lembrete vence no que
