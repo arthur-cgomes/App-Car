@@ -82,6 +82,30 @@ export class Vehicle extends BaseEntity {
   @Column({ type: 'integer', default: 10000 })
   oilChangeIntervalKm: number;
 
+  @Column({ type: 'integer', default: 15000 })
+  tireRotationKm: number;
+
+  @Column({ type: 'integer', nullable: true })
+  tireLastRotationKm: number | null;
+
+  @Column({ type: 'date', nullable: true })
+  tireLastPressureDate: string | null;
+
+  @Column({ type: 'smallint', default: 33 })
+  tirePsiFront: number;
+
+  @Column({ type: 'smallint', default: 33 })
+  tirePsiRear: number;
+
+  @Column({ type: 'smallint', default: 36 })
+  tirePsiLoadedFront: number;
+
+  @Column({ type: 'smallint', default: 41 })
+  tirePsiLoadedRear: number;
+
+  @Column({ type: 'smallint', default: 35 })
+  tirePsiSpare: number;
+
   @Column({ type: 'boolean', default: true })
   active: boolean;
 }

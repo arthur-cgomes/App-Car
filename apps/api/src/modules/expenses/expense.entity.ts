@@ -6,7 +6,7 @@ import { ExpenseAttachment } from './expense-attachment.entity';
 import { ExpenseCategory } from './expense-category.entity';
 import { FuelLog } from './fuel-log.entity';
 
-export type ExpenseSource = 'MANUAL' | 'DEBT' | 'INSURANCE' | 'DOCUMENT' | 'API';
+export type ExpenseSource = 'MANUAL' | 'DEBT' | 'INSURANCE' | 'DOCUMENT' | 'API' | 'TIRE';
 
 @Entity('expenses')
 @Index(['vehicleId', 'date'])

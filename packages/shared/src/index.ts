@@ -5,6 +5,7 @@ export * from './catalogs/categories';
 export * from './catalogs/part-systems';
 export * from './catalogs/vehicle-brands';
 export * from './catalogs/emergency-contacts';
+export * from './catalogs/tires';
 export * from './utils/cpf';
 export * from './utils/phone';
 export * from './utils/password';

@@ -5,7 +5,7 @@ import { AuthUser } from '../../common/auth/auth-user';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
-import { CodeDto, ForgotPasswordDto, LoginDto, PinRequestDto, PinVerifyDto, RegisterDto, ResetPasswordDto, SignupStartDto, SignupVerifyDto } from './dto/auth.dto';
+import { ChangePasswordDto, CodeDto, ForgotPasswordDto, LoginDto, PinRequestDto, PinVerifyDto, RegisterDto, ResetPasswordDto, SignupStartDto, SignupVerifyDto } from './dto/auth.dto';
 import { SignupService } from './signup.service';
 
 @ApiTags('auth')
@@ -114,6 +114,12 @@ export class AuthController {
 @Controller('me')
 export class MeSecurityController {
   constructor(private readonly auth: AuthService) {}
+
+  @Post('password')
+  @HttpCode(200)
+  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
+    return this.auth.changePassword(user.id, dto.currentPassword, dto.password);
+  }
 
   @Post('password-link')
   @HttpCode(202)

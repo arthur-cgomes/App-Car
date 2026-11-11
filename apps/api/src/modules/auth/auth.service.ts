@@ -205,6 +205,14 @@ export class AuthService {
     return { changed: true };
   }
 
+  async changePassword(userId: string, currentPassword: string, password: string) {
+    const user = await this.users.findOneOrFail({ where: { id: userId }, select: { id: true, passwordHash: true } });
+    if (!(await this.passwords.verify(user.passwordHash, currentPassword))) throw new BadRequestException('Senha atual incorreta.');
+    await this.users.update({ id: userId }, { passwordHash: await this.passwords.hash(password) });
+    await this.audit.logSecurityEvent('PASSWORD_CHANGED', {}, userId);
+    return { changed: true };
+  }
+
   refresh(request: Request, response: Response) {
     return this.sessions.rotate(request, response);
   }

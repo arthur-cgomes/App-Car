@@ -3,6 +3,7 @@ export const EMERGENCY_CONTACT_KINDS = [
   { code: 'ASSISTANCE', name: 'Guincho e assistência 24h', icon: 'truck' },
   { code: 'HIGHWAY', name: 'Concessionária da rodovia', icon: 'road' },
   { code: 'DEALER', name: 'Concessionária ou oficina', icon: 'wrench' },
+  { code: 'TIRE_SHOP', name: 'Borracharia', icon: 'wrench' },
   { code: 'OTHER', name: 'Outro', icon: 'phone' },
 ] as const;
 

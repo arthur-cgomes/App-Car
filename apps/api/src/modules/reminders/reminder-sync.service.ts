@@ -6,7 +6,7 @@ import type { PlateDebt } from '../plate-lookup/plate-provider';
 import { Expense } from '../expenses/expense.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { Reminder } from './reminder.entity';
-import { AutoReminder, OIL_CHANGE_PATTERN, debtReminders, ipvaEstimate, oilChangeReminder, paidDebtKeys, serviceReminder } from './reminder-rules';
+import { AutoReminder, OIL_CHANGE_PATTERN, debtReminders, ipvaEstimate, oilChangeReminder, paidDebtKeys, pressureReminder, rotationReminder, serviceReminder } from './reminder-rules';
 
 @Injectable()
 export class ReminderSyncService {
@@ -38,6 +38,17 @@ export class ReminderSyncService {
     }
     desired.push(oil);
 
+    const tireReminders = [
+      ...(vehicle.tireLastRotationKm !== null ? [rotationReminder(vehicle.tireLastRotationKm, vehicle.tireRotationKm)] : []),
+      ...(vehicle.tireLastPressureDate ? [pressureReminder(vehicle.tireLastPressureDate)] : []),
+    ];
+    const staleTires = existing.filter((r) => (r.source === 'AUTO_ROTATION' || r.source === 'AUTO_PRESSURE') && !r.doneAt && !tireReminders.some((item) => item.sourceKey === r.sourceKey));
+    if (staleTires.length) {
+      await this.reminders.softRemove(staleTires);
+      staleTires.forEach((r) => byKey.delete(r.sourceKey!));
+    }
+    desired.push(...tireReminders);
+
     const ipva = ipvaEstimate(debts ?? [], today, vehicle.fipeValueCents);
     if (ipva) desired.push(ipva);
 
@@ -54,7 +65,7 @@ export class ReminderSyncService {
       const current = byKey.get(item.sourceKey);
       if (!current) {
         await this.reminders.save(this.reminders.create({ vehicleId: vehicle.id, ...item }));
-      } else if (!current.doneAt && (current.dueDate !== item.dueDate || current.amountCents !== item.amountCents || current.title !== item.title)) {
+      } else if (!current.doneAt && (current.dueDate !== item.dueDate || current.dueOdometer !== item.dueOdometer || current.amountCents !== item.amountCents || current.title !== item.title)) {
         await this.reminders.save(this.reminders.merge(current, item));
       }
     }

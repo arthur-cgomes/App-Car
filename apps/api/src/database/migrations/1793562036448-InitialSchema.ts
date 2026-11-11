@@ -1,13 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 const CATEGORIES = [
-  ['FUEL', 'Combustível', 'fuel', '#023379'],
-  ['MAINTENANCE', 'Manutenção', 'wrench', '#346cc4'],
-  ['PARTS', 'Peças', 'cog', '#164ea3'],
-  ['DOCUMENTS', 'Documentos', 'file-text', '#5d8fde'],
-  ['FINES', 'Multas e débitos', 'triangle-alert', '#8bb2f1'],
-  ['INSURANCE', 'Seguro', 'shield', '#5d5d60'],
-  ['OTHER', 'Outros', 'tag', '#98989b'],
+  ['FUEL', 'Combustível', 'fuel', '#2f7cf6'],
+  ['MAINTENANCE', 'Manutenção', 'wrench', '#f59e0b'],
+  ['PARTS', 'Peças', 'cog', '#6d5ce8'],
+  ['TIRES', 'Pneus', 'tire', '#12a5b5'],
+  ['DOCUMENTS', 'Documentos', 'file-text', '#a855f7'],
+  ['FINES', 'Multas', 'gavel', '#ef4444'],
+  ['INSURANCE', 'Seguro', 'shield', '#64748b'],
+  ['OTHER', 'Outros', 'tag', '#8e8e93'],
 ];
 
 export class InitialSchema1793562036448 implements MigrationInterface {
@@ -80,7 +81,7 @@ export class InitialSchema1793562036448 implements MigrationInterface {
       `CREATE INDEX "idx_expense_attachments_expense_id_position" ON "expense_attachments" ("expense_id", "position") `,
     );
     await queryRunner.query(
-      `CREATE TABLE "vehicles" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "created_by" uuid, "updated_by" uuid, "version" integer NOT NULL DEFAULT '1', "owner_id" uuid NOT NULL, "plate" character varying(7) NOT NULL, "renavam" character varying(11), "brand" character varying(60), "model" character varying(80), "model_version" character varying(120), "year_fab" smallint, "year_model" smallint, "color" character varying(30), "fuel_type" character varying(20), "municipality" character varying(80), "uf" character(2), "restrictions" character varying(120), "fipe_code" character varying(10), "fipe_value_cents" integer, "fipe_ref_month" character varying(7), "fipe_manual" boolean NOT NULL DEFAULT false, "current_odometer" integer NOT NULL DEFAULT '0', "purchase_date" date, "purchase_odometer" integer, "base_odometer" integer NOT NULL DEFAULT '0', "service_interval_km" integer NOT NULL DEFAULT '10000', "oil_change_interval_km" integer NOT NULL DEFAULT '10000', "active" boolean NOT NULL DEFAULT true, CONSTRAINT "pk_vehicles" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "vehicles" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "created_by" uuid, "updated_by" uuid, "version" integer NOT NULL DEFAULT '1', "owner_id" uuid NOT NULL, "plate" character varying(7) NOT NULL, "renavam" character varying(11), "brand" character varying(60), "model" character varying(80), "model_version" character varying(120), "year_fab" smallint, "year_model" smallint, "color" character varying(30), "fuel_type" character varying(20), "municipality" character varying(80), "uf" character(2), "restrictions" character varying(120), "fipe_code" character varying(10), "fipe_value_cents" integer, "fipe_ref_month" character varying(7), "fipe_manual" boolean NOT NULL DEFAULT false, "current_odometer" integer NOT NULL DEFAULT '0', "purchase_date" date, "purchase_odometer" integer, "base_odometer" integer NOT NULL DEFAULT '0', "service_interval_km" integer NOT NULL DEFAULT '10000', "oil_change_interval_km" integer NOT NULL DEFAULT '10000', "tire_rotation_km" integer NOT NULL DEFAULT '15000', "tire_last_rotation_km" integer, "tire_last_pressure_date" date, "tire_psi_front" smallint NOT NULL DEFAULT '33', "tire_psi_rear" smallint NOT NULL DEFAULT '33', "tire_psi_loaded_front" smallint NOT NULL DEFAULT '36', "tire_psi_loaded_rear" smallint NOT NULL DEFAULT '41', "tire_psi_spare" smallint NOT NULL DEFAULT '35', "active" boolean NOT NULL DEFAULT true, CONSTRAINT "pk_vehicles" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(`CREATE INDEX "idx_vehicles_owner_id" ON "vehicles" ("owner_id") `);
     await queryRunner.query(
@@ -226,6 +227,34 @@ export class InitialSchema1793562036448 implements MigrationInterface {
       FOR EACH ROW EXECUTE FUNCTION prevent_audit_log_mutation()
     `);
 
+    await queryRunner.query(
+      `CREATE TABLE "tires" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "created_by" uuid, "updated_by" uuid, "version" integer NOT NULL DEFAULT '1', "vehicle_id" uuid NOT NULL, "number" smallint NOT NULL, "position" character varying(3), "brand" character varying(60) NOT NULL, "model" character varying(60) NOT NULL, "size" character varying(30) NOT NULL, "price_cents" integer, "installed_odometer" integer NOT NULL, "installed_date" date NOT NULL, "store" character varying(120), "life_km" integer NOT NULL, "front_km" integer NOT NULL DEFAULT '0', "rear_km" integer NOT NULL DEFAULT '0', "base_odometer" integer NOT NULL, "pressure_psi" numeric(4,1), "manufacture_year" smallint, "tread_file_id" uuid, "side_file_id" uuid, CONSTRAINT "pk_tires" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX "uq_tires_vehicle_id_position" ON "tires" ("vehicle_id", "position") WHERE "position" IS NOT NULL AND "deleted_at" IS NULL`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "tire_events" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "created_by" uuid, "updated_by" uuid, "version" integer NOT NULL DEFAULT '1', "vehicle_id" uuid NOT NULL, "tire_id" uuid NOT NULL, "kind" character varying(12) NOT NULL, "date" date NOT NULL, "odometer" integer NOT NULL, "description" character varying(200) NOT NULL, "pressure_psi" numeric(4,1), "damage_type" character varying(30), "severity" character varying(10), "repaired" boolean NOT NULL DEFAULT false, "cost_cents" integer, "notes" character varying(200), "file_id" uuid, CONSTRAINT "pk_tire_events" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_tire_events_tire_id_date" ON "tire_events" ("tire_id", "date") `,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "tire_rotations" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "created_by" uuid, "updated_by" uuid, "version" integer NOT NULL DEFAULT '1', "vehicle_id" uuid NOT NULL, "date" date NOT NULL, "odometer" integer NOT NULL, "kind" character varying(10) NOT NULL, CONSTRAINT "pk_tire_rotations" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_tire_rotations_vehicle_id_date" ON "tire_rotations" ("vehicle_id", "date") `,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "tires" ADD CONSTRAINT "fk_tires_vehicle_id" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "tire_events" ADD CONSTRAINT "fk_tire_events_tire_id" FOREIGN KEY ("tire_id") REFERENCES "tires"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "tire_rotations" ADD CONSTRAINT "fk_tire_rotations_vehicle_id" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+
     for (const [index, [code, name, icon, color]] of CATEGORIES.entries()) {
       await queryRunner.query(
         `INSERT INTO "expense_categories" ("code", "name", "icon", "color", "sort_order") VALUES ($1, $2, $3, $4, $5)`,
@@ -235,6 +264,9 @@ export class InitialSchema1793562036448 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP TABLE "tire_rotations"`);
+    await queryRunner.query(`DROP TABLE "tire_events"`);
+    await queryRunner.query(`DROP TABLE "tires"`);
     await queryRunner.query(`DROP TRIGGER "trg_audit_logs_append_only" ON "audit_logs"`);
     await queryRunner.query(`DROP FUNCTION prevent_audit_log_mutation()`);
     await queryRunner.query(

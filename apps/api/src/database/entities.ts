@@ -14,7 +14,10 @@ import { Reminder } from '../modules/reminders/reminder.entity';
 import { PlateLookupHistory } from '../modules/plate-lookup/entities/plate-lookup-history.entity';
 import { PlateLookup } from '../modules/plate-lookup/entities/plate-lookup.entity';
 import { ExpenseCategory } from '../modules/expenses/expense-category.entity';
+import { Tire } from '../modules/tires/tire.entity';
+import { TireEvent } from '../modules/tires/tire-event.entity';
+import { TireRotation } from '../modules/tires/tire-rotation.entity';
 import { User } from '../modules/users/user.entity';
 import { Vehicle } from '../modules/vehicles/vehicle.entity';
 
-export const ENTITIES = [User, Vehicle, ExpenseCategory, Expense, AuditLog, RefreshToken, AuthOtp, PasswordResetToken, PlateLookup, PlateLookupHistory, StoredFile, ExpenseAttachment, FuelLog, Reminder, VehicleDocument, Insurance, EmergencyContact, ApiKey];
+export const ENTITIES = [User, Vehicle, ExpenseCategory, Expense, AuditLog, RefreshToken, AuthOtp, PasswordResetToken, PlateLookup, PlateLookupHistory, StoredFile, ExpenseAttachment, FuelLog, Reminder, VehicleDocument, Insurance, EmergencyContact, ApiKey, Tire, TireEvent, TireRotation];

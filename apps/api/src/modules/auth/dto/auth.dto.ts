@@ -136,3 +136,15 @@ export class ResetPasswordDto {
   @Validate(StrongPasswordConstraint)
   password: string;
 }
+
+export class ChangePasswordDto {
+  @ApiProperty()
+  @IsString()
+  @MaxLength(128)
+  currentPassword: string;
+
+  @ApiProperty({ description: '8+ caracteres, com maiúscula, número e caractere especial' })
+  @IsString()
+  @Validate(StrongPasswordConstraint)
+  password: string;
+}

@@ -1,4 +1,5 @@
 import type { ExpenseCategoryCode } from '@monitoring-car/shared';
+import { addDays } from '../../common/today';
 import { ipvaEstimateCents } from '../fipe/fipe-provider';
 import type { PlateDebt } from '../plate-lookup/plate-provider';
 import type { ReminderSource } from './reminder.entity';
@@ -26,6 +27,33 @@ export function serviceReminder(odometer: number, intervalKm: number): AutoRemin
     title: `Revisão dos ${km.toLocaleString('pt-BR')} km`,
     dueDate: null,
     dueOdometer: km,
+    amountCents: null,
+  };
+}
+
+const PRESSURE_CHECK_DAYS = 30;
+
+export function rotationReminder(lastKm: number, intervalKm: number): AutoReminder {
+  const km = lastKm + intervalKm;
+  return {
+    source: 'AUTO_ROTATION',
+    sourceKey: `ROTATION:${lastKm}`,
+    categoryCode: 'TIRES',
+    title: 'Rodízio de pneus',
+    dueDate: null,
+    dueOdometer: km,
+    amountCents: null,
+  };
+}
+
+export function pressureReminder(lastDate: string): AutoReminder {
+  return {
+    source: 'AUTO_PRESSURE',
+    sourceKey: `PRESSURE:${lastDate}`,
+    categoryCode: 'TIRES',
+    title: 'Calibrar pneus',
+    dueDate: addDays(lastDate, PRESSURE_CHECK_DAYS),
+    dueOdometer: null,
     amountCents: null,
   };
 }

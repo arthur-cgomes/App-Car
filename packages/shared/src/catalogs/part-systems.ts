@@ -1,13 +1,18 @@
-export const PART_SYSTEMS = [
+export const PART_SYSTEM_CHOICES = [
   { code: 'ENGINE', name: 'Motor' },
   { code: 'BRAKES', name: 'Freios' },
-  { code: 'SUSPENSION', name: 'Suspensão e direção' },
+  { code: 'SUSPENSION', name: 'Suspensão' },
+  { code: 'ELECTRICAL', name: 'Elétrica' },
+  { code: 'COOLING', name: 'Arrefecimento' },
+  { code: 'TRANSMISSION', name: 'Câmbio' },
   { code: 'TIRES', name: 'Pneus e rodas' },
-  { code: 'ELECTRICAL', name: 'Elétrica e bateria' },
+  { code: 'BODY', name: 'Carroceria' },
+] as const;
+
+export const PART_SYSTEMS = [
+  ...PART_SYSTEM_CHOICES,
   { code: 'FILTERS', name: 'Filtros e fluidos' },
-  { code: 'TRANSMISSION', name: 'Câmbio e embreagem' },
   { code: 'AC', name: 'Ar-condicionado' },
-  { code: 'BODY', name: 'Carroceria e vidros' },
   { code: 'OTHER', name: 'Outras peças' },
 ] as const;
 

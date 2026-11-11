@@ -3,7 +3,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 
-export type ReminderSource = 'MANUAL' | 'AUTO_DEBT' | 'AUTO_IPVA' | 'AUTO_SERVICE' | 'AUTO_OIL' | 'AUTO_INSURANCE';
+export type ReminderSource = 'MANUAL' | 'AUTO_DEBT' | 'AUTO_IPVA' | 'AUTO_SERVICE' | 'AUTO_OIL' | 'AUTO_INSURANCE' | 'AUTO_ROTATION' | 'AUTO_PRESSURE';
 
 @Entity('reminders')
 @Index('uq_reminders_vehicle_id_source_key', ['vehicleId', 'sourceKey'], {

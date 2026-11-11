@@ -34,6 +34,7 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
 import { FilesModule } from './modules/files/files.module';
 import { PlateLookupModule } from './modules/plate-lookup/plate-lookup.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { TiresModule } from './modules/tires/tires.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
@@ -76,6 +77,7 @@ const REQUEST_ID_PATTERN = /^[\w-]{1,64}$/;
     StorageModule,
     NotificationsModule,
     AuthModule,
+    TiresModule,
     AccountModule,
     UsersModule,
     PlateLookupModule,

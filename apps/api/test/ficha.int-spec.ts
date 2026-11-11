@@ -230,6 +230,58 @@ describe('Ficha do veículo (integração)', () => {
     });
   });
 
+  describe('pneus', () => {
+    const t = () => `${v}/tires`;
+    const setup = { brand: 'Pirelli', model: 'Cinturato P7', size: '205/50 R17 89V', installedOdometer: 30000, installedDate: '2024-03-12', spareSize: '175/70 R14 84T', spareYear: 2019 };
+
+    it('começa vazio e cadastra o jogo com estepe, uma vez só', async () => {
+      expect((await request(server()).get(t()).set(asAlice).expect(200)).body.tires).toEqual([]);
+      await request(server()).get(t()).set(asBob).expect(404);
+      const { body } = await request(server()).post(t()).set(asAlice).send(setup).expect(201);
+      expect(body.tires.map((tire: { position: string }) => tire.position).sort()).toEqual(['DD', 'DE', 'EST', 'TD', 'TE']);
+      expect(body.lastRotationKm).toBe(30000);
+      await request(server()).post(t()).set(asAlice).send(setup).expect(400);
+    });
+
+    it('calibragem, ocorrência com custo e substituição viram histórico e gasto', async () => {
+      const calibrated = await request(server()).post(`${t()}/pressure`).set(asAlice).send({ values: { DE: 33, EST: 29 } }).expect(201);
+      expect(calibrated.body.tires.find((tire: { position: string }) => tire.position === 'EST').pressurePsi).toBe(29);
+      await request(server()).post(`${t()}/pressure`).set(asAlice).send({ values: { DE: 5 } }).expect(400);
+
+      await request(server()).post(`${t()}/occurrences`).set(asAlice).send({ position: 'TD', damageType: 'Prego', severity: 'Leve', repaired: false, costCents: 4000, notes: 'Borracharia do Zé' }).expect(201);
+      await request(server()).post(`${t()}/replacements`).set(asAlice).send({ position: 'DE', brand: 'Pirelli', model: 'Cinturato P7', size: '205/50 R17 89V', priceCents: 68900 }).expect(201);
+      const spent = (await request(server()).get(`${v}/expenses`).set(asAlice)).body.filter((expense: { source: string }) => expense.source === 'TIRE');
+      expect(spent.map((expense: { description: string; category: string }) => [expense.description, expense.category]).sort()).toEqual([
+        ['Pneu novo · DE', 'TIRES'],
+        ['Prego · TD', 'TIRES'],
+      ]);
+      for (const expense of spent) await request(server()).delete(`${v}/expenses/${expense.id}`).set(asAlice).expect(204);
+
+      const { body } = await request(server()).get(t()).set(asAlice);
+      const td = body.tires.find((tire: { position: string }) => tire.position === 'TD');
+      const event = td.events.find((item: { kind: string }) => item.kind === 'DAMAGE');
+      await request(server()).post(`${t()}/occurrences/${event.id}/repaired`).set(asAlice).expect(201);
+      expect(body.tires.find((tire: { position: string }) => tire.position === 'DE').number).toBe(5);
+    });
+
+    it('o rodízio troca posições, soma a km e atualiza o lembrete', async () => {
+      const before = (await request(server()).get(t()).set(asAlice)).body;
+      const at = (position: string) => before.tires.find((tire: { position: string }) => tire.position === position);
+      await request(server()).post(`${t()}/rotations`).set(asAlice).send({ kind: 'SUGGESTED', odometer: 40000, positions: { DE: at('DE').id, DD: at('DD').id, TE: at('TE').id, TD: at('DE').id } }).expect(400);
+      const odometer = before.odometer + 100;
+      const { body } = await request(server())
+        .post(`${t()}/rotations`)
+        .set(asAlice)
+        .send({ kind: 'SUGGESTED', odometer, positions: { DE: at('TD').id, DD: at('TE').id, TE: at('DE').id, TD: at('DD').id } })
+        .expect(201);
+      expect(body.tires.find((tire: { id: string }) => tire.id === at('TD').id).position).toBe('DE');
+      expect(body.lastRotationKm).toBe(odometer);
+      expect(body.rotations[0]).toMatchObject({ kind: 'SUGGESTED', odometer });
+      const reminders = (await request(server()).get(`${v}/reminders`).set(asAlice)).body.items;
+      expect(reminders.filter((r: { title: string; doneAt: string | null }) => r.title === 'Rodízio de pneus' && !r.doneAt)).toEqual([expect.objectContaining({ dueOdometer: odometer + 15000 })]);
+    });
+  });
+
   it('consumo: média de km/l pelos tanques cheios e preço médio por litro', async () => {
     const fuel = (date: string, odometer: number, liters: number, fullTank: boolean, amountCents: number) =>
       request(server()).post(`${v}/expenses`).set(asAlice).send({ category: 'FUEL', amountCents, date, odometer, fuel: { liters, fullTank } }).expect(201);

@@ -99,7 +99,7 @@ describe('Gastos e fotos (integração)', () => {
         .set(asAlice)
         .send({ category: 'FINES', partSystem: 'BRAKES', amountCents: 13016, date: '2026-10-15', fuel: { liters: 10 } })
         .expect(201);
-      expect(fine.body).toMatchObject({ partSystem: null, fuel: null, description: 'Multas e débitos' });
+      expect(fine.body).toMatchObject({ partSystem: null, fuel: null, description: 'Multas' });
 
       await request(server())
         .post(base)

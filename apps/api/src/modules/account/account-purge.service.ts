@@ -39,6 +39,9 @@ export class AccountPurgeService {
         ...(await ids('SELECT id FROM documents WHERE vehicle_id = ANY($1)')),
         ...(await ids('SELECT id FROM insurances WHERE vehicle_id = ANY($1)')),
         ...(await ids('SELECT id FROM emergency_contacts WHERE vehicle_id = ANY($1)')),
+        ...(await ids('SELECT id FROM tires WHERE vehicle_id = ANY($1)')),
+        ...(await ids('SELECT id FROM tire_events WHERE vehicle_id = ANY($1)')),
+        ...(await ids('SELECT id FROM tire_rotations WHERE vehicle_id = ANY($1)')),
         ...(await q('SELECT id FROM api_keys WHERE user_id = $1', [userId])).map((r: { id: string }) => r.id),
       ];
       const files: { id: string; storage_key: string }[] = await q('SELECT id, storage_key FROM files WHERE owner_id = $1', [userId]);

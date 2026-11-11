@@ -146,6 +146,17 @@ describe('Autenticação (integração)', () => {
       await post('/v1/auth/login', { login: '52998224725', password: MARINA.password }).expect(200);
     });
 
+    it('troca a senha só com a senha atual certa', async () => {
+      const login = await post('/v1/auth/login', { login: MARINA.cpf, password: MARINA.password }).expect(200);
+      const cookie = login.get('Set-Cookie')!;
+      const change = (body: object) => request(app.getHttpServer()).post('/v1/me/password').set(CSRF).set('Cookie', cookie).send(body);
+      expect((await change({ currentPassword: 'errada', password: 'Nova-Senha-2026!' }).expect(400)).body.message).toBe('Senha atual incorreta.');
+      await change({ currentPassword: MARINA.password, password: 'fraca' }).expect(400);
+      await change({ currentPassword: MARINA.password, password: 'Nova-Senha-2026!' }).expect(200);
+      await post('/v1/auth/login', { login: MARINA.cpf, password: 'Nova-Senha-2026!' }).expect(200);
+      await change({ currentPassword: 'Nova-Senha-2026!', password: MARINA.password }).expect(200);
+    });
+
     it('bloqueia por 15 min após 5 senhas erradas, mesmo com a senha certa depois', async () => {
       for (let i = 0; i < 5; i++) {
         const res = await post('/v1/auth/login', { login: MARINA.cpf, password: 'errada' }).expect(401);
