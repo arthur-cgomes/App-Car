@@ -196,21 +196,34 @@ export class AuthService {
     });
     if (!reset) throw new BadRequestException('Este link expirou. Peça um novo em "Esqueci minha senha".');
 
-    const user = await this.users.findOneByOrFail({ id: reset.userId });
-    user.passwordHash = await this.passwords.hash(password);
-    await this.users.save(user);
-    await this.resetTokens.update({ userId: user.id, usedAt: IsNull() }, { usedAt: new Date() });
-    await this.sessions.endAll(user.id);
-    await this.audit.logSecurityEvent('PASSWORD_CHANGED', {}, user.id);
+    await this.applyNewPassword(reset.userId, password);
     return { changed: true };
   }
 
-  async changePassword(userId: string, currentPassword: string, password: string) {
+  async changePassword(userId: string, currentPassword: string, password: string, response: Response) {
+    const key = `password-change-fail:${userId}`;
+    const failures = await this.limiter.count(key);
+    if (failures.count >= LOGIN_MAX_FAILURES) {
+      const minutes = Math.max(1, Math.ceil(failures.ttl / 60));
+      throw tooManyRequests(`Muitas tentativas. Tente novamente em ${minutes} min.`, failures.ttl);
+    }
     const user = await this.users.findOneOrFail({ where: { id: userId }, select: { id: true, passwordHash: true } });
-    if (!(await this.passwords.verify(user.passwordHash, currentPassword))) throw new BadRequestException('Senha atual incorreta.');
-    await this.users.update({ id: userId }, { passwordHash: await this.passwords.hash(password) });
-    await this.audit.logSecurityEvent('PASSWORD_CHANGED', {}, userId);
+    if (!(await this.passwords.verify(user.passwordHash, currentPassword))) {
+      await this.limiter.hit(key, LOGIN_MAX_FAILURES, LOGIN_LOCK_SECONDS);
+      await this.audit.logSecurityEvent('LOGIN_FAILED', { method: 'PASSWORD_CHANGE' }, userId);
+      throw new BadRequestException('Senha atual incorreta.');
+    }
+    await this.limiter.reset(key);
+    await this.applyNewPassword(userId, password);
+    await this.sessions.start(response, userId);
     return { changed: true };
+  }
+
+  private async applyNewPassword(userId: string, password: string) {
+    await this.users.update({ id: userId }, { passwordHash: await this.passwords.hash(password) });
+    await this.resetTokens.update({ userId, usedAt: IsNull() }, { usedAt: new Date() });
+    await this.sessions.endAll(userId);
+    await this.audit.logSecurityEvent('PASSWORD_CHANGED', {}, userId);
   }
 
   refresh(request: Request, response: Response) {

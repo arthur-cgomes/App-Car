@@ -117,8 +117,8 @@ export class MeSecurityController {
 
   @Post('password')
   @HttpCode(200)
-  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
-    return this.auth.changePassword(user.id, dto.currentPassword, dto.password);
+  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto, @Res({ passthrough: true }) response: Response) {
+    return this.auth.changePassword(user.id, dto.currentPassword, dto.password, response);
   }
 
   @Post('password-link')

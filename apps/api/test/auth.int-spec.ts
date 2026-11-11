@@ -146,15 +146,27 @@ describe('Autenticação (integração)', () => {
       await post('/v1/auth/login', { login: '52998224725', password: MARINA.password }).expect(200);
     });
 
-    it('troca a senha só com a senha atual certa', async () => {
+    it('troca a senha só com a senha atual certa, encerra as outras sessões e mantém esta', async () => {
       const login = await post('/v1/auth/login', { login: MARINA.cpf, password: MARINA.password }).expect(200);
       const cookie = login.get('Set-Cookie')!;
       const change = (body: object) => request(app.getHttpServer()).post('/v1/me/password').set(CSRF).set('Cookie', cookie).send(body);
       expect((await change({ currentPassword: 'errada', password: 'Nova-Senha-2026!' }).expect(400)).body.message).toBe('Senha atual incorreta.');
       await change({ currentPassword: MARINA.password, password: 'fraca' }).expect(400);
-      await change({ currentPassword: MARINA.password, password: 'Nova-Senha-2026!' }).expect(200);
-      await post('/v1/auth/login', { login: MARINA.cpf, password: 'Nova-Senha-2026!' }).expect(200);
-      await change({ currentPassword: 'Nova-Senha-2026!', password: MARINA.password }).expect(200);
+      const other = await post('/v1/auth/login', { login: MARINA.cpf, password: MARINA.password }).expect(200);
+      const changed = await change({ currentPassword: MARINA.password, password: 'Nova-Senha-2026!' }).expect(200);
+      expect(cookieNames(changed)).toContain('access_token');
+      await request(app.getHttpServer()).post('/v1/auth/refresh').set(CSRF).set('Cookie', other.get('Set-Cookie')!).expect(401);
+      const fresh = await post('/v1/auth/login', { login: MARINA.cpf, password: 'Nova-Senha-2026!' }).expect(200);
+      await request(app.getHttpServer()).post('/v1/me/password').set(CSRF).set('Cookie', fresh.get('Set-Cookie')!).send({ currentPassword: 'Nova-Senha-2026!', password: MARINA.password }).expect(200);
+    });
+
+    it('bloqueia a troca de senha após 5 senhas atuais erradas', async () => {
+      const login = await post('/v1/auth/login', { login: MARINA.cpf, password: MARINA.password }).expect(200);
+      const change = () =>
+        request(app.getHttpServer()).post('/v1/me/password').set(CSRF).set('Cookie', login.get('Set-Cookie')!).send({ currentPassword: 'errada', password: 'Nova-Senha-2026!' });
+      for (let i = 0; i < 5; i++) await change().expect(400);
+      expect((await change().expect(429)).body.message).toMatch(/Muitas tentativas/);
+      await redis.del(`rl:password-change-fail:${login.body.user.id}`);
     });
 
     it('bloqueia por 15 min após 5 senhas erradas, mesmo com a senha certa depois', async () => {
